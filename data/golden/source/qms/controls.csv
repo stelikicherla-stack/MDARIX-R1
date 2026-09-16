@@ -1,0 +1,13 @@
+control_id,control_identifier,control_type,description
+CTRL-001,CTRL-001,validation,Synthetic control 1
+CTRL-002,CTRL-002,process,Synthetic control 2
+CTRL-003,CTRL-003,validation,Synthetic control 3
+CTRL-004,CTRL-004,process,Synthetic control 4
+CTRL-005,CTRL-005,validation,Synthetic control 5
+CTRL-006,CTRL-006,process,Synthetic control 6
+CTRL-007,CTRL-007,validation,Synthetic control 7
+CTRL-008,CTRL-008,process,Synthetic control 8
+CTRL-009,CTRL-009,validation,Synthetic control 9
+CTRL-010,CTRL-010,process,Synthetic control 10
+CTRL-011,CTRL-011,validation,Synthetic control 11
+CTRL-012,CTRL-012,process,Synthetic control 12

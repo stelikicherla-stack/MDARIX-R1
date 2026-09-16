@@ -1,0 +1,7 @@
+product_version_id,product_id,version_identifier,effective_timestamp,source_alias
+PV-ASTER-A,PRD-ASTER-100,Rev A,2025-07-01,PRD-100-A
+PV-ASTER-B,PRD-ASTER-100,Rev B,2025-10-01,PRD100 Rev B
+PV-ASTER-C,PRD-ASTER-100,Rev C,2025-12-10,Product-100 / Revision C
+PV-ASTER-D,PRD-ASTER-100,Rev D,2026-01-25,PRD100 Rev D
+PV-NIMBUS-A,PRD-NIMBUS-200,Rev A,2025-08-15,NV200-A
+PV-NIMBUS-B,PRD-NIMBUS-200,Rev B,2026-02-01,Nimbus 200 Revision B

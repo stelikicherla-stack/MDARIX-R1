@@ -1,0 +1,163 @@
+{
+  "notice": "MDARIX R1 GOLDEN DATASET - SYNTHETIC TEST DATA ONLY. NOT FOR CLINICAL OR REGULATORY USE.",
+  "scenarios": [
+    {
+      "expected_contradictions": [
+        "Pre-Rev B shutdown complaints",
+        "Rev B validation passed"
+      ],
+      "expected_system_behavior": "Use evidence, contradictions, unknowns, and abstention where warranted.",
+      "expected_unknowns": [
+        "Comparative Rev A vs Rev B testing unavailable"
+      ],
+      "investigation_id": "INV-001",
+      "prohibited_conclusions": [
+        "Component Rev B definitively caused all shutdowns.",
+        "All Rev D devices are affected.",
+        "Correlation alone establishes causality."
+      ],
+      "purpose": "Evaluate supplier change correlation behavior.",
+      "scenario_id": "VS001",
+      "title": "Supplier Change Correlation"
+    },
+    {
+      "expected_contradictions": [],
+      "expected_system_behavior": "Use evidence, contradictions, unknowns, and abstention where warranted.",
+      "expected_unknowns": [],
+      "investigation_id": "INV-002",
+      "prohibited_conclusions": [
+        "Do not claim certainty without evidence."
+      ],
+      "purpose": "Evaluate false correlation behavior.",
+      "scenario_id": "VS002",
+      "title": "False Correlation"
+    },
+    {
+      "expected_contradictions": [],
+      "expected_system_behavior": "Use evidence, contradictions, unknowns, and abstention where warranted.",
+      "expected_unknowns": [
+        "Comparative Rev A vs Rev B testing unavailable"
+      ],
+      "investigation_id": "INV-003",
+      "prohibited_conclusions": [
+        "Do not claim certainty without evidence."
+      ],
+      "purpose": "Evaluate missing evidence behavior.",
+      "scenario_id": "VS003",
+      "title": "Missing Evidence"
+    },
+    {
+      "expected_contradictions": [
+        "Pre-Rev B shutdown complaints",
+        "Rev B validation passed"
+      ],
+      "expected_system_behavior": "Use evidence, contradictions, unknowns, and abstention where warranted.",
+      "expected_unknowns": [],
+      "investigation_id": "INV-004",
+      "prohibited_conclusions": [
+        "Do not claim certainty without evidence."
+      ],
+      "purpose": "Evaluate conflicting evidence behavior.",
+      "scenario_id": "VS004",
+      "title": "Conflicting Evidence"
+    },
+    {
+      "expected_contradictions": [],
+      "expected_system_behavior": "Use evidence, contradictions, unknowns, and abstention where warranted.",
+      "expected_unknowns": [],
+      "investigation_id": "INV-005",
+      "prohibited_conclusions": [
+        "Do not claim certainty without evidence."
+      ],
+      "purpose": "Evaluate incorrect timeline behavior.",
+      "scenario_id": "VS005",
+      "title": "Incorrect Timeline"
+    },
+    {
+      "expected_contradictions": [],
+      "expected_system_behavior": "Use evidence, contradictions, unknowns, and abstention where warranted.",
+      "expected_unknowns": [],
+      "investigation_id": "INV-006",
+      "prohibited_conclusions": [
+        "Do not claim certainty without evidence."
+      ],
+      "purpose": "Evaluate shared component exposure behavior.",
+      "scenario_id": "VS006",
+      "title": "Shared Component Exposure"
+    },
+    {
+      "expected_contradictions": [],
+      "expected_system_behavior": "Use evidence, contradictions, unknowns, and abstention where warranted.",
+      "expected_unknowns": [],
+      "investigation_id": "INV-007",
+      "prohibited_conclusions": [
+        "Do not claim certainty without evidence."
+      ],
+      "purpose": "Evaluate premature closure behavior.",
+      "scenario_id": "VS007",
+      "title": "Premature Closure"
+    },
+    {
+      "expected_contradictions": [],
+      "expected_system_behavior": "Use evidence, contradictions, unknowns, and abstention where warranted.",
+      "expected_unknowns": [],
+      "investigation_id": "INV-008",
+      "prohibited_conclusions": [
+        "Do not claim certainty without evidence."
+      ],
+      "purpose": "Evaluate control failure behavior.",
+      "scenario_id": "VS008",
+      "title": "Control Failure"
+    },
+    {
+      "expected_contradictions": [],
+      "expected_system_behavior": "Use evidence, contradictions, unknowns, and abstention where warranted.",
+      "expected_unknowns": [],
+      "investigation_id": "INV-009",
+      "prohibited_conclusions": [
+        "Do not claim certainty without evidence."
+      ],
+      "purpose": "Evaluate counterfactual behavior.",
+      "scenario_id": "VS009",
+      "title": "Counterfactual"
+    },
+    {
+      "expected_contradictions": [],
+      "expected_system_behavior": "Use evidence, contradictions, unknowns, and abstention where warranted.",
+      "expected_unknowns": [],
+      "investigation_id": "INV-010",
+      "prohibited_conclusions": [
+        "Do not claim certainty without evidence."
+      ],
+      "purpose": "Evaluate ai model change behavior.",
+      "scenario_id": "VS010",
+      "title": "AI Model Change"
+    },
+    {
+      "expected_contradictions": [],
+      "expected_system_behavior": "Use evidence, contradictions, unknowns, and abstention where warranted.",
+      "expected_unknowns": [],
+      "investigation_id": "INV-010",
+      "prohibited_conclusions": [
+        "Do not claim certainty without evidence."
+      ],
+      "purpose": "Evaluate multiple causes behavior.",
+      "scenario_id": "VS011",
+      "title": "Multiple Causes"
+    },
+    {
+      "expected_contradictions": [],
+      "expected_system_behavior": "Use evidence, contradictions, unknowns, and abstention where warranted.",
+      "expected_unknowns": [
+        "Comparative Rev A vs Rev B testing unavailable"
+      ],
+      "investigation_id": "INV-010",
+      "prohibited_conclusions": [
+        "Do not claim certainty without evidence."
+      ],
+      "purpose": "Evaluate correct abstention behavior.",
+      "scenario_id": "VS012",
+      "title": "Correct Abstention"
+    }
+  ]
+}

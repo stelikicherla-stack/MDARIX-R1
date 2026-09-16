@@ -1,0 +1,35 @@
+{
+  "canonical_sha256": "0e9323ba2c83f7688eece6dff838dde20334909c6981c87459644d18fb9465e4",
+  "counts": {
+    "changes": 16,
+    "complaints": 120,
+    "components": 16,
+    "controls": 12,
+    "evidence": 38,
+    "failure_chains": 1,
+    "failure_modes": 15,
+    "hypotheses": 3,
+    "intentional_anomalies": 8,
+    "investigations": 10,
+    "lots": 18,
+    "manufacturing_sites": 2,
+    "product_families": 2,
+    "product_versions": 6,
+    "products": 2,
+    "requirements": 24,
+    "risks": 15,
+    "scenarios": 12,
+    "suppliers": 5,
+    "unknowns": 3
+  },
+  "dataset_version": "r1-day3-golden-v1",
+  "deterministic_seed": 31003,
+  "fictional_company": "AcmeCare Instruments",
+  "layers": {
+    "canonical": "data/golden/canonical",
+    "ground_truth": "evaluation/ground_truth",
+    "source": "data/golden/source"
+  },
+  "notice": "MDARIX R1 GOLDEN DATASET - SYNTHETIC TEST DATA ONLY. NOT FOR CLINICAL OR REGULATORY USE.",
+  "synthetic_only": true
+}

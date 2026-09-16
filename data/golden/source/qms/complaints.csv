@@ -1,0 +1,121 @@
+complaint_id,complaint_identifier,product_version_id,source_product_version,lot_id,event_timestamp,recorded_timestamp,ingestion_timestamp,failure_mode,narrative,duplicate_candidate,data_quality_status
+CMP-0001,QMS-00001,PV-ASTER-C,Product-100 / Revision C,,2025-11-18,2025-11-23,2025-11-27,shutdown,Intermittent shutdown before Rev B,False,missing_lot
+CMP-0002,QMS-00002,PV-ASTER-C,Product-100 / Revision C,,2025-12-04,2025-12-10,2025-12-15,shutdown,Intermittent shutdown before Rev B,False,missing_lot
+CMP-0003,QMS-00003,PV-ASTER-C,Product-100 / Revision C,,2026-01-08,2026-01-15,2026-01-21,shutdown,Intermittent shutdown before Rev B,False,missing_lot
+CMP-0004,QMS-00004,PV-ASTER-D,PRD100 Rev D,LOT-014,2026-02-05,2026-02-13,2026-02-16,shutdown,Intermittent shutdown during field use,False,reviewed
+CMP-0005,QMS-00005,PV-ASTER-D,PRD100 Rev D,LOT-010,2026-02-06,2026-02-10,2026-02-14,shutdown,Intermittent shutdown during field use,False,reviewed
+CMP-0006,QMS-00006,PV-ASTER-D,PRD100 Rev D,LOT-012,2026-02-07,2026-02-12,2026-02-17,shutdown,Intermittent shutdown during field use,False,reviewed
+CMP-0007,QMS-00007,PV-ASTER-D,PRD100 Rev D,,2026-02-08,2026-02-14,2026-02-20,shutdown,Intermittent shutdown during field use,False,missing_lot
+CMP-0008,QMS-00008,PV-ASTER-D,PRD100 Rev D,LOT-010,2026-02-09,2026-02-16,2026-02-19,shutdown,Intermittent shutdown during field use,False,reviewed
+CMP-0009,QMS-00009,PV-ASTER-D,PRD100 Rev D,LOT-014,2026-02-10,2026-02-18,2026-02-22,shutdown,Intermittent shutdown during field use,False,reviewed
+CMP-0010,QMS-00010,PV-ASTER-D,PRD100 Rev D,LOT-012,2026-02-11,2026-02-15,2026-02-20,shutdown,Intermittent shutdown during field use,False,reviewed
+CMP-0011,QMS-00011,PV-ASTER-D,PRD100 Rev D,LOT-013,2026-02-12,2026-02-17,2026-02-23,shutdown,Intermittent shutdown during field use,False,reviewed
+CMP-0012,QMS-00012,PV-ASTER-D,PRD100 Rev D,,2026-02-13,2026-02-19,2026-02-22,shutdown,Intermittent shutdown during field use,False,missing_lot
+CMP-0013,QMS-00013,PV-ASTER-D,PRD100 Rev D,LOT-012,2026-02-14,2026-02-21,2026-02-25,shutdown,Intermittent shutdown during field use,False,reviewed
+CMP-0014,QMS-00014,PV-ASTER-D,PRD100 Rev D,LOT-009,2026-02-15,2026-02-23,2026-02-28,shutdown,Intermittent shutdown during field use,False,reviewed
+CMP-0015,QMS-00015,PV-ASTER-D,PRD100 Rev D,LOT-012,2026-02-16,2026-02-20,2026-02-26,shutdown,Intermittent shutdown during field use,False,reviewed
+CMP-0016,QMS-00016,PV-ASTER-D,PRD100 Rev D,LOT-009,2026-02-17,2026-02-22,2026-02-25,shutdown,Intermittent shutdown during field use,False,reviewed
+CMP-0017,QMS-00017,PV-ASTER-D,PRD100 Rev D,LOT-010,2026-02-18,2026-02-24,2026-02-28,shutdown,Intermittent shutdown during field use,False,reviewed
+CMP-0018,QMS-00018,PV-ASTER-D,PRD100 Rev D,LOT-012,2026-02-19,2026-02-26,2026-03-03,shutdown,Intermittent shutdown during field use,False,reviewed
+CMP-0019,QMS-00019,PV-ASTER-D,PRD100 Rev D,LOT-008,2026-02-20,2026-02-28,2026-03-06,shutdown,Intermittent shutdown during field use,False,reviewed
+CMP-0020,QMS-00020,PV-ASTER-D,PRD100 Rev D,LOT-008,2026-02-21,2026-02-25,2026-02-28,shutdown,Intermittent shutdown during field use,False,reviewed
+CMP-0021,QMS-00021,PV-ASTER-D,PRD100 Rev D,LOT-008,2026-02-22,2026-02-27,2026-03-03,shutdown,Intermittent shutdown during field use,False,reviewed
+CMP-0022,QMS-00022,PV-ASTER-D,PRD100 Rev D,LOT-013,2026-02-23,2026-03-01,2026-03-06,shutdown,Intermittent shutdown during field use,False,reviewed
+CMP-0023,QMS-00023,PV-ASTER-D,PRD100 Rev D,LOT-013,2026-02-24,2026-03-03,2026-03-09,shutdown,Intermittent shutdown during field use,False,reviewed
+CMP-0024,QMS-00024,PV-ASTER-D,PRD100 Rev D,LOT-012,2026-02-25,2026-03-05,2026-03-08,shutdown,Intermittent shutdown during field use,False,reviewed
+CMP-0025,QMS-00025,PV-ASTER-D,PRD100 Rev D,,2026-02-26,2026-03-02,2026-03-06,shutdown,Intermittent shutdown during field use,False,missing_lot
+CMP-0026,QMS-00026,PV-ASTER-D,PRD100 Rev D,LOT-013,2026-02-27,2026-03-04,2026-03-09,shutdown,Intermittent shutdown during field use,False,reviewed
+CMP-0027,QMS-00027,PV-ASTER-D,PRD100 Rev D,LOT-008,2026-02-28,2026-03-06,2026-03-12,shutdown,Intermittent shutdown during field use,False,reviewed
+CMP-0028,QMS-00028,PV-ASTER-D,PRD100 Rev D,LOT-009,2026-03-01,2026-03-08,2026-03-11,shutdown,Intermittent shutdown during field use,False,reviewed
+CMP-0029,QMS-00029,PV-ASTER-D,PRD100 Rev D,LOT-013,2026-03-02,2026-03-10,2026-03-14,shutdown,Intermittent shutdown during field use,False,reviewed
+CMP-0030,QMS-00030,PV-ASTER-D,PRD100 Rev D,LOT-009,2026-03-03,2026-03-07,2026-03-12,shutdown,Intermittent shutdown during field use,False,reviewed
+CMP-0031,QMS-00031,PV-ASTER-D,PRD100 Rev D,LOT-011,2026-03-04,2026-03-09,2026-03-15,shutdown,Intermittent shutdown during field use,False,reviewed
+CMP-0032,QMS-00032,PV-ASTER-D,PRD100 Rev D,LOT-010,2026-03-05,2026-03-11,2026-03-14,shutdown,Intermittent shutdown during field use,False,reviewed
+CMP-0033,QMS-00033,PV-ASTER-D,PRD100 Rev D,LOT-013,2026-03-06,2026-03-13,2026-03-17,shutdown,Intermittent shutdown during field use,False,reviewed
+CMP-0034,QMS-00034,PV-ASTER-D,PRD100 Rev D,LOT-011,2026-03-07,2026-03-15,2026-03-20,shutdown,Intermittent shutdown during field use,False,reviewed
+CMP-0035,QMS-00035,PV-ASTER-D,PRD100 Rev D,LOT-014,2026-03-08,2026-03-12,2026-03-18,shutdown,Intermittent shutdown during field use,False,reviewed
+CMP-0036,QMS-00036,PV-ASTER-D,PRD100 Rev D,LOT-010,2026-03-09,2026-03-14,2026-03-17,shutdown,Intermittent shutdown during field use,False,reviewed
+CMP-0037,QMS-00037,PV-ASTER-D,PRD100 Rev D,LOT-013,2026-03-10,2026-03-16,2026-03-20,shutdown,Intermittent shutdown during field use,False,reviewed
+CMP-0038,QMS-00038,PV-ASTER-D,PRD100 Rev D,LOT-013,2026-03-11,2026-03-18,2026-03-23,shutdown,Intermittent shutdown during field use,False,reviewed
+CMP-0039,QMS-00039,PV-ASTER-D,PRD100 Rev D,LOT-008,2026-03-12,2026-03-20,2026-03-26,shutdown,Intermittent shutdown during field use,False,reviewed
+CMP-0040,QMS-00040,PV-ASTER-D,PRD100 Rev D,LOT-009,2026-03-13,2026-03-17,2026-03-20,no_fault_found,Synthetic no_fault_found complaint,False,reviewed
+CMP-0041,QMS-00041,PV-ASTER-D,PRD100 Rev D,LOT-014,2026-03-14,2026-03-19,2026-03-23,delayed_restart,Synthetic delayed_restart complaint,False,reviewed
+CMP-0042,QMS-00042,PV-ASTER-D,PRD100 Rev D,LOT-010,2026-03-15,2026-03-21,2026-03-26,delayed_restart,Synthetic delayed_restart complaint,False,reviewed
+CMP-0043,QMS-00043,PV-ASTER-D,PRD100 Rev D,LOT-010,2026-03-16,2026-03-23,2026-03-29,false_alarm,Synthetic false_alarm complaint,False,reviewed
+CMP-0044,QMS-00044,PV-ASTER-D,PRD100 Rev D,LOT-010,2026-03-17,2026-03-25,2026-03-28,false_alarm,Synthetic false_alarm complaint,True,duplicate_candidate
+CMP-0045,QMS-00045,PV-ASTER-D,PRD100 Rev D,,2026-03-18,2026-03-22,2026-03-26,no_fault_found,Synthetic no_fault_found complaint,True,missing_lot
+CMP-0046,QMS-00046,PV-ASTER-D,PRD100 Rev D,LOT-010,2026-03-19,2026-03-24,2026-03-29,delayed_restart,Synthetic delayed_restart complaint,False,reviewed
+CMP-0047,QMS-00047,PV-ASTER-D,PRD100 Rev D,,2026-03-20,2026-03-26,2026-04-01,false_alarm,Synthetic false_alarm complaint,False,missing_lot
+CMP-0048,QMS-00048,PV-ASTER-D,PRD100 Rev D,LOT-012,2026-03-21,2026-03-28,2026-03-31,false_alarm,Synthetic false_alarm complaint,False,reviewed
+CMP-0049,QMS-00049,PV-ASTER-D,PRD100 Rev D,,2026-03-22,2026-03-30,2026-04-03,false_alarm,Synthetic false_alarm complaint,False,missing_lot
+CMP-0050,QMS-00050,PV-ASTER-D,PRD100 Rev D,LOT-011,2026-03-23,2026-03-27,2026-04-01,false_alarm,Synthetic false_alarm complaint,False,reviewed
+CMP-0051,QMS-00051,PV-ASTER-D,PRD100 Rev D,LOT-010,2026-03-24,2026-03-29,2026-04-04,delayed_restart,Synthetic delayed_restart complaint,False,reviewed
+CMP-0052,QMS-00052,PV-ASTER-C,Product-100 / Revision C,LOT-001,2026-01-18,2026-01-24,2026-01-27,shutdown,Pre-Rev D shutdown complaint,False,reviewed
+CMP-0053,QMS-00053,PV-ASTER-C,Product-100 / Revision C,LOT-002,2026-01-19,2026-01-26,2026-01-30,connector_intermittency,Pre-Rev D connector_intermittency complaint,False,reviewed
+CMP-0054,QMS-00054,PV-ASTER-C,Product-100 / Revision C,LOT-001,2026-01-20,2026-01-28,2026-02-02,shutdown,Pre-Rev D shutdown complaint,False,reviewed
+CMP-0055,QMS-00055,PV-ASTER-C,Product-100 / Revision C,LOT-002,2026-01-21,2026-01-25,2026-01-31,connector_intermittency,Pre-Rev D connector_intermittency complaint,False,reviewed
+CMP-0056,QMS-00056,PV-ASTER-C,Product-100 / Revision C,,2026-01-22,2026-01-27,2026-01-30,battery_warning,Pre-Rev D battery_warning complaint,False,missing_lot
+CMP-0057,QMS-00057,PV-ASTER-C,Product-100 / Revision C,,2026-01-23,2026-01-29,2026-02-02,connector_intermittency,Pre-Rev D connector_intermittency complaint,False,missing_lot
+CMP-0058,QMS-00058,PV-ASTER-C,Product-100 / Revision C,LOT-002,2026-01-24,2026-01-31,2026-02-05,connector_intermittency,Pre-Rev D connector_intermittency complaint,False,reviewed
+CMP-0059,QMS-00059,PV-ASTER-C,Product-100 / Revision C,,2026-01-25,2026-02-02,2026-02-08,connector_intermittency,Pre-Rev D connector_intermittency complaint,False,missing_lot
+CMP-0060,QMS-00060,PV-ASTER-C,Product-100 / Revision C,LOT-002,2026-01-26,2026-01-30,2026-02-02,shutdown,Pre-Rev D shutdown complaint,False,reviewed
+CMP-0061,QMS-00061,PV-ASTER-C,Product-100 / Revision C,,2026-01-27,2026-02-01,2026-02-05,shutdown,Pre-Rev D shutdown complaint,False,missing_lot
+CMP-0062,QMS-00062,PV-ASTER-C,Product-100 / Revision C,,2026-01-28,2026-02-03,2026-02-08,connector_intermittency,Pre-Rev D connector_intermittency complaint,False,missing_lot
+CMP-0063,QMS-00063,PV-ASTER-C,Product-100 / Revision C,LOT-003,2026-01-29,2026-02-05,2026-02-11,shutdown,Pre-Rev D shutdown complaint,False,reviewed
+CMP-0064,QMS-00064,PV-ASTER-C,Product-100 / Revision C,LOT-001,2026-01-30,2026-02-07,2026-02-10,shutdown,Pre-Rev D shutdown complaint,False,reviewed
+CMP-0065,QMS-00065,PV-ASTER-C,Product-100 / Revision C,LOT-003,2026-01-31,2026-02-04,2026-02-08,battery_warning,Pre-Rev D battery_warning complaint,False,reviewed
+CMP-0066,QMS-00066,PV-ASTER-C,Product-100 / Revision C,LOT-001,2026-02-01,2026-02-06,2026-02-11,battery_warning,Pre-Rev D battery_warning complaint,False,reviewed
+CMP-0067,QMS-00067,PV-ASTER-C,Product-100 / Revision C,,2026-02-02,2026-02-08,2026-02-14,battery_warning,Pre-Rev D battery_warning complaint,False,missing_lot
+CMP-0068,QMS-00068,PV-ASTER-C,Product-100 / Revision C,LOT-001,2026-02-03,2026-02-10,2026-02-13,shutdown,Pre-Rev D shutdown complaint,False,reviewed
+CMP-0069,QMS-00069,PV-ASTER-C,Product-100 / Revision C,LOT-002,2026-02-04,2026-02-12,2026-02-16,battery_warning,Pre-Rev D battery_warning complaint,False,reviewed
+CMP-0070,QMS-00070,PV-ASTER-C,Product-100 / Revision C,LOT-003,2026-02-05,2026-02-09,2026-02-14,battery_warning,Pre-Rev D battery_warning complaint,False,reviewed
+CMP-0071,QMS-00071,PV-ASTER-C,Product-100 / Revision C,,2026-02-06,2026-02-11,2026-02-17,shutdown,Pre-Rev D shutdown complaint,False,missing_lot
+CMP-0072,QMS-00072,PV-ASTER-C,Product-100 / Revision C,LOT-003,2026-02-07,2026-02-13,2026-02-16,shutdown,Pre-Rev D shutdown complaint,False,reviewed
+CMP-0073,QMS-00073,PV-ASTER-C,Product-100 / Revision C,LOT-002,2026-02-08,2026-02-15,2026-02-19,connector_intermittency,Pre-Rev D connector_intermittency complaint,False,reviewed
+CMP-0074,QMS-00074,PV-ASTER-C,Product-100 / Revision C,LOT-003,2026-02-09,2026-02-17,2026-02-22,shutdown,Pre-Rev D shutdown complaint,False,reviewed
+CMP-0075,QMS-00075,PV-ASTER-C,Product-100 / Revision C,LOT-003,2026-02-10,2026-02-14,2026-02-20,battery_warning,Pre-Rev D battery_warning complaint,False,reviewed
+CMP-0076,QMS-00076,PV-ASTER-C,Product-100 / Revision C,,2026-02-11,2026-02-16,2026-02-19,shutdown,Pre-Rev D shutdown complaint,False,missing_lot
+CMP-0077,QMS-00077,PV-ASTER-C,Product-100 / Revision C,,2026-02-12,2026-02-18,2026-02-22,battery_warning,Pre-Rev D battery_warning complaint,False,missing_lot
+CMP-0078,QMS-00078,PV-ASTER-C,Product-100 / Revision C,LOT-001,2026-02-13,2026-02-20,2026-02-25,connector_intermittency,Pre-Rev D connector_intermittency complaint,False,reviewed
+CMP-0079,QMS-00079,PV-NIMBUS-B,PV-NIMBUS-B,LOT-017,2026-03-09,2026-03-17,2026-03-23,display_freeze,Nimbus display_freeze complaint,False,reviewed
+CMP-0080,QMS-00080,PV-NIMBUS-B,PV-NIMBUS-B,LOT-018,2026-03-10,2026-03-14,2026-03-17,display_freeze,Nimbus display_freeze complaint,False,reviewed
+CMP-0081,QMS-00081,PV-NIMBUS-B,PV-NIMBUS-B,LOT-015,2026-03-11,2026-03-16,2026-03-20,display_freeze,Nimbus display_freeze complaint,False,reviewed
+CMP-0082,QMS-00082,PV-NIMBUS-B,PV-NIMBUS-B,LOT-016,2026-03-12,2026-03-18,2026-03-23,display_freeze,Nimbus display_freeze complaint,False,reviewed
+CMP-0083,QMS-00083,PV-NIMBUS-B,PV-NIMBUS-B,LOT-015,2026-03-13,2026-03-20,2026-03-26,shutdown,Nimbus shutdown complaint,False,reviewed
+CMP-0084,QMS-00084,PV-NIMBUS-B,PV-NIMBUS-B,,2026-02-02,2026-02-10,2026-02-13,false_alarm,Nimbus false_alarm complaint,False,missing_lot
+CMP-0085,QMS-00085,PV-NIMBUS-B,PV-NIMBUS-B,,2026-02-03,2026-02-07,2026-02-11,display_freeze,Nimbus display_freeze complaint,False,missing_lot
+CMP-0086,QMS-00086,PV-NIMBUS-B,PV-NIMBUS-B,LOT-015,2026-02-04,2026-02-09,2026-02-14,false_alarm,Nimbus false_alarm complaint,False,reviewed
+CMP-0087,QMS-00087,PV-NIMBUS-B,PV-NIMBUS-B,LOT-017,2026-02-05,2026-02-11,2026-02-17,display_freeze,Nimbus display_freeze complaint,False,reviewed
+CMP-0088,QMS-00088,PV-NIMBUS-B,PV-NIMBUS-B,LOT-016,2026-02-06,2026-02-13,2026-02-16,false_alarm,Nimbus false_alarm complaint,False,reviewed
+CMP-0089,QMS-00089,PV-NIMBUS-B,PV-NIMBUS-B,LOT-017,2026-02-07,2026-02-15,2026-02-19,false_alarm,Nimbus false_alarm complaint,False,reviewed
+CMP-0090,QMS-00090,PV-NIMBUS-B,PV-NIMBUS-B,LOT-016,2026-02-08,2026-02-12,2026-02-17,display_freeze,Nimbus display_freeze complaint,False,reviewed
+CMP-0091,QMS-00091,PV-NIMBUS-B,PV-NIMBUS-B,,2026-02-09,2026-02-14,2026-02-20,false_alarm,Nimbus false_alarm complaint,False,missing_lot
+CMP-0092,QMS-00092,PV-NIMBUS-B,PV-NIMBUS-B,LOT-016,2026-02-10,2026-02-16,2026-02-19,display_freeze,Nimbus display_freeze complaint,False,reviewed
+CMP-0093,QMS-00093,PV-NIMBUS-B,PV-NIMBUS-B,LOT-018,2026-02-11,2026-02-18,2026-02-22,false_alarm,Nimbus false_alarm complaint,False,reviewed
+CMP-0094,QMS-00094,PV-NIMBUS-B,PV-NIMBUS-B,,2026-02-12,2026-02-20,2026-02-25,shutdown,Nimbus shutdown complaint,False,missing_lot
+CMP-0095,QMS-00095,PV-NIMBUS-B,PV-NIMBUS-B,LOT-017,2026-02-13,2026-02-17,2026-02-23,display_freeze,Nimbus display_freeze complaint,False,reviewed
+CMP-0096,QMS-00096,PV-NIMBUS-B,PV-NIMBUS-B,LOT-018,2026-02-14,2026-02-19,2026-02-22,shutdown,Nimbus shutdown complaint,False,reviewed
+CMP-0097,QMS-00097,PV-NIMBUS-B,PV-NIMBUS-B,,2026-02-15,2026-02-21,2026-02-25,shutdown,Nimbus shutdown complaint,False,missing_lot
+CMP-0098,QMS-00098,PV-NIMBUS-B,PV-NIMBUS-B,,2026-02-16,2026-02-23,2026-02-28,false_alarm,Nimbus false_alarm complaint,False,missing_lot
+CMP-0099,QMS-00099,PV-NIMBUS-B,PV-NIMBUS-B,,2026-02-17,2026-02-25,2026-03-03,shutdown,Nimbus shutdown complaint,False,missing_lot
+CMP-0100,QMS-00100,PV-ASTER-B,PV-ASTER-B,,2025-11-24,2025-11-28,2025-12-01,label_mismatch,Background label_mismatch complaint,False,missing_lot
+CMP-0101,QMS-00101,PV-ASTER-B,PV-ASTER-B,,2025-11-25,2025-11-30,2025-12-04,speaker_low_volume,Background speaker_low_volume complaint,False,missing_lot
+CMP-0102,QMS-00102,PV-NIMBUS-A,PV-NIMBUS-A,,2025-11-26,2025-12-02,2025-12-07,speaker_low_volume,Background speaker_low_volume complaint,False,missing_lot
+CMP-0103,QMS-00103,PV-ASTER-A,PV-ASTER-A,,2025-11-27,2025-12-04,2025-12-10,speaker_low_volume,Background speaker_low_volume complaint,False,missing_lot
+CMP-0104,QMS-00104,PV-ASTER-A,PV-ASTER-A,,2025-11-28,2025-12-06,2025-12-09,label_mismatch,Background label_mismatch complaint,False,missing_lot
+CMP-0105,QMS-00105,PV-NIMBUS-A,PV-NIMBUS-A,,2025-11-29,2025-12-03,2025-12-07,label_mismatch,Background label_mismatch complaint,False,missing_lot
+CMP-0106,QMS-00106,PV-ASTER-B,PV-ASTER-B,,2025-11-30,2025-12-05,2025-12-10,no_fault_found,Background no_fault_found complaint,False,missing_lot
+CMP-0107,QMS-00107,PV-ASTER-A,PV-ASTER-A,,2025-12-01,2025-12-07,2025-12-13,label_mismatch,Background label_mismatch complaint,False,missing_lot
+CMP-0108,QMS-00108,PV-ASTER-A,PV-ASTER-A,,2025-12-02,2025-12-09,2025-12-12,speaker_low_volume,Background speaker_low_volume complaint,False,missing_lot
+CMP-0109,QMS-00109,PV-NIMBUS-A,PV-NIMBUS-A,,2025-12-03,2025-12-11,2025-12-15,no_fault_found,Background no_fault_found complaint,False,missing_lot
+CMP-0110,QMS-00110,PV-NIMBUS-A,PV-NIMBUS-A,,2025-12-04,2025-12-08,2025-12-13,no_fault_found,Background no_fault_found complaint,False,missing_lot
+CMP-0111,QMS-00111,PV-NIMBUS-A,PV-NIMBUS-A,,2025-12-05,2025-12-10,2025-12-16,no_fault_found,Background no_fault_found complaint,False,missing_lot
+CMP-0112,QMS-00112,PV-ASTER-B,PV-ASTER-B,,2025-12-06,2025-12-12,2025-12-15,speaker_low_volume,Background speaker_low_volume complaint,False,missing_lot
+CMP-0113,QMS-00113,PV-NIMBUS-A,PV-NIMBUS-A,,2025-12-07,2025-12-14,2025-12-18,no_fault_found,Background no_fault_found complaint,False,missing_lot
+CMP-0114,QMS-00114,PV-NIMBUS-A,PV-NIMBUS-A,,2025-12-08,2025-12-16,2025-12-21,label_mismatch,Background label_mismatch complaint,False,missing_lot
+CMP-0115,QMS-00115,PV-NIMBUS-A,PV-NIMBUS-A,,2025-12-09,2025-12-13,2025-12-19,no_fault_found,Background no_fault_found complaint,False,missing_lot
+CMP-0116,QMS-00116,PV-ASTER-A,PV-ASTER-A,,2025-12-10,2025-12-15,2025-12-18,label_mismatch,Background label_mismatch complaint,False,missing_lot
+CMP-0117,QMS-00117,PV-ASTER-A,PV-ASTER-A,,2025-12-11,2025-12-17,2025-12-21,speaker_low_volume,Background speaker_low_volume complaint,False,missing_lot
+CMP-0118,QMS-00118,PV-ASTER-A,PV-ASTER-A,,2025-12-12,2025-12-19,2025-12-24,label_mismatch,Background label_mismatch complaint,False,missing_lot
+CMP-0119,QMS-00119,PV-NIMBUS-A,PV-NIMBUS-A,,2025-12-13,2025-12-21,2025-12-27,label_mismatch,Background label_mismatch complaint,False,missing_lot
+CMP-0120,QMS-00120,PV-ASTER-B,PV-ASTER-B,,2025-12-14,2025-12-18,2025-12-21,label_mismatch,Background label_mismatch complaint,False,missing_lot

@@ -1,0 +1,11 @@
+investigation_id,investigation_identifier,product_id,question,opened_at,status
+INV-001,INV-001,PRD-ASTER-100,Why did intermittent device shutdown complaints increase after Product Rev D was introduced?,2026-02-23,open
+INV-002,INV-002,PRD-ASTER-100,Did the package label revision influence shutdown complaints?,2026-02-26,closed
+INV-003,INV-003,PRD-ASTER-100,Which records are missing for affected lots?,2026-03-01,open
+INV-004,INV-004,PRD-ASTER-100,Why do source timelines conflict for Component Rev B?,2026-03-04,closed
+INV-005,INV-005,PRD-ASTER-100,Which lots share the Power Regulation Module?,2026-03-07,closed
+INV-006,INV-006,PRD-ASTER-100,Was investigation INV-006 closed prematurely?,2026-03-10,closed
+INV-007,INV-007,PRD-ASTER-100,Did process control drift contribute to the complaint cluster?,2026-03-13,closed
+INV-008,INV-008,PRD-NIMBUS-200,What constrained counterfactual can be evaluated for Rev B?,2026-03-16,closed
+INV-009,INV-009,PRD-NIMBUS-200,How should AI model-change outputs be compared?,2026-03-19,closed
+INV-010,INV-010,PRD-NIMBUS-200,When should MDARIX abstain due to insufficient evidence?,2026-03-22,open

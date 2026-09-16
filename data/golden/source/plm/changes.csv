@@ -1,0 +1,17 @@
+change_id,change_identifier,change_type,description,event_timestamp,effective_timestamp,related_object_id
+CHG-SUP-PROC-001,CHG-SUP-PROC-001,supplier_process,NovaCap dielectric curing profile adjusted,2026-01-10,2026-01-15,SUP-NOVACAP
+CHG-COMP-PWR-B,CHG-COMP-PWR-B,component_revision,Power Regulation Module Rev B introduced,2026-01-18,2026-01-18,COMP-PWR
+CHG-PROD-D,CHG-PROD-D,product_revision,AsterFlow Rev D configuration released,2026-01-25,2026-01-25,PV-ASTER-D
+CHG-LABEL-042,CHG-LABEL-042,packaging_label,Outer carton label layout changed,2026-01-27,2026-01-28,COMP-LABEL
+CHG-FW-113,CHG-FW-113,firmware,Firmware logging level adjusted,2025-12-15,2025-12-20,COMP-FW
+CHG-GEN-006,CHG-GEN-006,component_revision,Synthetic controlled change 6,2025-11-18,2025-11-20,PRD-ASTER-100
+CHG-GEN-007,CHG-GEN-007,process,Synthetic controlled change 7,2025-12-01,2025-12-03,PRD-ASTER-100
+CHG-GEN-008,CHG-GEN-008,component_revision,Synthetic controlled change 8,2025-12-14,2025-12-16,PRD-ASTER-100
+CHG-GEN-009,CHG-GEN-009,process,Synthetic controlled change 9,2025-12-27,2025-12-29,PRD-ASTER-100
+CHG-GEN-010,CHG-GEN-010,component_revision,Synthetic controlled change 10,2026-01-09,2026-01-11,PRD-ASTER-100
+CHG-GEN-011,CHG-GEN-011,process,Synthetic controlled change 11,2026-01-22,2026-01-24,PRD-ASTER-100
+CHG-GEN-012,CHG-GEN-012,component_revision,Synthetic controlled change 12,2026-02-04,2026-02-06,PRD-ASTER-100
+CHG-GEN-013,CHG-GEN-013,process,Synthetic controlled change 13,2026-02-17,2026-02-19,PRD-ASTER-100
+CHG-GEN-014,CHG-GEN-014,component_revision,Synthetic controlled change 14,2026-03-02,2026-03-04,PRD-ASTER-100
+CHG-GEN-015,CHG-GEN-015,process,Synthetic controlled change 15,2026-03-15,2026-03-17,PRD-ASTER-100
+CHG-GEN-016,CHG-GEN-016,component_revision,Synthetic controlled change 16,2026-03-28,2026-03-30,PRD-ASTER-100

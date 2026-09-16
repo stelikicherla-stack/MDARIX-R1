@@ -1,0 +1,31 @@
+{
+  "aliases": [
+    {
+      "canonical_id": "PV-ASTER-D",
+      "entity_type": "product_version",
+      "source_value": "PRD-100-D"
+    },
+    {
+      "canonical_id": "PV-ASTER-D",
+      "entity_type": "product_version",
+      "source_value": "PRD100 Rev D"
+    },
+    {
+      "canonical_id": "PV-ASTER-D",
+      "entity_type": "product_version",
+      "source_value": "Product-100 / Revision D"
+    },
+    {
+      "canonical_id": "SUP-NOVACAP",
+      "entity_type": "supplier",
+      "source_value": "Nova Cap"
+    },
+    {
+      "canonical_id": "SUP-NOVACAP",
+      "entity_type": "supplier",
+      "source_value": "NVC Components"
+    }
+  ],
+  "evaluation_only": true,
+  "notice": "MDARIX R1 GOLDEN DATASET - SYNTHETIC TEST DATA ONLY. NOT FOR CLINICAL OR REGULATORY USE."
+}

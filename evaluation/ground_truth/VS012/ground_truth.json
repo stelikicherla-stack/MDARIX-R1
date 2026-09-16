@@ -1,0 +1,27 @@
+{
+  "evaluation_only": true,
+  "expected_contradictions": [],
+  "expected_system_behavior": "Use evidence, contradictions, unknowns, and abstention where warranted.",
+  "expected_unknowns": [
+    "Comparative Rev A vs Rev B testing unavailable"
+  ],
+  "hidden_ground_truth": "Evaluation-only. Not application-facing.",
+  "intentional_anomalies": [
+    "ANOM-ID-001",
+    "ANOM-SUP-001",
+    "ANOM-LOT-001",
+    "ANOM-DATE-001",
+    "ANOM-DUP-001",
+    "ANOM-TIME-001",
+    "ANOM-FALSE-001",
+    "ANOM-MULTI-001"
+  ],
+  "investigation_id": "INV-010",
+  "notice": "MDARIX R1 GOLDEN DATASET - SYNTHETIC TEST DATA ONLY. NOT FOR CLINICAL OR REGULATORY USE.",
+  "prohibited_conclusions": [
+    "Do not claim certainty without evidence."
+  ],
+  "purpose": "Evaluate correct abstention behavior.",
+  "scenario_id": "VS012",
+  "title": "Correct Abstention"
+}

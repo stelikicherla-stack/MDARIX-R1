@@ -1,0 +1,6 @@
+supplier_id,supplier_identifier,name,aliases
+SUP-NOVACAP,SUP-001,NovaCap Components,"['Nova Cap', 'NVC Components']"
+SUP-ORBIT,SUP-002,OrbitFlex Electronics,"['Orbit Flex', 'OFX']"
+SUP-LUMEN,SUP-003,LumenTrace Plastics,['Lumen Trace']
+SUP-QUANTA,SUP-004,QuantaSeal Packaging,['QS Packaging']
+SUP-HELIOS,SUP-005,Helios Boardworks,['Helios BW']

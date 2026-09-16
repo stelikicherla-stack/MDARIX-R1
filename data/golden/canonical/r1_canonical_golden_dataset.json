@@ -1,0 +1,3439 @@
+{
+  "aliases": [
+    {
+      "canonical_id": "PV-ASTER-D",
+      "entity_type": "product_version",
+      "source_value": "PRD-100-D"
+    },
+    {
+      "canonical_id": "PV-ASTER-D",
+      "entity_type": "product_version",
+      "source_value": "PRD100 Rev D"
+    },
+    {
+      "canonical_id": "PV-ASTER-D",
+      "entity_type": "product_version",
+      "source_value": "Product-100 / Revision D"
+    },
+    {
+      "canonical_id": "SUP-NOVACAP",
+      "entity_type": "supplier",
+      "source_value": "Nova Cap"
+    },
+    {
+      "canonical_id": "SUP-NOVACAP",
+      "entity_type": "supplier",
+      "source_value": "NVC Components"
+    }
+  ],
+  "changes": [
+    {
+      "change_id": "CHG-SUP-PROC-001",
+      "change_identifier": "CHG-SUP-PROC-001",
+      "change_type": "supplier_process",
+      "description": "NovaCap dielectric curing profile adjusted",
+      "effective_timestamp": "2026-01-15",
+      "event_timestamp": "2026-01-10",
+      "related_object_id": "SUP-NOVACAP"
+    },
+    {
+      "change_id": "CHG-COMP-PWR-B",
+      "change_identifier": "CHG-COMP-PWR-B",
+      "change_type": "component_revision",
+      "description": "Power Regulation Module Rev B introduced",
+      "effective_timestamp": "2026-01-18",
+      "event_timestamp": "2026-01-18",
+      "related_object_id": "COMP-PWR"
+    },
+    {
+      "change_id": "CHG-PROD-D",
+      "change_identifier": "CHG-PROD-D",
+      "change_type": "product_revision",
+      "description": "AsterFlow Rev D configuration released",
+      "effective_timestamp": "2026-01-25",
+      "event_timestamp": "2026-01-25",
+      "related_object_id": "PV-ASTER-D"
+    },
+    {
+      "change_id": "CHG-LABEL-042",
+      "change_identifier": "CHG-LABEL-042",
+      "change_type": "packaging_label",
+      "description": "Outer carton label layout changed",
+      "effective_timestamp": "2026-01-28",
+      "event_timestamp": "2026-01-27",
+      "related_object_id": "COMP-LABEL"
+    },
+    {
+      "change_id": "CHG-FW-113",
+      "change_identifier": "CHG-FW-113",
+      "change_type": "firmware",
+      "description": "Firmware logging level adjusted",
+      "effective_timestamp": "2025-12-20",
+      "event_timestamp": "2025-12-15",
+      "related_object_id": "COMP-FW"
+    },
+    {
+      "change_id": "CHG-GEN-006",
+      "change_identifier": "CHG-GEN-006",
+      "change_type": "component_revision",
+      "description": "Synthetic controlled change 6",
+      "effective_timestamp": "2025-11-20",
+      "event_timestamp": "2025-11-18",
+      "related_object_id": "PRD-ASTER-100"
+    },
+    {
+      "change_id": "CHG-GEN-007",
+      "change_identifier": "CHG-GEN-007",
+      "change_type": "process",
+      "description": "Synthetic controlled change 7",
+      "effective_timestamp": "2025-12-03",
+      "event_timestamp": "2025-12-01",
+      "related_object_id": "PRD-ASTER-100"
+    },
+    {
+      "change_id": "CHG-GEN-008",
+      "change_identifier": "CHG-GEN-008",
+      "change_type": "component_revision",
+      "description": "Synthetic controlled change 8",
+      "effective_timestamp": "2025-12-16",
+      "event_timestamp": "2025-12-14",
+      "related_object_id": "PRD-ASTER-100"
+    },
+    {
+      "change_id": "CHG-GEN-009",
+      "change_identifier": "CHG-GEN-009",
+      "change_type": "process",
+      "description": "Synthetic controlled change 9",
+      "effective_timestamp": "2025-12-29",
+      "event_timestamp": "2025-12-27",
+      "related_object_id": "PRD-ASTER-100"
+    },
+    {
+      "change_id": "CHG-GEN-010",
+      "change_identifier": "CHG-GEN-010",
+      "change_type": "component_revision",
+      "description": "Synthetic controlled change 10",
+      "effective_timestamp": "2026-01-11",
+      "event_timestamp": "2026-01-09",
+      "related_object_id": "PRD-ASTER-100"
+    },
+    {
+      "change_id": "CHG-GEN-011",
+      "change_identifier": "CHG-GEN-011",
+      "change_type": "process",
+      "description": "Synthetic controlled change 11",
+      "effective_timestamp": "2026-01-24",
+      "event_timestamp": "2026-01-22",
+      "related_object_id": "PRD-ASTER-100"
+    },
+    {
+      "change_id": "CHG-GEN-012",
+      "change_identifier": "CHG-GEN-012",
+      "change_type": "component_revision",
+      "description": "Synthetic controlled change 12",
+      "effective_timestamp": "2026-02-06",
+      "event_timestamp": "2026-02-04",
+      "related_object_id": "PRD-ASTER-100"
+    },
+    {
+      "change_id": "CHG-GEN-013",
+      "change_identifier": "CHG-GEN-013",
+      "change_type": "process",
+      "description": "Synthetic controlled change 13",
+      "effective_timestamp": "2026-02-19",
+      "event_timestamp": "2026-02-17",
+      "related_object_id": "PRD-ASTER-100"
+    },
+    {
+      "change_id": "CHG-GEN-014",
+      "change_identifier": "CHG-GEN-014",
+      "change_type": "component_revision",
+      "description": "Synthetic controlled change 14",
+      "effective_timestamp": "2026-03-04",
+      "event_timestamp": "2026-03-02",
+      "related_object_id": "PRD-ASTER-100"
+    },
+    {
+      "change_id": "CHG-GEN-015",
+      "change_identifier": "CHG-GEN-015",
+      "change_type": "process",
+      "description": "Synthetic controlled change 15",
+      "effective_timestamp": "2026-03-17",
+      "event_timestamp": "2026-03-15",
+      "related_object_id": "PRD-ASTER-100"
+    },
+    {
+      "change_id": "CHG-GEN-016",
+      "change_identifier": "CHG-GEN-016",
+      "change_type": "component_revision",
+      "description": "Synthetic controlled change 16",
+      "effective_timestamp": "2026-03-30",
+      "event_timestamp": "2026-03-28",
+      "related_object_id": "PRD-ASTER-100"
+    }
+  ],
+  "complaints": [
+    {
+      "complaint_id": "CMP-0001",
+      "complaint_identifier": "QMS-00001",
+      "data_quality_status": "missing_lot",
+      "duplicate_candidate": false,
+      "event_timestamp": "2025-11-18",
+      "failure_mode": "shutdown",
+      "ingestion_timestamp": "2025-11-27",
+      "lot_id": null,
+      "narrative": "Intermittent shutdown before Rev B",
+      "product_version_id": "PV-ASTER-C",
+      "recorded_timestamp": "2025-11-23",
+      "source_product_version": "Product-100 / Revision C"
+    },
+    {
+      "complaint_id": "CMP-0002",
+      "complaint_identifier": "QMS-00002",
+      "data_quality_status": "missing_lot",
+      "duplicate_candidate": false,
+      "event_timestamp": "2025-12-04",
+      "failure_mode": "shutdown",
+      "ingestion_timestamp": "2025-12-15",
+      "lot_id": null,
+      "narrative": "Intermittent shutdown before Rev B",
+      "product_version_id": "PV-ASTER-C",
+      "recorded_timestamp": "2025-12-10",
+      "source_product_version": "Product-100 / Revision C"
+    },
+    {
+      "complaint_id": "CMP-0003",
+      "complaint_identifier": "QMS-00003",
+      "data_quality_status": "missing_lot",
+      "duplicate_candidate": false,
+      "event_timestamp": "2026-01-08",
+      "failure_mode": "shutdown",
+      "ingestion_timestamp": "2026-01-21",
+      "lot_id": null,
+      "narrative": "Intermittent shutdown before Rev B",
+      "product_version_id": "PV-ASTER-C",
+      "recorded_timestamp": "2026-01-15",
+      "source_product_version": "Product-100 / Revision C"
+    },
+    {
+      "complaint_id": "CMP-0004",
+      "complaint_identifier": "QMS-00004",
+      "data_quality_status": "reviewed",
+      "duplicate_candidate": false,
+      "event_timestamp": "2026-02-05",
+      "failure_mode": "shutdown",
+      "ingestion_timestamp": "2026-02-16",
+      "lot_id": "LOT-014",
+      "narrative": "Intermittent shutdown during field use",
+      "product_version_id": "PV-ASTER-D",
+      "recorded_timestamp": "2026-02-13",
+      "source_product_version": "PRD100 Rev D"
+    },
+    {
+      "complaint_id": "CMP-0005",
+      "complaint_identifier": "QMS-00005",
+      "data_quality_status": "reviewed",
+      "duplicate_candidate": false,
+      "event_timestamp": "2026-02-06",
+      "failure_mode": "shutdown",
+      "ingestion_timestamp": "2026-02-14",
+      "lot_id": "LOT-010",
+      "narrative": "Intermittent shutdown during field use",
+      "product_version_id": "PV-ASTER-D",
+      "recorded_timestamp": "2026-02-10",
+      "source_product_version": "PRD100 Rev D"
+    },
+    {
+      "complaint_id": "CMP-0006",
+      "complaint_identifier": "QMS-00006",
+      "data_quality_status": "reviewed",
+      "duplicate_candidate": false,
+      "event_timestamp": "2026-02-07",
+      "failure_mode": "shutdown",
+      "ingestion_timestamp": "2026-02-17",
+      "lot_id": "LOT-012",
+      "narrative": "Intermittent shutdown during field use",
+      "product_version_id": "PV-ASTER-D",
+      "recorded_timestamp": "2026-02-12",
+      "source_product_version": "PRD100 Rev D"
+    },
+    {
+      "complaint_id": "CMP-0007",
+      "complaint_identifier": "QMS-00007",
+      "data_quality_status": "missing_lot",
+      "duplicate_candidate": false,
+      "event_timestamp": "2026-02-08",
+      "failure_mode": "shutdown",
+      "ingestion_timestamp": "2026-02-20",
+      "lot_id": null,
+      "narrative": "Intermittent shutdown during field use",
+      "product_version_id": "PV-ASTER-D",
+      "recorded_timestamp": "2026-02-14",
+      "source_product_version": "PRD100 Rev D"
+    },
+    {
+      "complaint_id": "CMP-0008",
+      "complaint_identifier": "QMS-00008",
+      "data_quality_status": "reviewed",
+      "duplicate_candidate": false,
+      "event_timestamp": "2026-02-09",
+      "failure_mode": "shutdown",
+      "ingestion_timestamp": "2026-02-19",
+      "lot_id": "LOT-010",
+      "narrative": "Intermittent shutdown during field use",
+      "product_version_id": "PV-ASTER-D",
+      "recorded_timestamp": "2026-02-16",
+      "source_product_version": "PRD100 Rev D"
+    },
+    {
+      "complaint_id": "CMP-0009",
+      "complaint_identifier": "QMS-00009",
+      "data_quality_status": "reviewed",
+      "duplicate_candidate": false,
+      "event_timestamp": "2026-02-10",
+      "failure_mode": "shutdown",
+      "ingestion_timestamp": "2026-02-22",
+      "lot_id": "LOT-014",
+      "narrative": "Intermittent shutdown during field use",
+      "product_version_id": "PV-ASTER-D",
+      "recorded_timestamp": "2026-02-18",
+      "source_product_version": "PRD100 Rev D"
+    },
+    {
+      "complaint_id": "CMP-0010",
+      "complaint_identifier": "QMS-00010",
+      "data_quality_status": "reviewed",
+      "duplicate_candidate": false,
+      "event_timestamp": "2026-02-11",
+      "failure_mode": "shutdown",
+      "ingestion_timestamp": "2026-02-20",
+      "lot_id": "LOT-012",
+      "narrative": "Intermittent shutdown during field use",
+      "product_version_id": "PV-ASTER-D",
+      "recorded_timestamp": "2026-02-15",
+      "source_product_version": "PRD100 Rev D"
+    },
+    {
+      "complaint_id": "CMP-0011",
+      "complaint_identifier": "QMS-00011",
+      "data_quality_status": "reviewed",
+      "duplicate_candidate": false,
+      "event_timestamp": "2026-02-12",
+      "failure_mode": "shutdown",
+      "ingestion_timestamp": "2026-02-23",
+      "lot_id": "LOT-013",
+      "narrative": "Intermittent shutdown during field use",
+      "product_version_id": "PV-ASTER-D",
+      "recorded_timestamp": "2026-02-17",
+      "source_product_version": "PRD100 Rev D"
+    },
+    {
+      "complaint_id": "CMP-0012",
+      "complaint_identifier": "QMS-00012",
+      "data_quality_status": "missing_lot",
+      "duplicate_candidate": false,
+      "event_timestamp": "2026-02-13",
+      "failure_mode": "shutdown",
+      "ingestion_timestamp": "2026-02-22",
+      "lot_id": null,
+      "narrative": "Intermittent shutdown during field use",
+      "product_version_id": "PV-ASTER-D",
+      "recorded_timestamp": "2026-02-19",
+      "source_product_version": "PRD100 Rev D"
+    },
+    {
+      "complaint_id": "CMP-0013",
+      "complaint_identifier": "QMS-00013",
+      "data_quality_status": "reviewed",
+      "duplicate_candidate": false,
+      "event_timestamp": "2026-02-14",
+      "failure_mode": "shutdown",
+      "ingestion_timestamp": "2026-02-25",
+      "lot_id": "LOT-012",
+      "narrative": "Intermittent shutdown during field use",
+      "product_version_id": "PV-ASTER-D",
+      "recorded_timestamp": "2026-02-21",
+      "source_product_version": "PRD100 Rev D"
+    },
+    {
+      "complaint_id": "CMP-0014",
+      "complaint_identifier": "QMS-00014",
+      "data_quality_status": "reviewed",
+      "duplicate_candidate": false,
+      "event_timestamp": "2026-02-15",
+      "failure_mode": "shutdown",
+      "ingestion_timestamp": "2026-02-28",
+      "lot_id": "LOT-009",
+      "narrative": "Intermittent shutdown during field use",
+      "product_version_id": "PV-ASTER-D",
+      "recorded_timestamp": "2026-02-23",
+      "source_product_version": "PRD100 Rev D"
+    },
+    {
+      "complaint_id": "CMP-0015",
+      "complaint_identifier": "QMS-00015",
+      "data_quality_status": "reviewed",
+      "duplicate_candidate": false,
+      "event_timestamp": "2026-02-16",
+      "failure_mode": "shutdown",
+      "ingestion_timestamp": "2026-02-26",
+      "lot_id": "LOT-012",
+      "narrative": "Intermittent shutdown during field use",
+      "product_version_id": "PV-ASTER-D",
+      "recorded_timestamp": "2026-02-20",
+      "source_product_version": "PRD100 Rev D"
+    },
+    {
+      "complaint_id": "CMP-0016",
+      "complaint_identifier": "QMS-00016",
+      "data_quality_status": "reviewed",
+      "duplicate_candidate": false,
+      "event_timestamp": "2026-02-17",
+      "failure_mode": "shutdown",
+      "ingestion_timestamp": "2026-02-25",
+      "lot_id": "LOT-009",
+      "narrative": "Intermittent shutdown during field use",
+      "product_version_id": "PV-ASTER-D",
+      "recorded_timestamp": "2026-02-22",
+      "source_product_version": "PRD100 Rev D"
+    },
+    {
+      "complaint_id": "CMP-0017",
+      "complaint_identifier": "QMS-00017",
+      "data_quality_status": "reviewed",
+      "duplicate_candidate": false,
+      "event_timestamp": "2026-02-18",
+      "failure_mode": "shutdown",
+      "ingestion_timestamp": "2026-02-28",
+      "lot_id": "LOT-010",
+      "narrative": "Intermittent shutdown during field use",
+      "product_version_id": "PV-ASTER-D",
+      "recorded_timestamp": "2026-02-24",
+      "source_product_version": "PRD100 Rev D"
+    },
+    {
+      "complaint_id": "CMP-0018",
+      "complaint_identifier": "QMS-00018",
+      "data_quality_status": "reviewed",
+      "duplicate_candidate": false,
+      "event_timestamp": "2026-02-19",
+      "failure_mode": "shutdown",
+      "ingestion_timestamp": "2026-03-03",
+      "lot_id": "LOT-012",
+      "narrative": "Intermittent shutdown during field use",
+      "product_version_id": "PV-ASTER-D",
+      "recorded_timestamp": "2026-02-26",
+      "source_product_version": "PRD100 Rev D"
+    },
+    {
+      "complaint_id": "CMP-0019",
+      "complaint_identifier": "QMS-00019",
+      "data_quality_status": "reviewed",
+      "duplicate_candidate": false,
+      "event_timestamp": "2026-02-20",
+      "failure_mode": "shutdown",
+      "ingestion_timestamp": "2026-03-06",
+      "lot_id": "LOT-008",
+      "narrative": "Intermittent shutdown during field use",
+      "product_version_id": "PV-ASTER-D",
+      "recorded_timestamp": "2026-02-28",
+      "source_product_version": "PRD100 Rev D"
+    },
+    {
+      "complaint_id": "CMP-0020",
+      "complaint_identifier": "QMS-00020",
+      "data_quality_status": "reviewed",
+      "duplicate_candidate": false,
+      "event_timestamp": "2026-02-21",
+      "failure_mode": "shutdown",
+      "ingestion_timestamp": "2026-02-28",
+      "lot_id": "LOT-008",
+      "narrative": "Intermittent shutdown during field use",
+      "product_version_id": "PV-ASTER-D",
+      "recorded_timestamp": "2026-02-25",
+      "source_product_version": "PRD100 Rev D"
+    },
+    {
+      "complaint_id": "CMP-0021",
+      "complaint_identifier": "QMS-00021",
+      "data_quality_status": "reviewed",
+      "duplicate_candidate": false,
+      "event_timestamp": "2026-02-22",
+      "failure_mode": "shutdown",
+      "ingestion_timestamp": "2026-03-03",
+      "lot_id": "LOT-008",
+      "narrative": "Intermittent shutdown during field use",
+      "product_version_id": "PV-ASTER-D",
+      "recorded_timestamp": "2026-02-27",
+      "source_product_version": "PRD100 Rev D"
+    },
+    {
+      "complaint_id": "CMP-0022",
+      "complaint_identifier": "QMS-00022",
+      "data_quality_status": "reviewed",
+      "duplicate_candidate": false,
+      "event_timestamp": "2026-02-23",
+      "failure_mode": "shutdown",
+      "ingestion_timestamp": "2026-03-06",
+      "lot_id": "LOT-013",
+      "narrative": "Intermittent shutdown during field use",
+      "product_version_id": "PV-ASTER-D",
+      "recorded_timestamp": "2026-03-01",
+      "source_product_version": "PRD100 Rev D"
+    },
+    {
+      "complaint_id": "CMP-0023",
+      "complaint_identifier": "QMS-00023",
+      "data_quality_status": "reviewed",
+      "duplicate_candidate": false,
+      "event_timestamp": "2026-02-24",
+      "failure_mode": "shutdown",
+      "ingestion_timestamp": "2026-03-09",
+      "lot_id": "LOT-013",
+      "narrative": "Intermittent shutdown during field use",
+      "product_version_id": "PV-ASTER-D",
+      "recorded_timestamp": "2026-03-03",
+      "source_product_version": "PRD100 Rev D"
+    },
+    {
+      "complaint_id": "CMP-0024",
+      "complaint_identifier": "QMS-00024",
+      "data_quality_status": "reviewed",
+      "duplicate_candidate": false,
+      "event_timestamp": "2026-02-25",
+      "failure_mode": "shutdown",
+      "ingestion_timestamp": "2026-03-08",
+      "lot_id": "LOT-012",
+      "narrative": "Intermittent shutdown during field use",
+      "product_version_id": "PV-ASTER-D",
+      "recorded_timestamp": "2026-03-05",
+      "source_product_version": "PRD100 Rev D"
+    },
+    {
+      "complaint_id": "CMP-0025",
+      "complaint_identifier": "QMS-00025",
+      "data_quality_status": "missing_lot",
+      "duplicate_candidate": false,
+      "event_timestamp": "2026-02-26",
+      "failure_mode": "shutdown",
+      "ingestion_timestamp": "2026-03-06",
+      "lot_id": null,
+      "narrative": "Intermittent shutdown during field use",
+      "product_version_id": "PV-ASTER-D",
+      "recorded_timestamp": "2026-03-02",
+      "source_product_version": "PRD100 Rev D"
+    },
+    {
+      "complaint_id": "CMP-0026",
+      "complaint_identifier": "QMS-00026",
+      "data_quality_status": "reviewed",
+      "duplicate_candidate": false,
+      "event_timestamp": "2026-02-27",
+      "failure_mode": "shutdown",
+      "ingestion_timestamp": "2026-03-09",
+      "lot_id": "LOT-013",
+      "narrative": "Intermittent shutdown during field use",
+      "product_version_id": "PV-ASTER-D",
+      "recorded_timestamp": "2026-03-04",
+      "source_product_version": "PRD100 Rev D"
+    },
+    {
+      "complaint_id": "CMP-0027",
+      "complaint_identifier": "QMS-00027",
+      "data_quality_status": "reviewed",
+      "duplicate_candidate": false,
+      "event_timestamp": "2026-02-28",
+      "failure_mode": "shutdown",
+      "ingestion_timestamp": "2026-03-12",
+      "lot_id": "LOT-008",
+      "narrative": "Intermittent shutdown during field use",
+      "product_version_id": "PV-ASTER-D",
+      "recorded_timestamp": "2026-03-06",
+      "source_product_version": "PRD100 Rev D"
+    },
+    {
+      "complaint_id": "CMP-0028",
+      "complaint_identifier": "QMS-00028",
+      "data_quality_status": "reviewed",
+      "duplicate_candidate": false,
+      "event_timestamp": "2026-03-01",
+      "failure_mode": "shutdown",
+      "ingestion_timestamp": "2026-03-11",
+      "lot_id": "LOT-009",
+      "narrative": "Intermittent shutdown during field use",
+      "product_version_id": "PV-ASTER-D",
+      "recorded_timestamp": "2026-03-08",
+      "source_product_version": "PRD100 Rev D"
+    },
+    {
+      "complaint_id": "CMP-0029",
+      "complaint_identifier": "QMS-00029",
+      "data_quality_status": "reviewed",
+      "duplicate_candidate": false,
+      "event_timestamp": "2026-03-02",
+      "failure_mode": "shutdown",
+      "ingestion_timestamp": "2026-03-14",
+      "lot_id": "LOT-013",
+      "narrative": "Intermittent shutdown during field use",
+      "product_version_id": "PV-ASTER-D",
+      "recorded_timestamp": "2026-03-10",
+      "source_product_version": "PRD100 Rev D"
+    },
+    {
+      "complaint_id": "CMP-0030",
+      "complaint_identifier": "QMS-00030",
+      "data_quality_status": "reviewed",
+      "duplicate_candidate": false,
+      "event_timestamp": "2026-03-03",
+      "failure_mode": "shutdown",
+      "ingestion_timestamp": "2026-03-12",
+      "lot_id": "LOT-009",
+      "narrative": "Intermittent shutdown during field use",
+      "product_version_id": "PV-ASTER-D",
+      "recorded_timestamp": "2026-03-07",
+      "source_product_version": "PRD100 Rev D"
+    },
+    {
+      "complaint_id": "CMP-0031",
+      "complaint_identifier": "QMS-00031",
+      "data_quality_status": "reviewed",
+      "duplicate_candidate": false,
+      "event_timestamp": "2026-03-04",
+      "failure_mode": "shutdown",
+      "ingestion_timestamp": "2026-03-15",
+      "lot_id": "LOT-011",
+      "narrative": "Intermittent shutdown during field use",
+      "product_version_id": "PV-ASTER-D",
+      "recorded_timestamp": "2026-03-09",
+      "source_product_version": "PRD100 Rev D"
+    },
+    {
+      "complaint_id": "CMP-0032",
+      "complaint_identifier": "QMS-00032",
+      "data_quality_status": "reviewed",
+      "duplicate_candidate": false,
+      "event_timestamp": "2026-03-05",
+      "failure_mode": "shutdown",
+      "ingestion_timestamp": "2026-03-14",
+      "lot_id": "LOT-010",
+      "narrative": "Intermittent shutdown during field use",
+      "product_version_id": "PV-ASTER-D",
+      "recorded_timestamp": "2026-03-11",
+      "source_product_version": "PRD100 Rev D"
+    },
+    {
+      "complaint_id": "CMP-0033",
+      "complaint_identifier": "QMS-00033",
+      "data_quality_status": "reviewed",
+      "duplicate_candidate": false,
+      "event_timestamp": "2026-03-06",
+      "failure_mode": "shutdown",
+      "ingestion_timestamp": "2026-03-17",
+      "lot_id": "LOT-013",
+      "narrative": "Intermittent shutdown during field use",
+      "product_version_id": "PV-ASTER-D",
+      "recorded_timestamp": "2026-03-13",
+      "source_product_version": "PRD100 Rev D"
+    },
+    {
+      "complaint_id": "CMP-0034",
+      "complaint_identifier": "QMS-00034",
+      "data_quality_status": "reviewed",
+      "duplicate_candidate": false,
+      "event_timestamp": "2026-03-07",
+      "failure_mode": "shutdown",
+      "ingestion_timestamp": "2026-03-20",
+      "lot_id": "LOT-011",
+      "narrative": "Intermittent shutdown during field use",
+      "product_version_id": "PV-ASTER-D",
+      "recorded_timestamp": "2026-03-15",
+      "source_product_version": "PRD100 Rev D"
+    },
+    {
+      "complaint_id": "CMP-0035",
+      "complaint_identifier": "QMS-00035",
+      "data_quality_status": "reviewed",
+      "duplicate_candidate": false,
+      "event_timestamp": "2026-03-08",
+      "failure_mode": "shutdown",
+      "ingestion_timestamp": "2026-03-18",
+      "lot_id": "LOT-014",
+      "narrative": "Intermittent shutdown during field use",
+      "product_version_id": "PV-ASTER-D",
+      "recorded_timestamp": "2026-03-12",
+      "source_product_version": "PRD100 Rev D"
+    },
+    {
+      "complaint_id": "CMP-0036",
+      "complaint_identifier": "QMS-00036",
+      "data_quality_status": "reviewed",
+      "duplicate_candidate": false,
+      "event_timestamp": "2026-03-09",
+      "failure_mode": "shutdown",
+      "ingestion_timestamp": "2026-03-17",
+      "lot_id": "LOT-010",
+      "narrative": "Intermittent shutdown during field use",
+      "product_version_id": "PV-ASTER-D",
+      "recorded_timestamp": "2026-03-14",
+      "source_product_version": "PRD100 Rev D"
+    },
+    {
+      "complaint_id": "CMP-0037",
+      "complaint_identifier": "QMS-00037",
+      "data_quality_status": "reviewed",
+      "duplicate_candidate": false,
+      "event_timestamp": "2026-03-10",
+      "failure_mode": "shutdown",
+      "ingestion_timestamp": "2026-03-20",
+      "lot_id": "LOT-013",
+      "narrative": "Intermittent shutdown during field use",
+      "product_version_id": "PV-ASTER-D",
+      "recorded_timestamp": "2026-03-16",
+      "source_product_version": "PRD100 Rev D"
+    },
+    {
+      "complaint_id": "CMP-0038",
+      "complaint_identifier": "QMS-00038",
+      "data_quality_status": "reviewed",
+      "duplicate_candidate": false,
+      "event_timestamp": "2026-03-11",
+      "failure_mode": "shutdown",
+      "ingestion_timestamp": "2026-03-23",
+      "lot_id": "LOT-013",
+      "narrative": "Intermittent shutdown during field use",
+      "product_version_id": "PV-ASTER-D",
+      "recorded_timestamp": "2026-03-18",
+      "source_product_version": "PRD100 Rev D"
+    },
+    {
+      "complaint_id": "CMP-0039",
+      "complaint_identifier": "QMS-00039",
+      "data_quality_status": "reviewed",
+      "duplicate_candidate": false,
+      "event_timestamp": "2026-03-12",
+      "failure_mode": "shutdown",
+      "ingestion_timestamp": "2026-03-26",
+      "lot_id": "LOT-008",
+      "narrative": "Intermittent shutdown during field use",
+      "product_version_id": "PV-ASTER-D",
+      "recorded_timestamp": "2026-03-20",
+      "source_product_version": "PRD100 Rev D"
+    },
+    {
+      "complaint_id": "CMP-0040",
+      "complaint_identifier": "QMS-00040",
+      "data_quality_status": "reviewed",
+      "duplicate_candidate": false,
+      "event_timestamp": "2026-03-13",
+      "failure_mode": "no_fault_found",
+      "ingestion_timestamp": "2026-03-20",
+      "lot_id": "LOT-009",
+      "narrative": "Synthetic no_fault_found complaint",
+      "product_version_id": "PV-ASTER-D",
+      "recorded_timestamp": "2026-03-17",
+      "source_product_version": "PRD100 Rev D"
+    },
+    {
+      "complaint_id": "CMP-0041",
+      "complaint_identifier": "QMS-00041",
+      "data_quality_status": "reviewed",
+      "duplicate_candidate": false,
+      "event_timestamp": "2026-03-14",
+      "failure_mode": "delayed_restart",
+      "ingestion_timestamp": "2026-03-23",
+      "lot_id": "LOT-014",
+      "narrative": "Synthetic delayed_restart complaint",
+      "product_version_id": "PV-ASTER-D",
+      "recorded_timestamp": "2026-03-19",
+      "source_product_version": "PRD100 Rev D"
+    },
+    {
+      "complaint_id": "CMP-0042",
+      "complaint_identifier": "QMS-00042",
+      "data_quality_status": "reviewed",
+      "duplicate_candidate": false,
+      "event_timestamp": "2026-03-15",
+      "failure_mode": "delayed_restart",
+      "ingestion_timestamp": "2026-03-26",
+      "lot_id": "LOT-010",
+      "narrative": "Synthetic delayed_restart complaint",
+      "product_version_id": "PV-ASTER-D",
+      "recorded_timestamp": "2026-03-21",
+      "source_product_version": "PRD100 Rev D"
+    },
+    {
+      "complaint_id": "CMP-0043",
+      "complaint_identifier": "QMS-00043",
+      "data_quality_status": "reviewed",
+      "duplicate_candidate": false,
+      "event_timestamp": "2026-03-16",
+      "failure_mode": "false_alarm",
+      "ingestion_timestamp": "2026-03-29",
+      "lot_id": "LOT-010",
+      "narrative": "Synthetic false_alarm complaint",
+      "product_version_id": "PV-ASTER-D",
+      "recorded_timestamp": "2026-03-23",
+      "source_product_version": "PRD100 Rev D"
+    },
+    {
+      "complaint_id": "CMP-0044",
+      "complaint_identifier": "QMS-00044",
+      "data_quality_status": "duplicate_candidate",
+      "duplicate_candidate": true,
+      "event_timestamp": "2026-03-17",
+      "failure_mode": "false_alarm",
+      "ingestion_timestamp": "2026-03-28",
+      "lot_id": "LOT-010",
+      "narrative": "Synthetic false_alarm complaint",
+      "product_version_id": "PV-ASTER-D",
+      "recorded_timestamp": "2026-03-25",
+      "source_product_version": "PRD100 Rev D"
+    },
+    {
+      "complaint_id": "CMP-0045",
+      "complaint_identifier": "QMS-00045",
+      "data_quality_status": "missing_lot",
+      "duplicate_candidate": true,
+      "event_timestamp": "2026-03-18",
+      "failure_mode": "no_fault_found",
+      "ingestion_timestamp": "2026-03-26",
+      "lot_id": null,
+      "narrative": "Synthetic no_fault_found complaint",
+      "product_version_id": "PV-ASTER-D",
+      "recorded_timestamp": "2026-03-22",
+      "source_product_version": "PRD100 Rev D"
+    },
+    {
+      "complaint_id": "CMP-0046",
+      "complaint_identifier": "QMS-00046",
+      "data_quality_status": "reviewed",
+      "duplicate_candidate": false,
+      "event_timestamp": "2026-03-19",
+      "failure_mode": "delayed_restart",
+      "ingestion_timestamp": "2026-03-29",
+      "lot_id": "LOT-010",
+      "narrative": "Synthetic delayed_restart complaint",
+      "product_version_id": "PV-ASTER-D",
+      "recorded_timestamp": "2026-03-24",
+      "source_product_version": "PRD100 Rev D"
+    },
+    {
+      "complaint_id": "CMP-0047",
+      "complaint_identifier": "QMS-00047",
+      "data_quality_status": "missing_lot",
+      "duplicate_candidate": false,
+      "event_timestamp": "2026-03-20",
+      "failure_mode": "false_alarm",
+      "ingestion_timestamp": "2026-04-01",
+      "lot_id": null,
+      "narrative": "Synthetic false_alarm complaint",
+      "product_version_id": "PV-ASTER-D",
+      "recorded_timestamp": "2026-03-26",
+      "source_product_version": "PRD100 Rev D"
+    },
+    {
+      "complaint_id": "CMP-0048",
+      "complaint_identifier": "QMS-00048",
+      "data_quality_status": "reviewed",
+      "duplicate_candidate": false,
+      "event_timestamp": "2026-03-21",
+      "failure_mode": "false_alarm",
+      "ingestion_timestamp": "2026-03-31",
+      "lot_id": "LOT-012",
+      "narrative": "Synthetic false_alarm complaint",
+      "product_version_id": "PV-ASTER-D",
+      "recorded_timestamp": "2026-03-28",
+      "source_product_version": "PRD100 Rev D"
+    },
+    {
+      "complaint_id": "CMP-0049",
+      "complaint_identifier": "QMS-00049",
+      "data_quality_status": "missing_lot",
+      "duplicate_candidate": false,
+      "event_timestamp": "2026-03-22",
+      "failure_mode": "false_alarm",
+      "ingestion_timestamp": "2026-04-03",
+      "lot_id": null,
+      "narrative": "Synthetic false_alarm complaint",
+      "product_version_id": "PV-ASTER-D",
+      "recorded_timestamp": "2026-03-30",
+      "source_product_version": "PRD100 Rev D"
+    },
+    {
+      "complaint_id": "CMP-0050",
+      "complaint_identifier": "QMS-00050",
+      "data_quality_status": "reviewed",
+      "duplicate_candidate": false,
+      "event_timestamp": "2026-03-23",
+      "failure_mode": "false_alarm",
+      "ingestion_timestamp": "2026-04-01",
+      "lot_id": "LOT-011",
+      "narrative": "Synthetic false_alarm complaint",
+      "product_version_id": "PV-ASTER-D",
+      "recorded_timestamp": "2026-03-27",
+      "source_product_version": "PRD100 Rev D"
+    },
+    {
+      "complaint_id": "CMP-0051",
+      "complaint_identifier": "QMS-00051",
+      "data_quality_status": "reviewed",
+      "duplicate_candidate": false,
+      "event_timestamp": "2026-03-24",
+      "failure_mode": "delayed_restart",
+      "ingestion_timestamp": "2026-04-04",
+      "lot_id": "LOT-010",
+      "narrative": "Synthetic delayed_restart complaint",
+      "product_version_id": "PV-ASTER-D",
+      "recorded_timestamp": "2026-03-29",
+      "source_product_version": "PRD100 Rev D"
+    },
+    {
+      "complaint_id": "CMP-0052",
+      "complaint_identifier": "QMS-00052",
+      "data_quality_status": "reviewed",
+      "duplicate_candidate": false,
+      "event_timestamp": "2026-01-18",
+      "failure_mode": "shutdown",
+      "ingestion_timestamp": "2026-01-27",
+      "lot_id": "LOT-001",
+      "narrative": "Pre-Rev D shutdown complaint",
+      "product_version_id": "PV-ASTER-C",
+      "recorded_timestamp": "2026-01-24",
+      "source_product_version": "Product-100 / Revision C"
+    },
+    {
+      "complaint_id": "CMP-0053",
+      "complaint_identifier": "QMS-00053",
+      "data_quality_status": "reviewed",
+      "duplicate_candidate": false,
+      "event_timestamp": "2026-01-19",
+      "failure_mode": "connector_intermittency",
+      "ingestion_timestamp": "2026-01-30",
+      "lot_id": "LOT-002",
+      "narrative": "Pre-Rev D connector_intermittency complaint",
+      "product_version_id": "PV-ASTER-C",
+      "recorded_timestamp": "2026-01-26",
+      "source_product_version": "Product-100 / Revision C"
+    },
+    {
+      "complaint_id": "CMP-0054",
+      "complaint_identifier": "QMS-00054",
+      "data_quality_status": "reviewed",
+      "duplicate_candidate": false,
+      "event_timestamp": "2026-01-20",
+      "failure_mode": "shutdown",
+      "ingestion_timestamp": "2026-02-02",
+      "lot_id": "LOT-001",
+      "narrative": "Pre-Rev D shutdown complaint",
+      "product_version_id": "PV-ASTER-C",
+      "recorded_timestamp": "2026-01-28",
+      "source_product_version": "Product-100 / Revision C"
+    },
+    {
+      "complaint_id": "CMP-0055",
+      "complaint_identifier": "QMS-00055",
+      "data_quality_status": "reviewed",
+      "duplicate_candidate": false,
+      "event_timestamp": "2026-01-21",
+      "failure_mode": "connector_intermittency",
+      "ingestion_timestamp": "2026-01-31",
+      "lot_id": "LOT-002",
+      "narrative": "Pre-Rev D connector_intermittency complaint",
+      "product_version_id": "PV-ASTER-C",
+      "recorded_timestamp": "2026-01-25",
+      "source_product_version": "Product-100 / Revision C"
+    },
+    {
+      "complaint_id": "CMP-0056",
+      "complaint_identifier": "QMS-00056",
+      "data_quality_status": "missing_lot",
+      "duplicate_candidate": false,
+      "event_timestamp": "2026-01-22",
+      "failure_mode": "battery_warning",
+      "ingestion_timestamp": "2026-01-30",
+      "lot_id": null,
+      "narrative": "Pre-Rev D battery_warning complaint",
+      "product_version_id": "PV-ASTER-C",
+      "recorded_timestamp": "2026-01-27",
+      "source_product_version": "Product-100 / Revision C"
+    },
+    {
+      "complaint_id": "CMP-0057",
+      "complaint_identifier": "QMS-00057",
+      "data_quality_status": "missing_lot",
+      "duplicate_candidate": false,
+      "event_timestamp": "2026-01-23",
+      "failure_mode": "connector_intermittency",
+      "ingestion_timestamp": "2026-02-02",
+      "lot_id": null,
+      "narrative": "Pre-Rev D connector_intermittency complaint",
+      "product_version_id": "PV-ASTER-C",
+      "recorded_timestamp": "2026-01-29",
+      "source_product_version": "Product-100 / Revision C"
+    },
+    {
+      "complaint_id": "CMP-0058",
+      "complaint_identifier": "QMS-00058",
+      "data_quality_status": "reviewed",
+      "duplicate_candidate": false,
+      "event_timestamp": "2026-01-24",
+      "failure_mode": "connector_intermittency",
+      "ingestion_timestamp": "2026-02-05",
+      "lot_id": "LOT-002",
+      "narrative": "Pre-Rev D connector_intermittency complaint",
+      "product_version_id": "PV-ASTER-C",
+      "recorded_timestamp": "2026-01-31",
+      "source_product_version": "Product-100 / Revision C"
+    },
+    {
+      "complaint_id": "CMP-0059",
+      "complaint_identifier": "QMS-00059",
+      "data_quality_status": "missing_lot",
+      "duplicate_candidate": false,
+      "event_timestamp": "2026-01-25",
+      "failure_mode": "connector_intermittency",
+      "ingestion_timestamp": "2026-02-08",
+      "lot_id": null,
+      "narrative": "Pre-Rev D connector_intermittency complaint",
+      "product_version_id": "PV-ASTER-C",
+      "recorded_timestamp": "2026-02-02",
+      "source_product_version": "Product-100 / Revision C"
+    },
+    {
+      "complaint_id": "CMP-0060",
+      "complaint_identifier": "QMS-00060",
+      "data_quality_status": "reviewed",
+      "duplicate_candidate": false,
+      "event_timestamp": "2026-01-26",
+      "failure_mode": "shutdown",
+      "ingestion_timestamp": "2026-02-02",
+      "lot_id": "LOT-002",
+      "narrative": "Pre-Rev D shutdown complaint",
+      "product_version_id": "PV-ASTER-C",
+      "recorded_timestamp": "2026-01-30",
+      "source_product_version": "Product-100 / Revision C"
+    },
+    {
+      "complaint_id": "CMP-0061",
+      "complaint_identifier": "QMS-00061",
+      "data_quality_status": "missing_lot",
+      "duplicate_candidate": false,
+      "event_timestamp": "2026-01-27",
+      "failure_mode": "shutdown",
+      "ingestion_timestamp": "2026-02-05",
+      "lot_id": null,
+      "narrative": "Pre-Rev D shutdown complaint",
+      "product_version_id": "PV-ASTER-C",
+      "recorded_timestamp": "2026-02-01",
+      "source_product_version": "Product-100 / Revision C"
+    },
+    {
+      "complaint_id": "CMP-0062",
+      "complaint_identifier": "QMS-00062",
+      "data_quality_status": "missing_lot",
+      "duplicate_candidate": false,
+      "event_timestamp": "2026-01-28",
+      "failure_mode": "connector_intermittency",
+      "ingestion_timestamp": "2026-02-08",
+      "lot_id": null,
+      "narrative": "Pre-Rev D connector_intermittency complaint",
+      "product_version_id": "PV-ASTER-C",
+      "recorded_timestamp": "2026-02-03",
+      "source_product_version": "Product-100 / Revision C"
+    },
+    {
+      "complaint_id": "CMP-0063",
+      "complaint_identifier": "QMS-00063",
+      "data_quality_status": "reviewed",
+      "duplicate_candidate": false,
+      "event_timestamp": "2026-01-29",
+      "failure_mode": "shutdown",
+      "ingestion_timestamp": "2026-02-11",
+      "lot_id": "LOT-003",
+      "narrative": "Pre-Rev D shutdown complaint",
+      "product_version_id": "PV-ASTER-C",
+      "recorded_timestamp": "2026-02-05",
+      "source_product_version": "Product-100 / Revision C"
+    },
+    {
+      "complaint_id": "CMP-0064",
+      "complaint_identifier": "QMS-00064",
+      "data_quality_status": "reviewed",
+      "duplicate_candidate": false,
+      "event_timestamp": "2026-01-30",
+      "failure_mode": "shutdown",
+      "ingestion_timestamp": "2026-02-10",
+      "lot_id": "LOT-001",
+      "narrative": "Pre-Rev D shutdown complaint",
+      "product_version_id": "PV-ASTER-C",
+      "recorded_timestamp": "2026-02-07",
+      "source_product_version": "Product-100 / Revision C"
+    },
+    {
+      "complaint_id": "CMP-0065",
+      "complaint_identifier": "QMS-00065",
+      "data_quality_status": "reviewed",
+      "duplicate_candidate": false,
+      "event_timestamp": "2026-01-31",
+      "failure_mode": "battery_warning",
+      "ingestion_timestamp": "2026-02-08",
+      "lot_id": "LOT-003",
+      "narrative": "Pre-Rev D battery_warning complaint",
+      "product_version_id": "PV-ASTER-C",
+      "recorded_timestamp": "2026-02-04",
+      "source_product_version": "Product-100 / Revision C"
+    },
+    {
+      "complaint_id": "CMP-0066",
+      "complaint_identifier": "QMS-00066",
+      "data_quality_status": "reviewed",
+      "duplicate_candidate": false,
+      "event_timestamp": "2026-02-01",
+      "failure_mode": "battery_warning",
+      "ingestion_timestamp": "2026-02-11",
+      "lot_id": "LOT-001",
+      "narrative": "Pre-Rev D battery_warning complaint",
+      "product_version_id": "PV-ASTER-C",
+      "recorded_timestamp": "2026-02-06",
+      "source_product_version": "Product-100 / Revision C"
+    },
+    {
+      "complaint_id": "CMP-0067",
+      "complaint_identifier": "QMS-00067",
+      "data_quality_status": "missing_lot",
+      "duplicate_candidate": false,
+      "event_timestamp": "2026-02-02",
+      "failure_mode": "battery_warning",
+      "ingestion_timestamp": "2026-02-14",
+      "lot_id": null,
+      "narrative": "Pre-Rev D battery_warning complaint",
+      "product_version_id": "PV-ASTER-C",
+      "recorded_timestamp": "2026-02-08",
+      "source_product_version": "Product-100 / Revision C"
+    },
+    {
+      "complaint_id": "CMP-0068",
+      "complaint_identifier": "QMS-00068",
+      "data_quality_status": "reviewed",
+      "duplicate_candidate": false,
+      "event_timestamp": "2026-02-03",
+      "failure_mode": "shutdown",
+      "ingestion_timestamp": "2026-02-13",
+      "lot_id": "LOT-001",
+      "narrative": "Pre-Rev D shutdown complaint",
+      "product_version_id": "PV-ASTER-C",
+      "recorded_timestamp": "2026-02-10",
+      "source_product_version": "Product-100 / Revision C"
+    },
+    {
+      "complaint_id": "CMP-0069",
+      "complaint_identifier": "QMS-00069",
+      "data_quality_status": "reviewed",
+      "duplicate_candidate": false,
+      "event_timestamp": "2026-02-04",
+      "failure_mode": "battery_warning",
+      "ingestion_timestamp": "2026-02-16",
+      "lot_id": "LOT-002",
+      "narrative": "Pre-Rev D battery_warning complaint",
+      "product_version_id": "PV-ASTER-C",
+      "recorded_timestamp": "2026-02-12",
+      "source_product_version": "Product-100 / Revision C"
+    },
+    {
+      "complaint_id": "CMP-0070",
+      "complaint_identifier": "QMS-00070",
+      "data_quality_status": "reviewed",
+      "duplicate_candidate": false,
+      "event_timestamp": "2026-02-05",
+      "failure_mode": "battery_warning",
+      "ingestion_timestamp": "2026-02-14",
+      "lot_id": "LOT-003",
+      "narrative": "Pre-Rev D battery_warning complaint",
+      "product_version_id": "PV-ASTER-C",
+      "recorded_timestamp": "2026-02-09",
+      "source_product_version": "Product-100 / Revision C"
+    },
+    {
+      "complaint_id": "CMP-0071",
+      "complaint_identifier": "QMS-00071",
+      "data_quality_status": "missing_lot",
+      "duplicate_candidate": false,
+      "event_timestamp": "2026-02-06",
+      "failure_mode": "shutdown",
+      "ingestion_timestamp": "2026-02-17",
+      "lot_id": null,
+      "narrative": "Pre-Rev D shutdown complaint",
+      "product_version_id": "PV-ASTER-C",
+      "recorded_timestamp": "2026-02-11",
+      "source_product_version": "Product-100 / Revision C"
+    },
+    {
+      "complaint_id": "CMP-0072",
+      "complaint_identifier": "QMS-00072",
+      "data_quality_status": "reviewed",
+      "duplicate_candidate": false,
+      "event_timestamp": "2026-02-07",
+      "failure_mode": "shutdown",
+      "ingestion_timestamp": "2026-02-16",
+      "lot_id": "LOT-003",
+      "narrative": "Pre-Rev D shutdown complaint",
+      "product_version_id": "PV-ASTER-C",
+      "recorded_timestamp": "2026-02-13",
+      "source_product_version": "Product-100 / Revision C"
+    },
+    {
+      "complaint_id": "CMP-0073",
+      "complaint_identifier": "QMS-00073",
+      "data_quality_status": "reviewed",
+      "duplicate_candidate": false,
+      "event_timestamp": "2026-02-08",
+      "failure_mode": "connector_intermittency",
+      "ingestion_timestamp": "2026-02-19",
+      "lot_id": "LOT-002",
+      "narrative": "Pre-Rev D connector_intermittency complaint",
+      "product_version_id": "PV-ASTER-C",
+      "recorded_timestamp": "2026-02-15",
+      "source_product_version": "Product-100 / Revision C"
+    },
+    {
+      "complaint_id": "CMP-0074",
+      "complaint_identifier": "QMS-00074",
+      "data_quality_status": "reviewed",
+      "duplicate_candidate": false,
+      "event_timestamp": "2026-02-09",
+      "failure_mode": "shutdown",
+      "ingestion_timestamp": "2026-02-22",
+      "lot_id": "LOT-003",
+      "narrative": "Pre-Rev D shutdown complaint",
+      "product_version_id": "PV-ASTER-C",
+      "recorded_timestamp": "2026-02-17",
+      "source_product_version": "Product-100 / Revision C"
+    },
+    {
+      "complaint_id": "CMP-0075",
+      "complaint_identifier": "QMS-00075",
+      "data_quality_status": "reviewed",
+      "duplicate_candidate": false,
+      "event_timestamp": "2026-02-10",
+      "failure_mode": "battery_warning",
+      "ingestion_timestamp": "2026-02-20",
+      "lot_id": "LOT-003",
+      "narrative": "Pre-Rev D battery_warning complaint",
+      "product_version_id": "PV-ASTER-C",
+      "recorded_timestamp": "2026-02-14",
+      "source_product_version": "Product-100 / Revision C"
+    },
+    {
+      "complaint_id": "CMP-0076",
+      "complaint_identifier": "QMS-00076",
+      "data_quality_status": "missing_lot",
+      "duplicate_candidate": false,
+      "event_timestamp": "2026-02-11",
+      "failure_mode": "shutdown",
+      "ingestion_timestamp": "2026-02-19",
+      "lot_id": null,
+      "narrative": "Pre-Rev D shutdown complaint",
+      "product_version_id": "PV-ASTER-C",
+      "recorded_timestamp": "2026-02-16",
+      "source_product_version": "Product-100 / Revision C"
+    },
+    {
+      "complaint_id": "CMP-0077",
+      "complaint_identifier": "QMS-00077",
+      "data_quality_status": "missing_lot",
+      "duplicate_candidate": false,
+      "event_timestamp": "2026-02-12",
+      "failure_mode": "battery_warning",
+      "ingestion_timestamp": "2026-02-22",
+      "lot_id": null,
+      "narrative": "Pre-Rev D battery_warning complaint",
+      "product_version_id": "PV-ASTER-C",
+      "recorded_timestamp": "2026-02-18",
+      "source_product_version": "Product-100 / Revision C"
+    },
+    {
+      "complaint_id": "CMP-0078",
+      "complaint_identifier": "QMS-00078",
+      "data_quality_status": "reviewed",
+      "duplicate_candidate": false,
+      "event_timestamp": "2026-02-13",
+      "failure_mode": "connector_intermittency",
+      "ingestion_timestamp": "2026-02-25",
+      "lot_id": "LOT-001",
+      "narrative": "Pre-Rev D connector_intermittency complaint",
+      "product_version_id": "PV-ASTER-C",
+      "recorded_timestamp": "2026-02-20",
+      "source_product_version": "Product-100 / Revision C"
+    },
+    {
+      "complaint_id": "CMP-0079",
+      "complaint_identifier": "QMS-00079",
+      "data_quality_status": "reviewed",
+      "duplicate_candidate": false,
+      "event_timestamp": "2026-03-09",
+      "failure_mode": "display_freeze",
+      "ingestion_timestamp": "2026-03-23",
+      "lot_id": "LOT-017",
+      "narrative": "Nimbus display_freeze complaint",
+      "product_version_id": "PV-NIMBUS-B",
+      "recorded_timestamp": "2026-03-17",
+      "source_product_version": "PV-NIMBUS-B"
+    },
+    {
+      "complaint_id": "CMP-0080",
+      "complaint_identifier": "QMS-00080",
+      "data_quality_status": "reviewed",
+      "duplicate_candidate": false,
+      "event_timestamp": "2026-03-10",
+      "failure_mode": "display_freeze",
+      "ingestion_timestamp": "2026-03-17",
+      "lot_id": "LOT-018",
+      "narrative": "Nimbus display_freeze complaint",
+      "product_version_id": "PV-NIMBUS-B",
+      "recorded_timestamp": "2026-03-14",
+      "source_product_version": "PV-NIMBUS-B"
+    },
+    {
+      "complaint_id": "CMP-0081",
+      "complaint_identifier": "QMS-00081",
+      "data_quality_status": "reviewed",
+      "duplicate_candidate": false,
+      "event_timestamp": "2026-03-11",
+      "failure_mode": "display_freeze",
+      "ingestion_timestamp": "2026-03-20",
+      "lot_id": "LOT-015",
+      "narrative": "Nimbus display_freeze complaint",
+      "product_version_id": "PV-NIMBUS-B",
+      "recorded_timestamp": "2026-03-16",
+      "source_product_version": "PV-NIMBUS-B"
+    },
+    {
+      "complaint_id": "CMP-0082",
+      "complaint_identifier": "QMS-00082",
+      "data_quality_status": "reviewed",
+      "duplicate_candidate": false,
+      "event_timestamp": "2026-03-12",
+      "failure_mode": "display_freeze",
+      "ingestion_timestamp": "2026-03-23",
+      "lot_id": "LOT-016",
+      "narrative": "Nimbus display_freeze complaint",
+      "product_version_id": "PV-NIMBUS-B",
+      "recorded_timestamp": "2026-03-18",
+      "source_product_version": "PV-NIMBUS-B"
+    },
+    {
+      "complaint_id": "CMP-0083",
+      "complaint_identifier": "QMS-00083",
+      "data_quality_status": "reviewed",
+      "duplicate_candidate": false,
+      "event_timestamp": "2026-03-13",
+      "failure_mode": "shutdown",
+      "ingestion_timestamp": "2026-03-26",
+      "lot_id": "LOT-015",
+      "narrative": "Nimbus shutdown complaint",
+      "product_version_id": "PV-NIMBUS-B",
+      "recorded_timestamp": "2026-03-20",
+      "source_product_version": "PV-NIMBUS-B"
+    },
+    {
+      "complaint_id": "CMP-0084",
+      "complaint_identifier": "QMS-00084",
+      "data_quality_status": "missing_lot",
+      "duplicate_candidate": false,
+      "event_timestamp": "2026-02-02",
+      "failure_mode": "false_alarm",
+      "ingestion_timestamp": "2026-02-13",
+      "lot_id": null,
+      "narrative": "Nimbus false_alarm complaint",
+      "product_version_id": "PV-NIMBUS-B",
+      "recorded_timestamp": "2026-02-10",
+      "source_product_version": "PV-NIMBUS-B"
+    },
+    {
+      "complaint_id": "CMP-0085",
+      "complaint_identifier": "QMS-00085",
+      "data_quality_status": "missing_lot",
+      "duplicate_candidate": false,
+      "event_timestamp": "2026-02-03",
+      "failure_mode": "display_freeze",
+      "ingestion_timestamp": "2026-02-11",
+      "lot_id": null,
+      "narrative": "Nimbus display_freeze complaint",
+      "product_version_id": "PV-NIMBUS-B",
+      "recorded_timestamp": "2026-02-07",
+      "source_product_version": "PV-NIMBUS-B"
+    },
+    {
+      "complaint_id": "CMP-0086",
+      "complaint_identifier": "QMS-00086",
+      "data_quality_status": "reviewed",
+      "duplicate_candidate": false,
+      "event_timestamp": "2026-02-04",
+      "failure_mode": "false_alarm",
+      "ingestion_timestamp": "2026-02-14",
+      "lot_id": "LOT-015",
+      "narrative": "Nimbus false_alarm complaint",
+      "product_version_id": "PV-NIMBUS-B",
+      "recorded_timestamp": "2026-02-09",
+      "source_product_version": "PV-NIMBUS-B"
+    },
+    {
+      "complaint_id": "CMP-0087",
+      "complaint_identifier": "QMS-00087",
+      "data_quality_status": "reviewed",
+      "duplicate_candidate": false,
+      "event_timestamp": "2026-02-05",
+      "failure_mode": "display_freeze",
+      "ingestion_timestamp": "2026-02-17",
+      "lot_id": "LOT-017",
+      "narrative": "Nimbus display_freeze complaint",
+      "product_version_id": "PV-NIMBUS-B",
+      "recorded_timestamp": "2026-02-11",
+      "source_product_version": "PV-NIMBUS-B"
+    },
+    {
+      "complaint_id": "CMP-0088",
+      "complaint_identifier": "QMS-00088",
+      "data_quality_status": "reviewed",
+      "duplicate_candidate": false,
+      "event_timestamp": "2026-02-06",
+      "failure_mode": "false_alarm",
+      "ingestion_timestamp": "2026-02-16",
+      "lot_id": "LOT-016",
+      "narrative": "Nimbus false_alarm complaint",
+      "product_version_id": "PV-NIMBUS-B",
+      "recorded_timestamp": "2026-02-13",
+      "source_product_version": "PV-NIMBUS-B"
+    },
+    {
+      "complaint_id": "CMP-0089",
+      "complaint_identifier": "QMS-00089",
+      "data_quality_status": "reviewed",
+      "duplicate_candidate": false,
+      "event_timestamp": "2026-02-07",
+      "failure_mode": "false_alarm",
+      "ingestion_timestamp": "2026-02-19",
+      "lot_id": "LOT-017",
+      "narrative": "Nimbus false_alarm complaint",
+      "product_version_id": "PV-NIMBUS-B",
+      "recorded_timestamp": "2026-02-15",
+      "source_product_version": "PV-NIMBUS-B"
+    },
+    {
+      "complaint_id": "CMP-0090",
+      "complaint_identifier": "QMS-00090",
+      "data_quality_status": "reviewed",
+      "duplicate_candidate": false,
+      "event_timestamp": "2026-02-08",
+      "failure_mode": "display_freeze",
+      "ingestion_timestamp": "2026-02-17",
+      "lot_id": "LOT-016",
+      "narrative": "Nimbus display_freeze complaint",
+      "product_version_id": "PV-NIMBUS-B",
+      "recorded_timestamp": "2026-02-12",
+      "source_product_version": "PV-NIMBUS-B"
+    },
+    {
+      "complaint_id": "CMP-0091",
+      "complaint_identifier": "QMS-00091",
+      "data_quality_status": "missing_lot",
+      "duplicate_candidate": false,
+      "event_timestamp": "2026-02-09",
+      "failure_mode": "false_alarm",
+      "ingestion_timestamp": "2026-02-20",
+      "lot_id": null,
+      "narrative": "Nimbus false_alarm complaint",
+      "product_version_id": "PV-NIMBUS-B",
+      "recorded_timestamp": "2026-02-14",
+      "source_product_version": "PV-NIMBUS-B"
+    },
+    {
+      "complaint_id": "CMP-0092",
+      "complaint_identifier": "QMS-00092",
+      "data_quality_status": "reviewed",
+      "duplicate_candidate": false,
+      "event_timestamp": "2026-02-10",
+      "failure_mode": "display_freeze",
+      "ingestion_timestamp": "2026-02-19",
+      "lot_id": "LOT-016",
+      "narrative": "Nimbus display_freeze complaint",
+      "product_version_id": "PV-NIMBUS-B",
+      "recorded_timestamp": "2026-02-16",
+      "source_product_version": "PV-NIMBUS-B"
+    },
+    {
+      "complaint_id": "CMP-0093",
+      "complaint_identifier": "QMS-00093",
+      "data_quality_status": "reviewed",
+      "duplicate_candidate": false,
+      "event_timestamp": "2026-02-11",
+      "failure_mode": "false_alarm",
+      "ingestion_timestamp": "2026-02-22",
+      "lot_id": "LOT-018",
+      "narrative": "Nimbus false_alarm complaint",
+      "product_version_id": "PV-NIMBUS-B",
+      "recorded_timestamp": "2026-02-18",
+      "source_product_version": "PV-NIMBUS-B"
+    },
+    {
+      "complaint_id": "CMP-0094",
+      "complaint_identifier": "QMS-00094",
+      "data_quality_status": "missing_lot",
+      "duplicate_candidate": false,
+      "event_timestamp": "2026-02-12",
+      "failure_mode": "shutdown",
+      "ingestion_timestamp": "2026-02-25",
+      "lot_id": null,
+      "narrative": "Nimbus shutdown complaint",
+      "product_version_id": "PV-NIMBUS-B",
+      "recorded_timestamp": "2026-02-20",
+      "source_product_version": "PV-NIMBUS-B"
+    },
+    {
+      "complaint_id": "CMP-0095",
+      "complaint_identifier": "QMS-00095",
+      "data_quality_status": "reviewed",
+      "duplicate_candidate": false,
+      "event_timestamp": "2026-02-13",
+      "failure_mode": "display_freeze",
+      "ingestion_timestamp": "2026-02-23",
+      "lot_id": "LOT-017",
+      "narrative": "Nimbus display_freeze complaint",
+      "product_version_id": "PV-NIMBUS-B",
+      "recorded_timestamp": "2026-02-17",
+      "source_product_version": "PV-NIMBUS-B"
+    },
+    {
+      "complaint_id": "CMP-0096",
+      "complaint_identifier": "QMS-00096",
+      "data_quality_status": "reviewed",
+      "duplicate_candidate": false,
+      "event_timestamp": "2026-02-14",
+      "failure_mode": "shutdown",
+      "ingestion_timestamp": "2026-02-22",
+      "lot_id": "LOT-018",
+      "narrative": "Nimbus shutdown complaint",
+      "product_version_id": "PV-NIMBUS-B",
+      "recorded_timestamp": "2026-02-19",
+      "source_product_version": "PV-NIMBUS-B"
+    },
+    {
+      "complaint_id": "CMP-0097",
+      "complaint_identifier": "QMS-00097",
+      "data_quality_status": "missing_lot",
+      "duplicate_candidate": false,
+      "event_timestamp": "2026-02-15",
+      "failure_mode": "shutdown",
+      "ingestion_timestamp": "2026-02-25",
+      "lot_id": null,
+      "narrative": "Nimbus shutdown complaint",
+      "product_version_id": "PV-NIMBUS-B",
+      "recorded_timestamp": "2026-02-21",
+      "source_product_version": "PV-NIMBUS-B"
+    },
+    {
+      "complaint_id": "CMP-0098",
+      "complaint_identifier": "QMS-00098",
+      "data_quality_status": "missing_lot",
+      "duplicate_candidate": false,
+      "event_timestamp": "2026-02-16",
+      "failure_mode": "false_alarm",
+      "ingestion_timestamp": "2026-02-28",
+      "lot_id": null,
+      "narrative": "Nimbus false_alarm complaint",
+      "product_version_id": "PV-NIMBUS-B",
+      "recorded_timestamp": "2026-02-23",
+      "source_product_version": "PV-NIMBUS-B"
+    },
+    {
+      "complaint_id": "CMP-0099",
+      "complaint_identifier": "QMS-00099",
+      "data_quality_status": "missing_lot",
+      "duplicate_candidate": false,
+      "event_timestamp": "2026-02-17",
+      "failure_mode": "shutdown",
+      "ingestion_timestamp": "2026-03-03",
+      "lot_id": null,
+      "narrative": "Nimbus shutdown complaint",
+      "product_version_id": "PV-NIMBUS-B",
+      "recorded_timestamp": "2026-02-25",
+      "source_product_version": "PV-NIMBUS-B"
+    },
+    {
+      "complaint_id": "CMP-0100",
+      "complaint_identifier": "QMS-00100",
+      "data_quality_status": "missing_lot",
+      "duplicate_candidate": false,
+      "event_timestamp": "2025-11-24",
+      "failure_mode": "label_mismatch",
+      "ingestion_timestamp": "2025-12-01",
+      "lot_id": null,
+      "narrative": "Background label_mismatch complaint",
+      "product_version_id": "PV-ASTER-B",
+      "recorded_timestamp": "2025-11-28",
+      "source_product_version": "PV-ASTER-B"
+    },
+    {
+      "complaint_id": "CMP-0101",
+      "complaint_identifier": "QMS-00101",
+      "data_quality_status": "missing_lot",
+      "duplicate_candidate": false,
+      "event_timestamp": "2025-11-25",
+      "failure_mode": "speaker_low_volume",
+      "ingestion_timestamp": "2025-12-04",
+      "lot_id": null,
+      "narrative": "Background speaker_low_volume complaint",
+      "product_version_id": "PV-ASTER-B",
+      "recorded_timestamp": "2025-11-30",
+      "source_product_version": "PV-ASTER-B"
+    },
+    {
+      "complaint_id": "CMP-0102",
+      "complaint_identifier": "QMS-00102",
+      "data_quality_status": "missing_lot",
+      "duplicate_candidate": false,
+      "event_timestamp": "2025-11-26",
+      "failure_mode": "speaker_low_volume",
+      "ingestion_timestamp": "2025-12-07",
+      "lot_id": null,
+      "narrative": "Background speaker_low_volume complaint",
+      "product_version_id": "PV-NIMBUS-A",
+      "recorded_timestamp": "2025-12-02",
+      "source_product_version": "PV-NIMBUS-A"
+    },
+    {
+      "complaint_id": "CMP-0103",
+      "complaint_identifier": "QMS-00103",
+      "data_quality_status": "missing_lot",
+      "duplicate_candidate": false,
+      "event_timestamp": "2025-11-27",
+      "failure_mode": "speaker_low_volume",
+      "ingestion_timestamp": "2025-12-10",
+      "lot_id": null,
+      "narrative": "Background speaker_low_volume complaint",
+      "product_version_id": "PV-ASTER-A",
+      "recorded_timestamp": "2025-12-04",
+      "source_product_version": "PV-ASTER-A"
+    },
+    {
+      "complaint_id": "CMP-0104",
+      "complaint_identifier": "QMS-00104",
+      "data_quality_status": "missing_lot",
+      "duplicate_candidate": false,
+      "event_timestamp": "2025-11-28",
+      "failure_mode": "label_mismatch",
+      "ingestion_timestamp": "2025-12-09",
+      "lot_id": null,
+      "narrative": "Background label_mismatch complaint",
+      "product_version_id": "PV-ASTER-A",
+      "recorded_timestamp": "2025-12-06",
+      "source_product_version": "PV-ASTER-A"
+    },
+    {
+      "complaint_id": "CMP-0105",
+      "complaint_identifier": "QMS-00105",
+      "data_quality_status": "missing_lot",
+      "duplicate_candidate": false,
+      "event_timestamp": "2025-11-29",
+      "failure_mode": "label_mismatch",
+      "ingestion_timestamp": "2025-12-07",
+      "lot_id": null,
+      "narrative": "Background label_mismatch complaint",
+      "product_version_id": "PV-NIMBUS-A",
+      "recorded_timestamp": "2025-12-03",
+      "source_product_version": "PV-NIMBUS-A"
+    },
+    {
+      "complaint_id": "CMP-0106",
+      "complaint_identifier": "QMS-00106",
+      "data_quality_status": "missing_lot",
+      "duplicate_candidate": false,
+      "event_timestamp": "2025-11-30",
+      "failure_mode": "no_fault_found",
+      "ingestion_timestamp": "2025-12-10",
+      "lot_id": null,
+      "narrative": "Background no_fault_found complaint",
+      "product_version_id": "PV-ASTER-B",
+      "recorded_timestamp": "2025-12-05",
+      "source_product_version": "PV-ASTER-B"
+    },
+    {
+      "complaint_id": "CMP-0107",
+      "complaint_identifier": "QMS-00107",
+      "data_quality_status": "missing_lot",
+      "duplicate_candidate": false,
+      "event_timestamp": "2025-12-01",
+      "failure_mode": "label_mismatch",
+      "ingestion_timestamp": "2025-12-13",
+      "lot_id": null,
+      "narrative": "Background label_mismatch complaint",
+      "product_version_id": "PV-ASTER-A",
+      "recorded_timestamp": "2025-12-07",
+      "source_product_version": "PV-ASTER-A"
+    },
+    {
+      "complaint_id": "CMP-0108",
+      "complaint_identifier": "QMS-00108",
+      "data_quality_status": "missing_lot",
+      "duplicate_candidate": false,
+      "event_timestamp": "2025-12-02",
+      "failure_mode": "speaker_low_volume",
+      "ingestion_timestamp": "2025-12-12",
+      "lot_id": null,
+      "narrative": "Background speaker_low_volume complaint",
+      "product_version_id": "PV-ASTER-A",
+      "recorded_timestamp": "2025-12-09",
+      "source_product_version": "PV-ASTER-A"
+    },
+    {
+      "complaint_id": "CMP-0109",
+      "complaint_identifier": "QMS-00109",
+      "data_quality_status": "missing_lot",
+      "duplicate_candidate": false,
+      "event_timestamp": "2025-12-03",
+      "failure_mode": "no_fault_found",
+      "ingestion_timestamp": "2025-12-15",
+      "lot_id": null,
+      "narrative": "Background no_fault_found complaint",
+      "product_version_id": "PV-NIMBUS-A",
+      "recorded_timestamp": "2025-12-11",
+      "source_product_version": "PV-NIMBUS-A"
+    },
+    {
+      "complaint_id": "CMP-0110",
+      "complaint_identifier": "QMS-00110",
+      "data_quality_status": "missing_lot",
+      "duplicate_candidate": false,
+      "event_timestamp": "2025-12-04",
+      "failure_mode": "no_fault_found",
+      "ingestion_timestamp": "2025-12-13",
+      "lot_id": null,
+      "narrative": "Background no_fault_found complaint",
+      "product_version_id": "PV-NIMBUS-A",
+      "recorded_timestamp": "2025-12-08",
+      "source_product_version": "PV-NIMBUS-A"
+    },
+    {
+      "complaint_id": "CMP-0111",
+      "complaint_identifier": "QMS-00111",
+      "data_quality_status": "missing_lot",
+      "duplicate_candidate": false,
+      "event_timestamp": "2025-12-05",
+      "failure_mode": "no_fault_found",
+      "ingestion_timestamp": "2025-12-16",
+      "lot_id": null,
+      "narrative": "Background no_fault_found complaint",
+      "product_version_id": "PV-NIMBUS-A",
+      "recorded_timestamp": "2025-12-10",
+      "source_product_version": "PV-NIMBUS-A"
+    },
+    {
+      "complaint_id": "CMP-0112",
+      "complaint_identifier": "QMS-00112",
+      "data_quality_status": "missing_lot",
+      "duplicate_candidate": false,
+      "event_timestamp": "2025-12-06",
+      "failure_mode": "speaker_low_volume",
+      "ingestion_timestamp": "2025-12-15",
+      "lot_id": null,
+      "narrative": "Background speaker_low_volume complaint",
+      "product_version_id": "PV-ASTER-B",
+      "recorded_timestamp": "2025-12-12",
+      "source_product_version": "PV-ASTER-B"
+    },
+    {
+      "complaint_id": "CMP-0113",
+      "complaint_identifier": "QMS-00113",
+      "data_quality_status": "missing_lot",
+      "duplicate_candidate": false,
+      "event_timestamp": "2025-12-07",
+      "failure_mode": "no_fault_found",
+      "ingestion_timestamp": "2025-12-18",
+      "lot_id": null,
+      "narrative": "Background no_fault_found complaint",
+      "product_version_id": "PV-NIMBUS-A",
+      "recorded_timestamp": "2025-12-14",
+      "source_product_version": "PV-NIMBUS-A"
+    },
+    {
+      "complaint_id": "CMP-0114",
+      "complaint_identifier": "QMS-00114",
+      "data_quality_status": "missing_lot",
+      "duplicate_candidate": false,
+      "event_timestamp": "2025-12-08",
+      "failure_mode": "label_mismatch",
+      "ingestion_timestamp": "2025-12-21",
+      "lot_id": null,
+      "narrative": "Background label_mismatch complaint",
+      "product_version_id": "PV-NIMBUS-A",
+      "recorded_timestamp": "2025-12-16",
+      "source_product_version": "PV-NIMBUS-A"
+    },
+    {
+      "complaint_id": "CMP-0115",
+      "complaint_identifier": "QMS-00115",
+      "data_quality_status": "missing_lot",
+      "duplicate_candidate": false,
+      "event_timestamp": "2025-12-09",
+      "failure_mode": "no_fault_found",
+      "ingestion_timestamp": "2025-12-19",
+      "lot_id": null,
+      "narrative": "Background no_fault_found complaint",
+      "product_version_id": "PV-NIMBUS-A",
+      "recorded_timestamp": "2025-12-13",
+      "source_product_version": "PV-NIMBUS-A"
+    },
+    {
+      "complaint_id": "CMP-0116",
+      "complaint_identifier": "QMS-00116",
+      "data_quality_status": "missing_lot",
+      "duplicate_candidate": false,
+      "event_timestamp": "2025-12-10",
+      "failure_mode": "label_mismatch",
+      "ingestion_timestamp": "2025-12-18",
+      "lot_id": null,
+      "narrative": "Background label_mismatch complaint",
+      "product_version_id": "PV-ASTER-A",
+      "recorded_timestamp": "2025-12-15",
+      "source_product_version": "PV-ASTER-A"
+    },
+    {
+      "complaint_id": "CMP-0117",
+      "complaint_identifier": "QMS-00117",
+      "data_quality_status": "missing_lot",
+      "duplicate_candidate": false,
+      "event_timestamp": "2025-12-11",
+      "failure_mode": "speaker_low_volume",
+      "ingestion_timestamp": "2025-12-21",
+      "lot_id": null,
+      "narrative": "Background speaker_low_volume complaint",
+      "product_version_id": "PV-ASTER-A",
+      "recorded_timestamp": "2025-12-17",
+      "source_product_version": "PV-ASTER-A"
+    },
+    {
+      "complaint_id": "CMP-0118",
+      "complaint_identifier": "QMS-00118",
+      "data_quality_status": "missing_lot",
+      "duplicate_candidate": false,
+      "event_timestamp": "2025-12-12",
+      "failure_mode": "label_mismatch",
+      "ingestion_timestamp": "2025-12-24",
+      "lot_id": null,
+      "narrative": "Background label_mismatch complaint",
+      "product_version_id": "PV-ASTER-A",
+      "recorded_timestamp": "2025-12-19",
+      "source_product_version": "PV-ASTER-A"
+    },
+    {
+      "complaint_id": "CMP-0119",
+      "complaint_identifier": "QMS-00119",
+      "data_quality_status": "missing_lot",
+      "duplicate_candidate": false,
+      "event_timestamp": "2025-12-13",
+      "failure_mode": "label_mismatch",
+      "ingestion_timestamp": "2025-12-27",
+      "lot_id": null,
+      "narrative": "Background label_mismatch complaint",
+      "product_version_id": "PV-NIMBUS-A",
+      "recorded_timestamp": "2025-12-21",
+      "source_product_version": "PV-NIMBUS-A"
+    },
+    {
+      "complaint_id": "CMP-0120",
+      "complaint_identifier": "QMS-00120",
+      "data_quality_status": "missing_lot",
+      "duplicate_candidate": false,
+      "event_timestamp": "2025-12-14",
+      "failure_mode": "label_mismatch",
+      "ingestion_timestamp": "2025-12-21",
+      "lot_id": null,
+      "narrative": "Background label_mismatch complaint",
+      "product_version_id": "PV-ASTER-B",
+      "recorded_timestamp": "2025-12-18",
+      "source_product_version": "PV-ASTER-B"
+    }
+  ],
+  "components": [
+    {
+      "component_id": "COMP-PWR",
+      "component_identifier": "C-001",
+      "description": "Synthetic power regulation module used for R1 evaluation.",
+      "name": "Power Regulation Module",
+      "revision": "Rev B",
+      "supplier_id": "SUP-NOVACAP"
+    },
+    {
+      "component_id": "COMP-CAP",
+      "component_identifier": "C-002",
+      "description": "Synthetic reservoir capacitor used for R1 evaluation.",
+      "name": "Reservoir Capacitor",
+      "revision": "Rev B",
+      "supplier_id": "SUP-NOVACAP"
+    },
+    {
+      "component_id": "COMP-FW",
+      "component_identifier": "C-003",
+      "description": "Synthetic firmware control package used for R1 evaluation.",
+      "name": "Firmware Control Package",
+      "revision": "Rev C",
+      "supplier_id": "SUP-ORBIT"
+    },
+    {
+      "component_id": "COMP-SENSOR",
+      "component_identifier": "C-004",
+      "description": "Synthetic flow sensor board used for R1 evaluation.",
+      "name": "Flow Sensor Board",
+      "revision": "Rev A",
+      "supplier_id": "SUP-HELIOS"
+    },
+    {
+      "component_id": "COMP-BATT",
+      "component_identifier": "C-005",
+      "description": "Synthetic backup cell used for R1 evaluation.",
+      "name": "Backup Cell",
+      "revision": "Rev A",
+      "supplier_id": "SUP-ORBIT"
+    },
+    {
+      "component_id": "COMP-CASE",
+      "component_identifier": "C-006",
+      "description": "Synthetic outer housing used for R1 evaluation.",
+      "name": "Outer Housing",
+      "revision": "Rev C",
+      "supplier_id": "SUP-LUMEN"
+    },
+    {
+      "component_id": "COMP-LABEL",
+      "component_identifier": "C-007",
+      "description": "Synthetic package label used for R1 evaluation.",
+      "name": "Package Label",
+      "revision": "Rev A",
+      "supplier_id": "SUP-QUANTA"
+    },
+    {
+      "component_id": "COMP-DISPLAY",
+      "component_identifier": "C-008",
+      "description": "Synthetic status display used for R1 evaluation.",
+      "name": "Status Display",
+      "revision": "Rev A",
+      "supplier_id": "SUP-HELIOS"
+    },
+    {
+      "component_id": "COMP-CONN",
+      "component_identifier": "C-009",
+      "description": "Synthetic harness connector used for R1 evaluation.",
+      "name": "Harness Connector",
+      "revision": "Rev C",
+      "supplier_id": "SUP-ORBIT"
+    },
+    {
+      "component_id": "COMP-PUMP",
+      "component_identifier": "C-010",
+      "description": "Synthetic pump drive used for R1 evaluation.",
+      "name": "Pump Drive",
+      "revision": "Rev A",
+      "supplier_id": "SUP-NOVACAP"
+    },
+    {
+      "component_id": "COMP-VALVE",
+      "component_identifier": "C-011",
+      "description": "Synthetic valve assembly used for R1 evaluation.",
+      "name": "Valve Assembly",
+      "revision": "Rev A",
+      "supplier_id": "SUP-LUMEN"
+    },
+    {
+      "component_id": "COMP-SEAL",
+      "component_identifier": "C-012",
+      "description": "Synthetic fluid seal used for R1 evaluation.",
+      "name": "Fluid Seal",
+      "revision": "Rev C",
+      "supplier_id": "SUP-LUMEN"
+    },
+    {
+      "component_id": "COMP-LOGIC",
+      "component_identifier": "C-013",
+      "description": "Synthetic logic board used for R1 evaluation.",
+      "name": "Logic Board",
+      "revision": "Rev A",
+      "supplier_id": "SUP-HELIOS"
+    },
+    {
+      "component_id": "COMP-CHARGE",
+      "component_identifier": "C-014",
+      "description": "Synthetic charge controller used for R1 evaluation.",
+      "name": "Charge Controller",
+      "revision": "Rev A",
+      "supplier_id": "SUP-NOVACAP"
+    },
+    {
+      "component_id": "COMP-SPEAKER",
+      "component_identifier": "C-015",
+      "description": "Synthetic alert speaker used for R1 evaluation.",
+      "name": "Alert Speaker",
+      "revision": "Rev C",
+      "supplier_id": "SUP-ORBIT"
+    },
+    {
+      "component_id": "COMP-CLIP",
+      "component_identifier": "C-016",
+      "description": "Synthetic mounting clip used for R1 evaluation.",
+      "name": "Mounting Clip",
+      "revision": "Rev A",
+      "supplier_id": "SUP-QUANTA"
+    }
+  ],
+  "controls": [
+    {
+      "control_id": "CTRL-001",
+      "control_identifier": "CTRL-001",
+      "control_type": "validation",
+      "description": "Synthetic control 1"
+    },
+    {
+      "control_id": "CTRL-002",
+      "control_identifier": "CTRL-002",
+      "control_type": "process",
+      "description": "Synthetic control 2"
+    },
+    {
+      "control_id": "CTRL-003",
+      "control_identifier": "CTRL-003",
+      "control_type": "validation",
+      "description": "Synthetic control 3"
+    },
+    {
+      "control_id": "CTRL-004",
+      "control_identifier": "CTRL-004",
+      "control_type": "process",
+      "description": "Synthetic control 4"
+    },
+    {
+      "control_id": "CTRL-005",
+      "control_identifier": "CTRL-005",
+      "control_type": "validation",
+      "description": "Synthetic control 5"
+    },
+    {
+      "control_id": "CTRL-006",
+      "control_identifier": "CTRL-006",
+      "control_type": "process",
+      "description": "Synthetic control 6"
+    },
+    {
+      "control_id": "CTRL-007",
+      "control_identifier": "CTRL-007",
+      "control_type": "validation",
+      "description": "Synthetic control 7"
+    },
+    {
+      "control_id": "CTRL-008",
+      "control_identifier": "CTRL-008",
+      "control_type": "process",
+      "description": "Synthetic control 8"
+    },
+    {
+      "control_id": "CTRL-009",
+      "control_identifier": "CTRL-009",
+      "control_type": "validation",
+      "description": "Synthetic control 9"
+    },
+    {
+      "control_id": "CTRL-010",
+      "control_identifier": "CTRL-010",
+      "control_type": "process",
+      "description": "Synthetic control 10"
+    },
+    {
+      "control_id": "CTRL-011",
+      "control_identifier": "CTRL-011",
+      "control_type": "validation",
+      "description": "Synthetic control 11"
+    },
+    {
+      "control_id": "CTRL-012",
+      "control_identifier": "CTRL-012",
+      "control_type": "process",
+      "description": "Synthetic control 12"
+    }
+  ],
+  "dataset_version": "r1-day3-golden-v1",
+  "evidence": [
+    {
+      "content": "Supplier process change became effective before Component Rev B.",
+      "document_path": "source/evidence/EV-VS001-001.md",
+      "event_timestamp": "2026-01-11",
+      "evidence_id": "EV-VS001-001",
+      "evidence_type": "supplier_process_notification",
+      "ingestion_timestamp": "2026-02-02",
+      "investigation_id": "INV-001",
+      "quality": "higher",
+      "recorded_timestamp": "2026-01-16",
+      "source": "approved_supplier_record",
+      "title": "NovaCap process-change notification"
+    },
+    {
+      "content": "Component Rev B introduced after supplier process change.",
+      "document_path": "source/evidence/EV-VS001-002.md",
+      "event_timestamp": "2026-01-12",
+      "evidence_id": "EV-VS001-002",
+      "evidence_type": "engineering_change_record",
+      "ingestion_timestamp": "2026-02-03",
+      "investigation_id": "INV-001",
+      "quality": "higher",
+      "recorded_timestamp": "2026-01-17",
+      "source": "formal_change_record",
+      "title": "Power module Rev B engineering change"
+    },
+    {
+      "content": "Several Rev D lots used Component Rev B; LOT-010 and LOT-013 have incomplete traceability.",
+      "document_path": "source/evidence/EV-VS001-003.md",
+      "event_timestamp": "2026-01-13",
+      "evidence_id": "EV-VS001-003",
+      "evidence_type": "manufacturing_record",
+      "ingestion_timestamp": "2026-04-08",
+      "investigation_id": "INV-001",
+      "quality": "higher",
+      "recorded_timestamp": "2026-01-18",
+      "source": "controlled_manufacturing_record",
+      "title": "Rev D lots component genealogy"
+    },
+    {
+      "content": "Shutdown complaints increased after Rev D field deployment.",
+      "document_path": "source/evidence/EV-VS001-004.md",
+      "event_timestamp": "2026-01-14",
+      "evidence_id": "EV-VS001-004",
+      "evidence_type": "complaint_summary",
+      "ingestion_timestamp": "2026-02-05",
+      "investigation_id": "INV-001",
+      "quality": "higher",
+      "recorded_timestamp": "2026-01-19",
+      "source": "qms_summary",
+      "title": "Shutdown complaint frequency trend"
+    },
+    {
+      "content": "Relevant Rev B validation test passed acceptance criteria.",
+      "document_path": "source/evidence/EV-VS001-005.md",
+      "event_timestamp": "2026-01-15",
+      "evidence_id": "EV-VS001-005",
+      "evidence_type": "validation_report",
+      "ingestion_timestamp": "2026-02-06",
+      "investigation_id": "INV-001",
+      "quality": "higher",
+      "recorded_timestamp": "2026-01-20",
+      "source": "approved_validation_report",
+      "title": "Rev B qualification passed"
+    },
+    {
+      "content": "At least three shutdown complaints existed before Component Rev B.",
+      "document_path": "source/evidence/EV-VS001-006.md",
+      "event_timestamp": "2026-01-16",
+      "evidence_id": "EV-VS001-006",
+      "evidence_type": "complaint_history",
+      "ingestion_timestamp": "2026-02-07",
+      "investigation_id": "INV-001",
+      "quality": "higher",
+      "recorded_timestamp": "2026-01-21",
+      "source": "qms_records",
+      "title": "Pre-Rev B shutdown complaints"
+    },
+    {
+      "content": "No controlled comparative Rev A vs Rev B test was available.",
+      "document_path": "source/evidence/EV-VS001-007.md",
+      "event_timestamp": "2026-01-17",
+      "evidence_id": "EV-VS001-007",
+      "evidence_type": "investigation_note",
+      "ingestion_timestamp": "2026-02-08",
+      "investigation_id": "INV-001",
+      "quality": "uncertain",
+      "recorded_timestamp": "2026-01-22",
+      "source": "investigation_note",
+      "title": "Comparative Rev A versus Rev B testing unavailable"
+    },
+    {
+      "content": "Packaging label changed near complaint increase but has no electrical mechanism.",
+      "document_path": "source/evidence/EV-VS002-001.md",
+      "event_timestamp": "2026-01-18",
+      "evidence_id": "EV-VS002-001",
+      "evidence_type": "engineering_change_record",
+      "ingestion_timestamp": "2026-02-09",
+      "investigation_id": "INV-008",
+      "quality": "higher",
+      "recorded_timestamp": "2026-01-23",
+      "source": "formal_change_record",
+      "title": "Packaging label revision"
+    },
+    {
+      "content": "Historical closure did not address pre-Rev B complaints.",
+      "document_path": "source/evidence/EV-VS007-001.md",
+      "event_timestamp": "2026-01-19",
+      "evidence_id": "EV-VS007-001",
+      "evidence_type": "investigation_note",
+      "ingestion_timestamp": "2026-02-10",
+      "investigation_id": "INV-009",
+      "quality": "uncertain",
+      "recorded_timestamp": "2026-01-24",
+      "source": "investigation_note",
+      "title": "Closure rationale with unresolved contradiction"
+    },
+    {
+      "content": "Same evidence packet evaluated under two model metadata records.",
+      "document_path": "source/evidence/EV-VS010-001.md",
+      "event_timestamp": "2026-01-20",
+      "evidence_id": "EV-VS010-001",
+      "evidence_type": "ai_run_metadata",
+      "ingestion_timestamp": "2026-02-11",
+      "investigation_id": "INV-010",
+      "quality": "higher",
+      "recorded_timestamp": "2026-01-25",
+      "source": "evaluation_fixture",
+      "title": "AI model change comparison fixture"
+    },
+    {
+      "content": "Concise synthetic evidence content 11.",
+      "document_path": "source/evidence/EV-GEN-011.md",
+      "event_timestamp": "2026-01-21",
+      "evidence_id": "EV-GEN-011",
+      "evidence_type": "service_observation",
+      "ingestion_timestamp": "2026-02-12",
+      "investigation_id": "INV-001",
+      "quality": "higher",
+      "recorded_timestamp": "2026-01-26",
+      "source": "controlled_document",
+      "title": "Synthetic evidence artifact 11"
+    },
+    {
+      "content": "Concise synthetic evidence content 12.",
+      "document_path": "source/evidence/EV-GEN-012.md",
+      "event_timestamp": "2026-01-22",
+      "evidence_id": "EV-GEN-012",
+      "evidence_type": "risk_analysis_excerpt",
+      "ingestion_timestamp": "2026-02-13",
+      "investigation_id": "INV-002",
+      "quality": "uncertain",
+      "recorded_timestamp": "2026-01-27",
+      "source": "field_note",
+      "title": "Synthetic evidence artifact 12"
+    },
+    {
+      "content": "Concise synthetic evidence content 13.",
+      "document_path": "source/evidence/EV-GEN-013.md",
+      "event_timestamp": "2026-01-23",
+      "evidence_id": "EV-GEN-013",
+      "evidence_type": "service_observation",
+      "ingestion_timestamp": "2026-02-14",
+      "investigation_id": "INV-003",
+      "quality": "higher",
+      "recorded_timestamp": "2026-01-28",
+      "source": "controlled_document",
+      "title": "Synthetic evidence artifact 13"
+    },
+    {
+      "content": "Concise synthetic evidence content 14.",
+      "document_path": "source/evidence/EV-GEN-014.md",
+      "event_timestamp": "2026-01-24",
+      "evidence_id": "EV-GEN-014",
+      "evidence_type": "service_observation",
+      "ingestion_timestamp": "2026-02-15",
+      "investigation_id": "INV-004",
+      "quality": "higher",
+      "recorded_timestamp": "2026-01-29",
+      "source": "field_note",
+      "title": "Synthetic evidence artifact 14"
+    },
+    {
+      "content": "Concise synthetic evidence content 15.",
+      "document_path": "source/evidence/EV-GEN-015.md",
+      "event_timestamp": "2026-01-25",
+      "evidence_id": "EV-GEN-015",
+      "evidence_type": "risk_analysis_excerpt",
+      "ingestion_timestamp": "2026-02-16",
+      "investigation_id": "INV-005",
+      "quality": "higher",
+      "recorded_timestamp": "2026-01-30",
+      "source": "controlled_document",
+      "title": "Synthetic evidence artifact 15"
+    },
+    {
+      "content": "Concise synthetic evidence content 16.",
+      "document_path": "source/evidence/EV-GEN-016.md",
+      "event_timestamp": "2026-01-26",
+      "evidence_id": "EV-GEN-016",
+      "evidence_type": "service_observation",
+      "ingestion_timestamp": "2026-02-17",
+      "investigation_id": "INV-006",
+      "quality": "uncertain",
+      "recorded_timestamp": "2026-01-31",
+      "source": "field_note",
+      "title": "Synthetic evidence artifact 16"
+    },
+    {
+      "content": "Concise synthetic evidence content 17.",
+      "document_path": "source/evidence/EV-GEN-017.md",
+      "event_timestamp": "2026-01-27",
+      "evidence_id": "EV-GEN-017",
+      "evidence_type": "service_observation",
+      "ingestion_timestamp": "2026-02-18",
+      "investigation_id": "INV-007",
+      "quality": "higher",
+      "recorded_timestamp": "2026-02-01",
+      "source": "controlled_document",
+      "title": "Synthetic evidence artifact 17"
+    },
+    {
+      "content": "Concise synthetic evidence content 18.",
+      "document_path": "source/evidence/EV-GEN-018.md",
+      "event_timestamp": "2026-01-28",
+      "evidence_id": "EV-GEN-018",
+      "evidence_type": "risk_analysis_excerpt",
+      "ingestion_timestamp": "2026-02-19",
+      "investigation_id": "INV-008",
+      "quality": "higher",
+      "recorded_timestamp": "2026-02-02",
+      "source": "field_note",
+      "title": "Synthetic evidence artifact 18"
+    },
+    {
+      "content": "Concise synthetic evidence content 19.",
+      "document_path": "source/evidence/EV-GEN-019.md",
+      "event_timestamp": "2026-01-29",
+      "evidence_id": "EV-GEN-019",
+      "evidence_type": "service_observation",
+      "ingestion_timestamp": "2026-02-20",
+      "investigation_id": "INV-009",
+      "quality": "higher",
+      "recorded_timestamp": "2026-02-03",
+      "source": "controlled_document",
+      "title": "Synthetic evidence artifact 19"
+    },
+    {
+      "content": "Concise synthetic evidence content 20.",
+      "document_path": "source/evidence/EV-GEN-020.md",
+      "event_timestamp": "2026-01-30",
+      "evidence_id": "EV-GEN-020",
+      "evidence_type": "service_observation",
+      "ingestion_timestamp": "2026-02-21",
+      "investigation_id": "INV-010",
+      "quality": "uncertain",
+      "recorded_timestamp": "2026-02-04",
+      "source": "field_note",
+      "title": "Synthetic evidence artifact 20"
+    },
+    {
+      "content": "Concise synthetic evidence content 21.",
+      "document_path": "source/evidence/EV-GEN-021.md",
+      "event_timestamp": "2026-01-31",
+      "evidence_id": "EV-GEN-021",
+      "evidence_type": "risk_analysis_excerpt",
+      "ingestion_timestamp": "2026-02-22",
+      "investigation_id": "INV-001",
+      "quality": "higher",
+      "recorded_timestamp": "2026-02-05",
+      "source": "controlled_document",
+      "title": "Synthetic evidence artifact 21"
+    },
+    {
+      "content": "Concise synthetic evidence content 22.",
+      "document_path": "source/evidence/EV-GEN-022.md",
+      "event_timestamp": "2026-02-01",
+      "evidence_id": "EV-GEN-022",
+      "evidence_type": "service_observation",
+      "ingestion_timestamp": "2026-02-23",
+      "investigation_id": "INV-002",
+      "quality": "higher",
+      "recorded_timestamp": "2026-02-06",
+      "source": "field_note",
+      "title": "Synthetic evidence artifact 22"
+    },
+    {
+      "content": "Concise synthetic evidence content 23.",
+      "document_path": "source/evidence/EV-GEN-023.md",
+      "event_timestamp": "2026-02-02",
+      "evidence_id": "EV-GEN-023",
+      "evidence_type": "service_observation",
+      "ingestion_timestamp": "2026-02-24",
+      "investigation_id": "INV-003",
+      "quality": "higher",
+      "recorded_timestamp": "2026-02-07",
+      "source": "controlled_document",
+      "title": "Synthetic evidence artifact 23"
+    },
+    {
+      "content": "Concise synthetic evidence content 24.",
+      "document_path": "source/evidence/EV-GEN-024.md",
+      "event_timestamp": "2026-02-03",
+      "evidence_id": "EV-GEN-024",
+      "evidence_type": "risk_analysis_excerpt",
+      "ingestion_timestamp": "2026-02-25",
+      "investigation_id": "INV-004",
+      "quality": "uncertain",
+      "recorded_timestamp": "2026-02-08",
+      "source": "field_note",
+      "title": "Synthetic evidence artifact 24"
+    },
+    {
+      "content": "Concise synthetic evidence content 25.",
+      "document_path": "source/evidence/EV-GEN-025.md",
+      "event_timestamp": "2026-02-04",
+      "evidence_id": "EV-GEN-025",
+      "evidence_type": "service_observation",
+      "ingestion_timestamp": "2026-02-26",
+      "investigation_id": "INV-005",
+      "quality": "higher",
+      "recorded_timestamp": "2026-02-09",
+      "source": "controlled_document",
+      "title": "Synthetic evidence artifact 25"
+    },
+    {
+      "content": "Concise synthetic evidence content 26.",
+      "document_path": "source/evidence/EV-GEN-026.md",
+      "event_timestamp": "2026-02-05",
+      "evidence_id": "EV-GEN-026",
+      "evidence_type": "service_observation",
+      "ingestion_timestamp": "2026-02-27",
+      "investigation_id": "INV-006",
+      "quality": "higher",
+      "recorded_timestamp": "2026-02-10",
+      "source": "field_note",
+      "title": "Synthetic evidence artifact 26"
+    },
+    {
+      "content": "Concise synthetic evidence content 27.",
+      "document_path": "source/evidence/EV-GEN-027.md",
+      "event_timestamp": "2026-02-06",
+      "evidence_id": "EV-GEN-027",
+      "evidence_type": "risk_analysis_excerpt",
+      "ingestion_timestamp": "2026-02-28",
+      "investigation_id": "INV-007",
+      "quality": "higher",
+      "recorded_timestamp": "2026-02-11",
+      "source": "controlled_document",
+      "title": "Synthetic evidence artifact 27"
+    },
+    {
+      "content": "Concise synthetic evidence content 28.",
+      "document_path": "source/evidence/EV-GEN-028.md",
+      "event_timestamp": "2026-02-07",
+      "evidence_id": "EV-GEN-028",
+      "evidence_type": "service_observation",
+      "ingestion_timestamp": "2026-03-01",
+      "investigation_id": "INV-008",
+      "quality": "uncertain",
+      "recorded_timestamp": "2026-02-12",
+      "source": "field_note",
+      "title": "Synthetic evidence artifact 28"
+    },
+    {
+      "content": "Concise synthetic evidence content 29.",
+      "document_path": "source/evidence/EV-GEN-029.md",
+      "event_timestamp": "2026-02-08",
+      "evidence_id": "EV-GEN-029",
+      "evidence_type": "service_observation",
+      "ingestion_timestamp": "2026-03-02",
+      "investigation_id": "INV-009",
+      "quality": "higher",
+      "recorded_timestamp": "2026-02-13",
+      "source": "controlled_document",
+      "title": "Synthetic evidence artifact 29"
+    },
+    {
+      "content": "Concise synthetic evidence content 30.",
+      "document_path": "source/evidence/EV-GEN-030.md",
+      "event_timestamp": "2026-02-09",
+      "evidence_id": "EV-GEN-030",
+      "evidence_type": "risk_analysis_excerpt",
+      "ingestion_timestamp": "2026-03-03",
+      "investigation_id": "INV-010",
+      "quality": "higher",
+      "recorded_timestamp": "2026-02-14",
+      "source": "field_note",
+      "title": "Synthetic evidence artifact 30"
+    },
+    {
+      "content": "Concise synthetic evidence content 31.",
+      "document_path": "source/evidence/EV-GEN-031.md",
+      "event_timestamp": "2026-02-10",
+      "evidence_id": "EV-GEN-031",
+      "evidence_type": "service_observation",
+      "ingestion_timestamp": "2026-03-04",
+      "investigation_id": "INV-001",
+      "quality": "higher",
+      "recorded_timestamp": "2026-02-15",
+      "source": "controlled_document",
+      "title": "Synthetic evidence artifact 31"
+    },
+    {
+      "content": "Concise synthetic evidence content 32.",
+      "document_path": "source/evidence/EV-GEN-032.md",
+      "event_timestamp": "2026-02-11",
+      "evidence_id": "EV-GEN-032",
+      "evidence_type": "service_observation",
+      "ingestion_timestamp": "2026-03-05",
+      "investigation_id": "INV-002",
+      "quality": "uncertain",
+      "recorded_timestamp": "2026-02-16",
+      "source": "field_note",
+      "title": "Synthetic evidence artifact 32"
+    },
+    {
+      "content": "Concise synthetic evidence content 33.",
+      "document_path": "source/evidence/EV-GEN-033.md",
+      "event_timestamp": "2026-02-12",
+      "evidence_id": "EV-GEN-033",
+      "evidence_type": "risk_analysis_excerpt",
+      "ingestion_timestamp": "2026-03-06",
+      "investigation_id": "INV-003",
+      "quality": "higher",
+      "recorded_timestamp": "2026-02-17",
+      "source": "controlled_document",
+      "title": "Synthetic evidence artifact 33"
+    },
+    {
+      "content": "Concise synthetic evidence content 34.",
+      "document_path": "source/evidence/EV-GEN-034.md",
+      "event_timestamp": "2026-02-13",
+      "evidence_id": "EV-GEN-034",
+      "evidence_type": "service_observation",
+      "ingestion_timestamp": "2026-03-07",
+      "investigation_id": "INV-004",
+      "quality": "higher",
+      "recorded_timestamp": "2026-02-18",
+      "source": "field_note",
+      "title": "Synthetic evidence artifact 34"
+    },
+    {
+      "content": "Concise synthetic evidence content 35.",
+      "document_path": "source/evidence/EV-GEN-035.md",
+      "event_timestamp": "2026-02-14",
+      "evidence_id": "EV-GEN-035",
+      "evidence_type": "service_observation",
+      "ingestion_timestamp": "2026-03-08",
+      "investigation_id": "INV-005",
+      "quality": "higher",
+      "recorded_timestamp": "2026-02-19",
+      "source": "controlled_document",
+      "title": "Synthetic evidence artifact 35"
+    },
+    {
+      "content": "Concise synthetic evidence content 36.",
+      "document_path": "source/evidence/EV-GEN-036.md",
+      "event_timestamp": "2026-02-15",
+      "evidence_id": "EV-GEN-036",
+      "evidence_type": "risk_analysis_excerpt",
+      "ingestion_timestamp": "2026-03-09",
+      "investigation_id": "INV-006",
+      "quality": "uncertain",
+      "recorded_timestamp": "2026-02-20",
+      "source": "field_note",
+      "title": "Synthetic evidence artifact 36"
+    },
+    {
+      "content": "Concise synthetic evidence content 37.",
+      "document_path": "source/evidence/EV-GEN-037.md",
+      "event_timestamp": "2026-02-16",
+      "evidence_id": "EV-GEN-037",
+      "evidence_type": "service_observation",
+      "ingestion_timestamp": "2026-03-10",
+      "investigation_id": "INV-007",
+      "quality": "higher",
+      "recorded_timestamp": "2026-02-21",
+      "source": "controlled_document",
+      "title": "Synthetic evidence artifact 37"
+    },
+    {
+      "content": "Concise synthetic evidence content 38.",
+      "document_path": "source/evidence/EV-GEN-038.md",
+      "event_timestamp": "2026-02-17",
+      "evidence_id": "EV-GEN-038",
+      "evidence_type": "service_observation",
+      "ingestion_timestamp": "2026-03-11",
+      "investigation_id": "INV-008",
+      "quality": "higher",
+      "recorded_timestamp": "2026-02-22",
+      "source": "field_note",
+      "title": "Synthetic evidence artifact 38"
+    }
+  ],
+  "failure_chains": [
+    {
+      "edges": [
+        {
+          "from": "Supplier Process Change",
+          "status": "SUPPORTED",
+          "to": "Component Rev B"
+        },
+        {
+          "from": "Component Rev B",
+          "status": "ESTABLISHED",
+          "to": "Product Rev D"
+        },
+        {
+          "from": "Product Rev D",
+          "status": "SUPPORTED",
+          "to": "Affected lots"
+        },
+        {
+          "from": "Affected lots",
+          "status": "HYPOTHESIZED",
+          "to": "Shutdown complaints"
+        }
+      ],
+      "failure_chain_id": "FC-VS001",
+      "investigation_id": "INV-001",
+      "nodes": [
+        "Supplier Process Change",
+        "Component Rev B",
+        "Product Rev D",
+        "Affected lots",
+        "Shutdown complaints"
+      ]
+    }
+  ],
+  "failure_modes": [
+    {
+      "failure_mode_id": "FM-001",
+      "failure_mode_identifier": "FM-001",
+      "name": "Intermittent shutdown"
+    },
+    {
+      "failure_mode_id": "FM-002",
+      "failure_mode_identifier": "FM-002",
+      "name": "Delayed restart"
+    },
+    {
+      "failure_mode_id": "FM-003",
+      "failure_mode_identifier": "FM-003",
+      "name": "False alarm"
+    },
+    {
+      "failure_mode_id": "FM-004",
+      "failure_mode_identifier": "FM-004",
+      "name": "Display freeze"
+    },
+    {
+      "failure_mode_id": "FM-005",
+      "failure_mode_identifier": "FM-005",
+      "name": "Battery warning"
+    },
+    {
+      "failure_mode_id": "FM-006",
+      "failure_mode_identifier": "FM-006",
+      "name": "Flow interruption"
+    },
+    {
+      "failure_mode_id": "FM-007",
+      "failure_mode_identifier": "FM-007",
+      "name": "Connector intermittency"
+    },
+    {
+      "failure_mode_id": "FM-008",
+      "failure_mode_identifier": "FM-008",
+      "name": "Sensor drift"
+    },
+    {
+      "failure_mode_id": "FM-009",
+      "failure_mode_identifier": "FM-009",
+      "name": "Seal leak"
+    },
+    {
+      "failure_mode_id": "FM-010",
+      "failure_mode_identifier": "FM-010",
+      "name": "Label mismatch"
+    },
+    {
+      "failure_mode_id": "FM-011",
+      "failure_mode_identifier": "FM-011",
+      "name": "Charging interruption"
+    },
+    {
+      "failure_mode_id": "FM-012",
+      "failure_mode_identifier": "FM-012",
+      "name": "Housing crack"
+    },
+    {
+      "failure_mode_id": "FM-013",
+      "failure_mode_identifier": "FM-013",
+      "name": "Speaker low volume"
+    },
+    {
+      "failure_mode_id": "FM-014",
+      "failure_mode_identifier": "FM-014",
+      "name": "Firmware log overflow"
+    },
+    {
+      "failure_mode_id": "FM-015",
+      "failure_mode_identifier": "FM-015",
+      "name": "No fault found"
+    }
+  ],
+  "hypotheses": [
+    {
+      "hypothesis_id": "HYP-VS001-LEAD",
+      "investigation_id": "INV-001",
+      "origin": "human",
+      "statement": "Component Rev B may have contributed to the shutdown complaint increase."
+    },
+    {
+      "hypothesis_id": "HYP-VS001-FALSE",
+      "investigation_id": "INV-001",
+      "origin": "human",
+      "statement": "Packaging label revision may explain the shutdown complaint increase."
+    },
+    {
+      "hypothesis_id": "HYP-VS011-MULTI",
+      "investigation_id": "INV-001",
+      "origin": "human",
+      "statement": "Multiple mechanisms may explain different shutdown subsets."
+    }
+  ],
+  "intentional_anomalies": [
+    {
+      "anomaly_id": "ANOM-ID-001",
+      "description": "PRD-100-D, PRD100 Rev D, and Product-100 / Revision D refer to PV-ASTER-D",
+      "type": "identity_variation"
+    },
+    {
+      "anomaly_id": "ANOM-SUP-001",
+      "description": "Nova Cap and NVC Components refer to NovaCap Components",
+      "type": "supplier_alias"
+    },
+    {
+      "anomaly_id": "ANOM-LOT-001",
+      "description": "LOT-010 and LOT-013 have incomplete Component Rev B genealogy",
+      "type": "missing_traceability"
+    },
+    {
+      "anomaly_id": "ANOM-DATE-001",
+      "description": "Complaint events occur days before QMS entry and MDARIX ingestion",
+      "type": "delayed_record_entry"
+    },
+    {
+      "anomaly_id": "ANOM-DUP-001",
+      "description": "QMS-00044 and QMS-00045 are controlled duplicate candidates",
+      "type": "duplicate_candidate"
+    },
+    {
+      "anomaly_id": "ANOM-TIME-001",
+      "description": "LOT genealogy evidence arrived after an initial closure decision",
+      "type": "late_arriving_evidence"
+    },
+    {
+      "anomaly_id": "ANOM-FALSE-001",
+      "description": "Packaging label revision occurs near complaint increase but is non-causal",
+      "type": "false_correlation"
+    },
+    {
+      "anomaly_id": "ANOM-MULTI-001",
+      "description": "Some shutdown complaints align with a pre-existing connector intermittency condition",
+      "type": "multiple_causes"
+    }
+  ],
+  "investigations": [
+    {
+      "investigation_id": "INV-001",
+      "investigation_identifier": "INV-001",
+      "opened_at": "2026-02-23",
+      "product_id": "PRD-ASTER-100",
+      "question": "Why did intermittent device shutdown complaints increase after Product Rev D was introduced?",
+      "status": "open"
+    },
+    {
+      "investigation_id": "INV-002",
+      "investigation_identifier": "INV-002",
+      "opened_at": "2026-02-26",
+      "product_id": "PRD-ASTER-100",
+      "question": "Did the package label revision influence shutdown complaints?",
+      "status": "closed"
+    },
+    {
+      "investigation_id": "INV-003",
+      "investigation_identifier": "INV-003",
+      "opened_at": "2026-03-01",
+      "product_id": "PRD-ASTER-100",
+      "question": "Which records are missing for affected lots?",
+      "status": "open"
+    },
+    {
+      "investigation_id": "INV-004",
+      "investigation_identifier": "INV-004",
+      "opened_at": "2026-03-04",
+      "product_id": "PRD-ASTER-100",
+      "question": "Why do source timelines conflict for Component Rev B?",
+      "status": "closed"
+    },
+    {
+      "investigation_id": "INV-005",
+      "investigation_identifier": "INV-005",
+      "opened_at": "2026-03-07",
+      "product_id": "PRD-ASTER-100",
+      "question": "Which lots share the Power Regulation Module?",
+      "status": "closed"
+    },
+    {
+      "investigation_id": "INV-006",
+      "investigation_identifier": "INV-006",
+      "opened_at": "2026-03-10",
+      "product_id": "PRD-ASTER-100",
+      "question": "Was investigation INV-006 closed prematurely?",
+      "status": "closed"
+    },
+    {
+      "investigation_id": "INV-007",
+      "investigation_identifier": "INV-007",
+      "opened_at": "2026-03-13",
+      "product_id": "PRD-ASTER-100",
+      "question": "Did process control drift contribute to the complaint cluster?",
+      "status": "closed"
+    },
+    {
+      "investigation_id": "INV-008",
+      "investigation_identifier": "INV-008",
+      "opened_at": "2026-03-16",
+      "product_id": "PRD-NIMBUS-200",
+      "question": "What constrained counterfactual can be evaluated for Rev B?",
+      "status": "closed"
+    },
+    {
+      "investigation_id": "INV-009",
+      "investigation_identifier": "INV-009",
+      "opened_at": "2026-03-19",
+      "product_id": "PRD-NIMBUS-200",
+      "question": "How should AI model-change outputs be compared?",
+      "status": "closed"
+    },
+    {
+      "investigation_id": "INV-010",
+      "investigation_identifier": "INV-010",
+      "opened_at": "2026-03-22",
+      "product_id": "PRD-NIMBUS-200",
+      "question": "When should MDARIX abstain due to insufficient evidence?",
+      "status": "open"
+    }
+  ],
+  "lots": [
+    {
+      "lot_id": "LOT-001",
+      "lot_identifier": "GEN-26-001",
+      "manufactured_timestamp": "2026-01-21",
+      "manufacturing_site_id": "SITE-RIVER",
+      "product_version_id": "PV-ASTER-C",
+      "traceability_status": "complete"
+    },
+    {
+      "lot_id": "LOT-002",
+      "lot_identifier": "GEN-26-002",
+      "manufactured_timestamp": "2026-01-22",
+      "manufacturing_site_id": "SITE-SUMMIT",
+      "product_version_id": "PV-ASTER-C",
+      "traceability_status": "complete"
+    },
+    {
+      "lot_id": "LOT-003",
+      "lot_identifier": "GEN-26-003",
+      "manufactured_timestamp": "2026-01-23",
+      "manufacturing_site_id": "SITE-RIVER",
+      "product_version_id": "PV-ASTER-C",
+      "traceability_status": "complete"
+    },
+    {
+      "lot_id": "LOT-004",
+      "lot_identifier": "GEN-26-004",
+      "manufactured_timestamp": "2026-01-24",
+      "manufacturing_site_id": "SITE-SUMMIT",
+      "product_version_id": "PV-ASTER-C",
+      "traceability_status": "complete"
+    },
+    {
+      "lot_id": "LOT-005",
+      "lot_identifier": "GEN-26-005",
+      "manufactured_timestamp": "2026-01-25",
+      "manufacturing_site_id": "SITE-RIVER",
+      "product_version_id": "PV-ASTER-C",
+      "traceability_status": "complete"
+    },
+    {
+      "lot_id": "LOT-006",
+      "lot_identifier": "GEN-26-006",
+      "manufactured_timestamp": "2026-01-26",
+      "manufacturing_site_id": "SITE-SUMMIT",
+      "product_version_id": "PV-ASTER-C",
+      "traceability_status": "complete"
+    },
+    {
+      "lot_id": "LOT-007",
+      "lot_identifier": "GEN-26-007",
+      "manufactured_timestamp": "2026-01-27",
+      "manufacturing_site_id": "SITE-RIVER",
+      "product_version_id": "PV-ASTER-C",
+      "traceability_status": "complete"
+    },
+    {
+      "lot_id": "LOT-008",
+      "lot_identifier": "AFD-26-008",
+      "manufactured_timestamp": "2026-01-28",
+      "manufacturing_site_id": "SITE-SUMMIT",
+      "product_version_id": "PV-ASTER-D",
+      "traceability_status": "complete"
+    },
+    {
+      "lot_id": "LOT-009",
+      "lot_identifier": "AFD-26-009",
+      "manufactured_timestamp": "2026-01-29",
+      "manufacturing_site_id": "SITE-RIVER",
+      "product_version_id": "PV-ASTER-D",
+      "traceability_status": "complete"
+    },
+    {
+      "lot_id": "LOT-010",
+      "lot_identifier": "AFD-26-010",
+      "manufactured_timestamp": "2026-01-30",
+      "manufacturing_site_id": "SITE-SUMMIT",
+      "product_version_id": "PV-ASTER-D",
+      "traceability_status": "incomplete"
+    },
+    {
+      "lot_id": "LOT-011",
+      "lot_identifier": "AFD-26-011",
+      "manufactured_timestamp": "2026-01-31",
+      "manufacturing_site_id": "SITE-RIVER",
+      "product_version_id": "PV-ASTER-D",
+      "traceability_status": "complete"
+    },
+    {
+      "lot_id": "LOT-012",
+      "lot_identifier": "AFD-26-012",
+      "manufactured_timestamp": "2026-02-01",
+      "manufacturing_site_id": "SITE-SUMMIT",
+      "product_version_id": "PV-ASTER-D",
+      "traceability_status": "complete"
+    },
+    {
+      "lot_id": "LOT-013",
+      "lot_identifier": "AFD-26-013",
+      "manufactured_timestamp": "2026-02-02",
+      "manufacturing_site_id": "SITE-RIVER",
+      "product_version_id": "PV-ASTER-D",
+      "traceability_status": "incomplete"
+    },
+    {
+      "lot_id": "LOT-014",
+      "lot_identifier": "AFD-26-014",
+      "manufactured_timestamp": "2026-02-03",
+      "manufacturing_site_id": "SITE-SUMMIT",
+      "product_version_id": "PV-ASTER-D",
+      "traceability_status": "complete"
+    },
+    {
+      "lot_id": "LOT-015",
+      "lot_identifier": "GEN-26-015",
+      "manufactured_timestamp": "2026-02-04",
+      "manufacturing_site_id": "SITE-RIVER",
+      "product_version_id": "PV-NIMBUS-B",
+      "traceability_status": "complete"
+    },
+    {
+      "lot_id": "LOT-016",
+      "lot_identifier": "GEN-26-016",
+      "manufactured_timestamp": "2026-02-05",
+      "manufacturing_site_id": "SITE-SUMMIT",
+      "product_version_id": "PV-NIMBUS-B",
+      "traceability_status": "complete"
+    },
+    {
+      "lot_id": "LOT-017",
+      "lot_identifier": "GEN-26-017",
+      "manufactured_timestamp": "2026-02-06",
+      "manufacturing_site_id": "SITE-RIVER",
+      "product_version_id": "PV-NIMBUS-B",
+      "traceability_status": "incomplete"
+    },
+    {
+      "lot_id": "LOT-018",
+      "lot_identifier": "GEN-26-018",
+      "manufactured_timestamp": "2026-02-07",
+      "manufacturing_site_id": "SITE-SUMMIT",
+      "product_version_id": "PV-NIMBUS-B",
+      "traceability_status": "complete"
+    }
+  ],
+  "manufacturing_sites": [
+    {
+      "name": "Riverbend Assembly",
+      "site_id": "SITE-RIVER",
+      "site_identifier": "MFG-01"
+    },
+    {
+      "name": "Summit Final Test",
+      "site_id": "SITE-SUMMIT",
+      "site_identifier": "MFG-02"
+    }
+  ],
+  "notice": "MDARIX R1 GOLDEN DATASET - SYNTHETIC TEST DATA ONLY. NOT FOR CLINICAL OR REGULATORY USE.",
+  "product_families": [
+    {
+      "family_id": "FAM-INFUSION",
+      "name": "AsterFlow Infusion Platform"
+    },
+    {
+      "family_id": "FAM-MONITOR",
+      "name": "NimbusView Monitoring Platform"
+    }
+  ],
+  "product_versions": [
+    {
+      "effective_timestamp": "2025-07-01",
+      "product_id": "PRD-ASTER-100",
+      "product_version_id": "PV-ASTER-A",
+      "source_alias": "PRD-100-A",
+      "version_identifier": "Rev A"
+    },
+    {
+      "effective_timestamp": "2025-10-01",
+      "product_id": "PRD-ASTER-100",
+      "product_version_id": "PV-ASTER-B",
+      "source_alias": "PRD100 Rev B",
+      "version_identifier": "Rev B"
+    },
+    {
+      "effective_timestamp": "2025-12-10",
+      "product_id": "PRD-ASTER-100",
+      "product_version_id": "PV-ASTER-C",
+      "source_alias": "Product-100 / Revision C",
+      "version_identifier": "Rev C"
+    },
+    {
+      "effective_timestamp": "2026-01-25",
+      "product_id": "PRD-ASTER-100",
+      "product_version_id": "PV-ASTER-D",
+      "source_alias": "PRD100 Rev D",
+      "version_identifier": "Rev D"
+    },
+    {
+      "effective_timestamp": "2025-08-15",
+      "product_id": "PRD-NIMBUS-200",
+      "product_version_id": "PV-NIMBUS-A",
+      "source_alias": "NV200-A",
+      "version_identifier": "Rev A"
+    },
+    {
+      "effective_timestamp": "2026-02-01",
+      "product_id": "PRD-NIMBUS-200",
+      "product_version_id": "PV-NIMBUS-B",
+      "source_alias": "Nimbus 200 Revision B",
+      "version_identifier": "Rev B"
+    }
+  ],
+  "products": [
+    {
+      "family_id": "FAM-INFUSION",
+      "name": "AsterFlow 100 Controller",
+      "product_id": "PRD-ASTER-100",
+      "product_identifier": "AF-100"
+    },
+    {
+      "family_id": "FAM-MONITOR",
+      "name": "NimbusView 200 Monitor",
+      "product_id": "PRD-NIMBUS-200",
+      "product_identifier": "NV-200"
+    }
+  ],
+  "requirements": [
+    {
+      "product_id": "PRD-ASTER-100",
+      "requirement_id": "REQ-001",
+      "requirement_identifier": "REQ-001",
+      "requirement_type": "performance",
+      "text": "Synthetic lifecycle requirement 1."
+    },
+    {
+      "product_id": "PRD-ASTER-100",
+      "requirement_id": "REQ-002",
+      "requirement_identifier": "REQ-002",
+      "requirement_type": "performance",
+      "text": "Synthetic lifecycle requirement 2."
+    },
+    {
+      "product_id": "PRD-ASTER-100",
+      "requirement_id": "REQ-003",
+      "requirement_identifier": "REQ-003",
+      "requirement_type": "performance",
+      "text": "Synthetic lifecycle requirement 3."
+    },
+    {
+      "product_id": "PRD-ASTER-100",
+      "requirement_id": "REQ-004",
+      "requirement_identifier": "REQ-004",
+      "requirement_type": "safety",
+      "text": "Synthetic lifecycle requirement 4."
+    },
+    {
+      "product_id": "PRD-ASTER-100",
+      "requirement_id": "REQ-005",
+      "requirement_identifier": "REQ-005",
+      "requirement_type": "performance",
+      "text": "Synthetic lifecycle requirement 5."
+    },
+    {
+      "product_id": "PRD-ASTER-100",
+      "requirement_id": "REQ-006",
+      "requirement_identifier": "REQ-006",
+      "requirement_type": "performance",
+      "text": "Synthetic lifecycle requirement 6."
+    },
+    {
+      "product_id": "PRD-ASTER-100",
+      "requirement_id": "REQ-007",
+      "requirement_identifier": "REQ-007",
+      "requirement_type": "performance",
+      "text": "Synthetic lifecycle requirement 7."
+    },
+    {
+      "product_id": "PRD-ASTER-100",
+      "requirement_id": "REQ-008",
+      "requirement_identifier": "REQ-008",
+      "requirement_type": "safety",
+      "text": "Synthetic lifecycle requirement 8."
+    },
+    {
+      "product_id": "PRD-ASTER-100",
+      "requirement_id": "REQ-009",
+      "requirement_identifier": "REQ-009",
+      "requirement_type": "performance",
+      "text": "Synthetic lifecycle requirement 9."
+    },
+    {
+      "product_id": "PRD-ASTER-100",
+      "requirement_id": "REQ-010",
+      "requirement_identifier": "REQ-010",
+      "requirement_type": "performance",
+      "text": "Synthetic lifecycle requirement 10."
+    },
+    {
+      "product_id": "PRD-ASTER-100",
+      "requirement_id": "REQ-011",
+      "requirement_identifier": "REQ-011",
+      "requirement_type": "performance",
+      "text": "Synthetic lifecycle requirement 11."
+    },
+    {
+      "product_id": "PRD-ASTER-100",
+      "requirement_id": "REQ-012",
+      "requirement_identifier": "REQ-012",
+      "requirement_type": "safety",
+      "text": "Synthetic lifecycle requirement 12."
+    },
+    {
+      "product_id": "PRD-ASTER-100",
+      "requirement_id": "REQ-013",
+      "requirement_identifier": "REQ-013",
+      "requirement_type": "performance",
+      "text": "Synthetic lifecycle requirement 13."
+    },
+    {
+      "product_id": "PRD-ASTER-100",
+      "requirement_id": "REQ-014",
+      "requirement_identifier": "REQ-014",
+      "requirement_type": "performance",
+      "text": "Synthetic lifecycle requirement 14."
+    },
+    {
+      "product_id": "PRD-ASTER-100",
+      "requirement_id": "REQ-015",
+      "requirement_identifier": "REQ-015",
+      "requirement_type": "performance",
+      "text": "Synthetic lifecycle requirement 15."
+    },
+    {
+      "product_id": "PRD-ASTER-100",
+      "requirement_id": "REQ-016",
+      "requirement_identifier": "REQ-016",
+      "requirement_type": "safety",
+      "text": "Synthetic lifecycle requirement 16."
+    },
+    {
+      "product_id": "PRD-ASTER-100",
+      "requirement_id": "REQ-017",
+      "requirement_identifier": "REQ-017",
+      "requirement_type": "performance",
+      "text": "Synthetic lifecycle requirement 17."
+    },
+    {
+      "product_id": "PRD-ASTER-100",
+      "requirement_id": "REQ-018",
+      "requirement_identifier": "REQ-018",
+      "requirement_type": "performance",
+      "text": "Synthetic lifecycle requirement 18."
+    },
+    {
+      "product_id": "PRD-NIMBUS-200",
+      "requirement_id": "REQ-019",
+      "requirement_identifier": "REQ-019",
+      "requirement_type": "performance",
+      "text": "Synthetic lifecycle requirement 19."
+    },
+    {
+      "product_id": "PRD-NIMBUS-200",
+      "requirement_id": "REQ-020",
+      "requirement_identifier": "REQ-020",
+      "requirement_type": "safety",
+      "text": "Synthetic lifecycle requirement 20."
+    },
+    {
+      "product_id": "PRD-NIMBUS-200",
+      "requirement_id": "REQ-021",
+      "requirement_identifier": "REQ-021",
+      "requirement_type": "performance",
+      "text": "Synthetic lifecycle requirement 21."
+    },
+    {
+      "product_id": "PRD-NIMBUS-200",
+      "requirement_id": "REQ-022",
+      "requirement_identifier": "REQ-022",
+      "requirement_type": "performance",
+      "text": "Synthetic lifecycle requirement 22."
+    },
+    {
+      "product_id": "PRD-NIMBUS-200",
+      "requirement_id": "REQ-023",
+      "requirement_identifier": "REQ-023",
+      "requirement_type": "performance",
+      "text": "Synthetic lifecycle requirement 23."
+    },
+    {
+      "product_id": "PRD-NIMBUS-200",
+      "requirement_id": "REQ-024",
+      "requirement_identifier": "REQ-024",
+      "requirement_type": "safety",
+      "text": "Synthetic lifecycle requirement 24."
+    }
+  ],
+  "risks": [
+    {
+      "description": "Synthetic risk 1",
+      "product_id": "PRD-ASTER-100",
+      "risk_id": "RISK-001",
+      "risk_identifier": "RISK-001"
+    },
+    {
+      "description": "Synthetic risk 2",
+      "product_id": "PRD-ASTER-100",
+      "risk_id": "RISK-002",
+      "risk_identifier": "RISK-002"
+    },
+    {
+      "description": "Synthetic risk 3",
+      "product_id": "PRD-ASTER-100",
+      "risk_id": "RISK-003",
+      "risk_identifier": "RISK-003"
+    },
+    {
+      "description": "Synthetic risk 4",
+      "product_id": "PRD-ASTER-100",
+      "risk_id": "RISK-004",
+      "risk_identifier": "RISK-004"
+    },
+    {
+      "description": "Synthetic risk 5",
+      "product_id": "PRD-ASTER-100",
+      "risk_id": "RISK-005",
+      "risk_identifier": "RISK-005"
+    },
+    {
+      "description": "Synthetic risk 6",
+      "product_id": "PRD-ASTER-100",
+      "risk_id": "RISK-006",
+      "risk_identifier": "RISK-006"
+    },
+    {
+      "description": "Synthetic risk 7",
+      "product_id": "PRD-ASTER-100",
+      "risk_id": "RISK-007",
+      "risk_identifier": "RISK-007"
+    },
+    {
+      "description": "Synthetic risk 8",
+      "product_id": "PRD-ASTER-100",
+      "risk_id": "RISK-008",
+      "risk_identifier": "RISK-008"
+    },
+    {
+      "description": "Synthetic risk 9",
+      "product_id": "PRD-ASTER-100",
+      "risk_id": "RISK-009",
+      "risk_identifier": "RISK-009"
+    },
+    {
+      "description": "Synthetic risk 10",
+      "product_id": "PRD-ASTER-100",
+      "risk_id": "RISK-010",
+      "risk_identifier": "RISK-010"
+    },
+    {
+      "description": "Synthetic risk 11",
+      "product_id": "PRD-NIMBUS-200",
+      "risk_id": "RISK-011",
+      "risk_identifier": "RISK-011"
+    },
+    {
+      "description": "Synthetic risk 12",
+      "product_id": "PRD-NIMBUS-200",
+      "risk_id": "RISK-012",
+      "risk_identifier": "RISK-012"
+    },
+    {
+      "description": "Synthetic risk 13",
+      "product_id": "PRD-NIMBUS-200",
+      "risk_id": "RISK-013",
+      "risk_identifier": "RISK-013"
+    },
+    {
+      "description": "Synthetic risk 14",
+      "product_id": "PRD-NIMBUS-200",
+      "risk_id": "RISK-014",
+      "risk_identifier": "RISK-014"
+    },
+    {
+      "description": "Synthetic risk 15",
+      "product_id": "PRD-NIMBUS-200",
+      "risk_id": "RISK-015",
+      "risk_identifier": "RISK-015"
+    }
+  ],
+  "scenarios": [
+    {
+      "investigation_id": "INV-001",
+      "scenario_id": "VS001",
+      "title": "Supplier Change Correlation"
+    },
+    {
+      "investigation_id": "INV-002",
+      "scenario_id": "VS002",
+      "title": "False Correlation"
+    },
+    {
+      "investigation_id": "INV-003",
+      "scenario_id": "VS003",
+      "title": "Missing Evidence"
+    },
+    {
+      "investigation_id": "INV-004",
+      "scenario_id": "VS004",
+      "title": "Conflicting Evidence"
+    },
+    {
+      "investigation_id": "INV-005",
+      "scenario_id": "VS005",
+      "title": "Incorrect Timeline"
+    },
+    {
+      "investigation_id": "INV-006",
+      "scenario_id": "VS006",
+      "title": "Shared Component Exposure"
+    },
+    {
+      "investigation_id": "INV-007",
+      "scenario_id": "VS007",
+      "title": "Premature Closure"
+    },
+    {
+      "investigation_id": "INV-008",
+      "scenario_id": "VS008",
+      "title": "Control Failure"
+    },
+    {
+      "investigation_id": "INV-009",
+      "scenario_id": "VS009",
+      "title": "Counterfactual"
+    },
+    {
+      "investigation_id": "INV-010",
+      "scenario_id": "VS010",
+      "title": "AI Model Change"
+    },
+    {
+      "investigation_id": "INV-010",
+      "scenario_id": "VS011",
+      "title": "Multiple Causes"
+    },
+    {
+      "investigation_id": "INV-010",
+      "scenario_id": "VS012",
+      "title": "Correct Abstention"
+    }
+  ],
+  "suppliers": [
+    {
+      "aliases": [
+        "Nova Cap",
+        "NVC Components"
+      ],
+      "name": "NovaCap Components",
+      "supplier_id": "SUP-NOVACAP",
+      "supplier_identifier": "SUP-001"
+    },
+    {
+      "aliases": [
+        "Orbit Flex",
+        "OFX"
+      ],
+      "name": "OrbitFlex Electronics",
+      "supplier_id": "SUP-ORBIT",
+      "supplier_identifier": "SUP-002"
+    },
+    {
+      "aliases": [
+        "Lumen Trace"
+      ],
+      "name": "LumenTrace Plastics",
+      "supplier_id": "SUP-LUMEN",
+      "supplier_identifier": "SUP-003"
+    },
+    {
+      "aliases": [
+        "QS Packaging"
+      ],
+      "name": "QuantaSeal Packaging",
+      "supplier_id": "SUP-QUANTA",
+      "supplier_identifier": "SUP-004"
+    },
+    {
+      "aliases": [
+        "Helios BW"
+      ],
+      "name": "Helios Boardworks",
+      "supplier_id": "SUP-HELIOS",
+      "supplier_identifier": "SUP-005"
+    }
+  ],
+  "tenant": {
+    "fictional": true,
+    "name": "AcmeCare Instruments",
+    "notice": "MDARIX R1 GOLDEN DATASET - SYNTHETIC TEST DATA ONLY. NOT FOR CLINICAL OR REGULATORY USE.",
+    "tenant_id": "ten-acme-care-fictive",
+    "tenant_key": "ACME_CARE_SYNTHETIC"
+  },
+  "unknowns": [
+    {
+      "description": "Comparative Rev A versus Rev B testing unavailable",
+      "evidence_needed": "Controlled comparative test report",
+      "investigation_id": "INV-001",
+      "unknown_id": "UNK-VS001-COMPARE",
+      "why_it_matters": "Limits causality assessment"
+    },
+    {
+      "description": "Lot/component traceability incomplete for LOT-010 and LOT-013",
+      "evidence_needed": "MES component genealogy export",
+      "investigation_id": "INV-001",
+      "unknown_id": "UNK-VS001-TRACE",
+      "why_it_matters": "Limits exposure certainty"
+    },
+    {
+      "description": "Field operating condition not recorded",
+      "evidence_needed": "Field use logs",
+      "investigation_id": "INV-010",
+      "unknown_id": "UNK-VS012-FIELD",
+      "why_it_matters": "Correct behavior is abstention"
+    }
+  ]
+}

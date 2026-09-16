@@ -1,0 +1,46 @@
+{
+  "anomalies": [
+    {
+      "anomaly_id": "ANOM-ID-001",
+      "description": "PRD-100-D, PRD100 Rev D, and Product-100 / Revision D refer to PV-ASTER-D",
+      "type": "identity_variation"
+    },
+    {
+      "anomaly_id": "ANOM-SUP-001",
+      "description": "Nova Cap and NVC Components refer to NovaCap Components",
+      "type": "supplier_alias"
+    },
+    {
+      "anomaly_id": "ANOM-LOT-001",
+      "description": "LOT-010 and LOT-013 have incomplete Component Rev B genealogy",
+      "type": "missing_traceability"
+    },
+    {
+      "anomaly_id": "ANOM-DATE-001",
+      "description": "Complaint events occur days before QMS entry and MDARIX ingestion",
+      "type": "delayed_record_entry"
+    },
+    {
+      "anomaly_id": "ANOM-DUP-001",
+      "description": "QMS-00044 and QMS-00045 are controlled duplicate candidates",
+      "type": "duplicate_candidate"
+    },
+    {
+      "anomaly_id": "ANOM-TIME-001",
+      "description": "LOT genealogy evidence arrived after an initial closure decision",
+      "type": "late_arriving_evidence"
+    },
+    {
+      "anomaly_id": "ANOM-FALSE-001",
+      "description": "Packaging label revision occurs near complaint increase but is non-causal",
+      "type": "false_correlation"
+    },
+    {
+      "anomaly_id": "ANOM-MULTI-001",
+      "description": "Some shutdown complaints align with a pre-existing connector intermittency condition",
+      "type": "multiple_causes"
+    }
+  ],
+  "evaluation_only": true,
+  "notice": "MDARIX R1 GOLDEN DATASET - SYNTHETIC TEST DATA ONLY. NOT FOR CLINICAL OR REGULATORY USE."
+}

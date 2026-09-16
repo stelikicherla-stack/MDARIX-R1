@@ -1,0 +1,17 @@
+component_id,component_identifier,name,revision,supplier_id,description
+COMP-PWR,C-001,Power Regulation Module,Rev B,SUP-NOVACAP,Synthetic power regulation module used for R1 evaluation.
+COMP-CAP,C-002,Reservoir Capacitor,Rev B,SUP-NOVACAP,Synthetic reservoir capacitor used for R1 evaluation.
+COMP-FW,C-003,Firmware Control Package,Rev C,SUP-ORBIT,Synthetic firmware control package used for R1 evaluation.
+COMP-SENSOR,C-004,Flow Sensor Board,Rev A,SUP-HELIOS,Synthetic flow sensor board used for R1 evaluation.
+COMP-BATT,C-005,Backup Cell,Rev A,SUP-ORBIT,Synthetic backup cell used for R1 evaluation.
+COMP-CASE,C-006,Outer Housing,Rev C,SUP-LUMEN,Synthetic outer housing used for R1 evaluation.
+COMP-LABEL,C-007,Package Label,Rev A,SUP-QUANTA,Synthetic package label used for R1 evaluation.
+COMP-DISPLAY,C-008,Status Display,Rev A,SUP-HELIOS,Synthetic status display used for R1 evaluation.
+COMP-CONN,C-009,Harness Connector,Rev C,SUP-ORBIT,Synthetic harness connector used for R1 evaluation.
+COMP-PUMP,C-010,Pump Drive,Rev A,SUP-NOVACAP,Synthetic pump drive used for R1 evaluation.
+COMP-VALVE,C-011,Valve Assembly,Rev A,SUP-LUMEN,Synthetic valve assembly used for R1 evaluation.
+COMP-SEAL,C-012,Fluid Seal,Rev C,SUP-LUMEN,Synthetic fluid seal used for R1 evaluation.
+COMP-LOGIC,C-013,Logic Board,Rev A,SUP-HELIOS,Synthetic logic board used for R1 evaluation.
+COMP-CHARGE,C-014,Charge Controller,Rev A,SUP-NOVACAP,Synthetic charge controller used for R1 evaluation.
+COMP-SPEAKER,C-015,Alert Speaker,Rev C,SUP-ORBIT,Synthetic alert speaker used for R1 evaluation.
+COMP-CLIP,C-016,Mounting Clip,Rev A,SUP-QUANTA,Synthetic mounting clip used for R1 evaluation.

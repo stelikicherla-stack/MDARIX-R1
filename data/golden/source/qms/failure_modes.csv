@@ -1,0 +1,16 @@
+failure_mode_id,failure_mode_identifier,name
+FM-001,FM-001,Intermittent shutdown
+FM-002,FM-002,Delayed restart
+FM-003,FM-003,False alarm
+FM-004,FM-004,Display freeze
+FM-005,FM-005,Battery warning
+FM-006,FM-006,Flow interruption
+FM-007,FM-007,Connector intermittency
+FM-008,FM-008,Sensor drift
+FM-009,FM-009,Seal leak
+FM-010,FM-010,Label mismatch
+FM-011,FM-011,Charging interruption
+FM-012,FM-012,Housing crack
+FM-013,FM-013,Speaker low volume
+FM-014,FM-014,Firmware log overflow
+FM-015,FM-015,No fault found
