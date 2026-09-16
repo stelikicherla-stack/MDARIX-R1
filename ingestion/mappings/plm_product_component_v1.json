@@ -1,0 +1,21 @@
+{
+  "source_system": "PLM",
+  "source_type": "plm",
+  "record_type": "product_component",
+  "mapping_version": "PLM_PRODUCT_COMPONENT_V1",
+  "schema_version": "plm.product_component.v1",
+  "required_source_fields": [
+    "product_component_id",
+    "product_version_id",
+    "component_id"
+  ],
+  "field_mappings": {
+    "product_component_id": "source_product_component_id",
+    "product_version_id": "source_product_version_id",
+    "component_id": "source_component_id",
+    "effective_timestamp": "effective_timestamp"
+  },
+  "timestamp_semantics": {
+    "effective_timestamp": "effective_time"
+  }
+}

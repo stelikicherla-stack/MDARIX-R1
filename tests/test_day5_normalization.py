@@ -49,6 +49,17 @@ def test_shared_component_relationship(normalized):
     assert scalar("SELECT count(*) FROM canonical_relationships WHERE relationship_type='COMPONENT_SUPPLIED_BY'") >= 16
 
 
+def test_product_version_component_relationship(normalized):
+    assert scalar("SELECT count(*) FROM product_components") >= 16
+    assert scalar("SELECT count(*) FROM canonical_relationships WHERE relationship_type='PRODUCT_VERSION_HAS_COMPONENT'") >= 16
+    assert scalar(
+        "SELECT count(*) FROM product_components pc "
+        "JOIN product_versions pv ON pv.tenant_id=pc.tenant_id AND pv.id=pc.product_version_id "
+        "JOIN components c ON c.tenant_id=pc.tenant_id AND c.id=pc.component_id "
+        "WHERE pv.source_identifier='PV-ASTER-D' AND c.source_identifier='COMP-PWR'"
+    ) == 1
+
+
 def test_manufacturing_site_identity(normalized):
     assert scalar("SELECT count(*) FROM manufacturing_sites") == 2
 

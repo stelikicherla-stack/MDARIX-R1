@@ -69,18 +69,24 @@ class Product360Service:
             if not product:
                 raise Product360Error("PRODUCT_NOT_FOUND", "Product not found")
             versions = conn.execute(text("SELECT * FROM product_versions WHERE tenant_id=:tenant_id AND product_id=:product_id ORDER BY release_timestamp NULLS LAST, version_identifier"), {"tenant_id": tenant_id, "product_id": product_id}).mappings().all()
+            visible_versions = self.filter_rows_by_time(versions, as_of, mode, "release_timestamp")
             selected = self.select_version(versions, version_id, as_of)
             selected_id = str(selected["id"]) if selected else None
             components = self.components(conn, tenant_id, selected_id)
             suppliers = self.suppliers(conn, tenant_id, components)
             changes = self.changes(conn, tenant_id, product_id, selected_id, components, suppliers)
+            changes = self.filter_rows_by_time(changes, as_of, mode, "effective_timestamp", "event_timestamp")
             lots = self.lots(conn, tenant_id, selected_id)
+            lots = self.filter_rows_by_time(lots, as_of, mode, "manufactured_timestamp")
             complaints = self.complaints(conn, tenant_id, product_id, selected_id, as_of, mode)
+            complaints = self.filter_rows_by_time(complaints, as_of, mode, "ingestion_timestamp", "event_timestamp")
             investigations = self.investigations(conn, tenant_id, product_id)
+            investigations = self.filter_rows_by_time(investigations, as_of, mode, "opened_at")
             risks = conn.execute(text("SELECT id, risk_identifier, description, status FROM risks WHERE tenant_id=:tenant_id AND product_id=:product_id ORDER BY risk_identifier"), {"tenant_id": tenant_id, "product_id": product_id}).mappings().all()
             failure_modes = conn.execute(text("SELECT id, failure_mode_identifier, name FROM failure_modes WHERE tenant_id=:tenant_id ORDER BY failure_mode_identifier"), {"tenant_id": tenant_id}).mappings().all()
             controls = conn.execute(text("SELECT id, control_identifier, control_type, description, status FROM controls WHERE tenant_id=:tenant_id ORDER BY control_identifier"), {"tenant_id": tenant_id}).mappings().all()
             evidence = self.evidence(conn, tenant_id, investigations, as_of, mode)
+            evidence = self.filter_rows_by_time(evidence, as_of, mode, "ingestion_timestamp", "source_timestamp")
             timeline = self.timeline(product, versions, components, suppliers, changes, lots, complaints, investigations, evidence, risks, controls)
             timeline = self.filter_as_of(timeline, as_of, mode)
             limitations = self.limitations(lots, complaints, evidence)
@@ -99,7 +105,7 @@ class Product360Service:
         return Product360Response(
             product=rowdict(product),
             selected_version=rowdict(selected) if selected else None,
-            versions=[rowdict(v) for v in versions],
+            versions=[rowdict(v) for v in visible_versions],
             overview=overview,
             configuration={"components": [rowdict(c) for c in components], "suppliers": [rowdict(s) for s in suppliers]},
             changes=[rowdict(c) for c in changes],
@@ -146,10 +152,8 @@ class Product360Service:
         return conn.execute(
             text(
                 "SELECT DISTINCT c.id, c.component_identifier, c.name, c.revision, c.description, c.status "
-                "FROM components c JOIN canonical_relationships cr ON cr.tenant_id=c.tenant_id AND cr.target_entity_type='component' AND cr.target_entity_id=c.id "
-                "WHERE c.tenant_id=:tenant_id AND cr.source_entity_type='product_version' AND cr.source_entity_id=:version_id "
-                "UNION SELECT c.id, c.component_identifier, c.name, c.revision, c.description, c.status FROM components c "
-                "WHERE c.tenant_id=:tenant_id AND c.component_identifier IN ('COMP-PWR','COMP-CAP','COMP-FW','COMP-CONN') ORDER BY component_identifier"
+                "FROM components c JOIN product_components pc ON pc.tenant_id=c.tenant_id AND pc.component_id=c.id "
+                "WHERE c.tenant_id=:tenant_id AND pc.product_version_id=:version_id ORDER BY c.component_identifier"
             ),
             {"tenant_id": tenant_id, "version_id": version_id},
         ).mappings().all()
@@ -242,6 +246,15 @@ class Product360Service:
         if mode == "known":
             return [e for e in events if (e.knowledge_available_time or e.recorded_time or e.event_time or e.effective_time or datetime.max.replace(tzinfo=timezone.utc)) <= as_of]
         return [e for e in events if (e.event_time or e.effective_time or datetime.max.replace(tzinfo=timezone.utc)) <= as_of]
+
+    def filter_rows_by_time(self, rows, as_of: datetime | None, mode: str, known_key: str, event_key: str | None = None):
+        if not as_of:
+            return rows
+        if as_of.tzinfo is None:
+            as_of = as_of.replace(tzinfo=timezone.utc)
+        primary_key = known_key if mode == "known" else (event_key or known_key)
+        fallback_key = event_key or known_key
+        return [row for row in rows if (row[primary_key] or row[fallback_key]) and (row[primary_key] or row[fallback_key]) <= as_of]
 
     def limitations(self, lots, complaints, evidence) -> list[dict[str, Any]]:
         items = []

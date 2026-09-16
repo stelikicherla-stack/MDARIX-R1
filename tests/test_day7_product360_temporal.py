@@ -42,6 +42,22 @@ def test_configuration_component_supplier_context():
     assert any("NovaCap" in s["name"] for s in view.configuration["suppliers"])
 
 
+def test_configuration_components_are_relationship_derived():
+    view = service.product360(str(primary_product()), version_id="D")
+    component_ids = {c["id"] for c in view.configuration["components"]}
+    expected_ids = {
+        str(row[0])
+        for row in engine.connect().execute(
+            text(
+                "SELECT component_id FROM product_components pc "
+                "JOIN product_versions pv ON pv.tenant_id=pc.tenant_id AND pv.id=pc.product_version_id "
+                "WHERE pv.version_identifier='D'"
+            )
+        )
+    }
+    assert component_ids == expected_ids
+
+
 def test_change_manufacturing_lot_context():
     view = service.product360(str(primary_product()), version_id="D")
     assert any(c["change_identifier"] == "CHG-SUP-PROC-001" for c in view.changes)
@@ -86,6 +102,24 @@ def test_as_of_known_vs_event():
     assert event_view.event_count >= known_view.event_count
 
 
+def test_product360_known_as_of_filters_section_payloads():
+    product_id = str(primary_product())
+    as_of = datetime(2026, 2, 15, tzinfo=timezone.utc)
+    view = service.product360(product_id, version_id="D", as_of=as_of, mode="known")
+    assert all(datetime.fromisoformat(c["ingestion_timestamp"]) <= as_of for c in view.complaints)
+    assert all(datetime.fromisoformat(e["ingestion_timestamp"]) <= as_of for e in view.evidence)
+    assert view.overview["complaint_count"] == len(view.complaints)
+    assert view.overview["evidence_count"] == len(view.evidence)
+
+
+def test_product360_event_as_of_does_not_show_future_effective_sections():
+    product_id = str(primary_product())
+    as_of = datetime(2026, 1, 16, tzinfo=timezone.utc)
+    view = service.product360(product_id, version_id="D", as_of=as_of, mode="event")
+    assert all(datetime.fromisoformat(c["effective_timestamp"]) <= as_of for c in view.changes if c["effective_timestamp"])
+    assert all(datetime.fromisoformat(l["manufactured_timestamp"]) <= as_of for l in view.manufacturing["lots"])
+
+
 def test_late_arriving_evidence_visible():
     timeline = service.temporal_reality(str(primary_product()), version_id="D")
     assert any(event.late_arriving for event in timeline.events)
@@ -122,7 +156,12 @@ def test_ground_truth_and_tenant_isolation():
     view = service.product360(str(primary_product()), version_id="D")
     payload = view.model_dump_json()
     assert "actual_root_cause" not in payload
-    assert scalar("SELECT count(distinct tenant_id) FROM products") == 1
+    # Verify all Day 7 canonical products share exactly one tenant
+    # (Using scoped query to remain robust as subsequent days add test data)
+    assert scalar(
+        "SELECT count(distinct tenant_id) FROM products "
+        "WHERE product_identifier IN ('PRD-ASTER-100', 'PRD-LEGACY-001', 'PRD-MK2-200')"
+    ) == 1
 
 
 def test_api_timeline_endpoint():

@@ -50,6 +50,8 @@ def main() -> int:
             "links": scalar(conn, "SELECT count(*) FROM source_canonical_links WHERE tenant_id=:tenant_id AND normalization_run_id=:run_id", tenant_id=tenant_id, run_id=run_id),
             "rules": scalar(conn, "SELECT count(*) FROM identity_rules WHERE active=true"),
             "relationships": scalar(conn, "SELECT count(*) FROM canonical_relationships WHERE tenant_id=:tenant_id", tenant_id=tenant_id),
+            "product_components": scalar(conn, "SELECT count(*) FROM product_components WHERE tenant_id=:tenant_id", tenant_id=tenant_id),
+            "product_component_relationships": scalar(conn, "SELECT count(*) FROM canonical_relationships WHERE tenant_id=:tenant_id AND relationship_type='PRODUCT_VERSION_HAS_COMPONENT'", tenant_id=tenant_id),
             "ground_truth_links": scalar(conn, "SELECT count(*) FROM source_canonical_links WHERE provenance::text LIKE '%ground_truth%' AND provenance::text NOT LIKE '%ground_truth_used%false%'", tenant_id=tenant_id),
         }
 
@@ -68,6 +70,8 @@ def main() -> int:
             "links": 337,
             "rules": 12,
             "relationships": 18,
+            "product_components": 16,
+            "product_component_relationships": 16,
         }
         for key, expected in minimums.items():
             if checks[key] < expected:

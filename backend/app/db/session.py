@@ -21,3 +21,11 @@ def database_url() -> URL:
 
 engine = create_engine(database_url(), future=True)
 SessionLocal = sessionmaker(bind=engine, autoflush=False, autocommit=False, future=True)
+
+
+def get_db():
+    db = SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()

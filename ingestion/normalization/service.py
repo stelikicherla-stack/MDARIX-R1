@@ -245,6 +245,7 @@ class NormalizationService:
             "product": self.product,
             "product_version": self.product_version,
             "component": self.component,
+            "product_component": self.product_component,
             "supplier": self.supplier,
             "manufacturing_site": self.site,
             "lot": self.lot,
@@ -326,6 +327,15 @@ class NormalizationService:
         if supplier_id:
             self.upsert_relationship_table(conn, "component_suppliers", tenant_id, component_id=str(component_id), supplier_id=supplier_id)
         return [self.matched("component", component_id, raw["component_id"], raw["component_identifier"], f"{normalize_identifier(raw['component_identifier'])}:REV-{normalize_revision(raw.get('revision'))}", "COMPONENT_IDENTIFIER_REVISION_V1", record)]
+
+    def product_component(self, conn, tenant_id: str, record, raw: dict[str, Any], lookup) -> list[LinkResult]:
+        product_version_id = lookup["product_version"].get(raw.get("product_version_id")) or self.find_product_version_source(conn, tenant_id, raw.get("product_version_id"))
+        component_id = lookup["component"].get(raw.get("component_id")) or self.find_component_source(conn, tenant_id, raw.get("component_id"))
+        if not product_version_id or not component_id:
+            return [self.issue_link(record, "product_component", "REQUIRES_HUMAN_REVIEW", "Product version or component context missing for configuration relationship")]
+        self.upsert_relationship_table(conn, "product_components", tenant_id, product_version_id=product_version_id, component_id=component_id)
+        business_id = f"{raw['product_version_id']}::{raw['component_id']}"
+        return [self.matched("product_component", component_id, business_id, business_id, business_id, "PRODUCT_COMPONENT_SOURCE_V1", record)]
 
     def site(self, conn, tenant_id: str, record, raw: dict[str, Any], lookup) -> list[LinkResult]:
         site_id = conn.execute(
@@ -509,6 +519,8 @@ class NormalizationService:
             row = conn.execute(text("SELECT product_version_id FROM lot_batches WHERE id=:id"), {"id": lot_id}).mappings().one_or_none()
             if row and row["product_version_id"]:
                 self.canonical_relationship(conn, tenant_id, run_id, "lot_batch", lot_id, "product_version", str(row["product_version_id"]), "LOT_BUILT_AS_PRODUCT_VERSION", "LOT_COMPOSITE_V1")
+        for row in conn.execute(text("SELECT product_version_id, component_id FROM product_components WHERE tenant_id=:tenant_id"), {"tenant_id": tenant_id}).mappings():
+            self.canonical_relationship(conn, tenant_id, run_id, "product_version", str(row["product_version_id"]), "component", str(row["component_id"]), "PRODUCT_VERSION_HAS_COMPONENT", "PRODUCT_COMPONENT_SOURCE_V1")
         for component_id in lookup["component"].values():
             for supplier_id in set(lookup["supplier"].values()):
                 exists = conn.execute(text("SELECT count(*) FROM component_suppliers WHERE tenant_id=:tenant_id AND component_id=:c AND supplier_id=:s"), {"tenant_id": tenant_id, "c": component_id, "s": supplier_id}).scalar_one()
@@ -532,6 +544,14 @@ class NormalizationService:
                 text(
                     "INSERT INTO component_suppliers (tenant_id, component_id, supplier_id, created_at) VALUES (:tenant_id, :component_id, :supplier_id, :now) "
                     "ON CONFLICT (tenant_id, component_id, supplier_id) DO NOTHING"
+                ),
+                {"tenant_id": tenant_id, "now": utcnow(), **ids},
+            )
+        if table == "product_components":
+            conn.execute(
+                text(
+                    "INSERT INTO product_components (tenant_id, product_version_id, component_id, created_at) VALUES (:tenant_id, :product_version_id, :component_id, :now) "
+                    "ON CONFLICT (tenant_id, product_version_id, component_id) DO NOTHING"
                 ),
                 {"tenant_id": tenant_id, "now": utcnow(), **ids},
             )
@@ -562,6 +582,11 @@ class NormalizationService:
         if not source_id:
             return None
         return conn.execute(text("SELECT id FROM product_versions WHERE tenant_id=:tenant_id AND source_identifier=:id"), {"tenant_id": tenant_id, "id": source_id}).scalar_one_or_none()
+
+    def find_component_source(self, conn, tenant_id: str, source_id: str | None) -> str | None:
+        if not source_id:
+            return None
+        return conn.execute(text("SELECT id FROM components WHERE tenant_id=:tenant_id AND source_identifier=:id"), {"tenant_id": tenant_id, "id": source_id}).scalar_one_or_none()
 
     def find_site_source(self, conn, tenant_id: str, source_id: str | None) -> str | None:
         if not source_id:

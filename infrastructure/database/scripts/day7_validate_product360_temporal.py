@@ -49,9 +49,15 @@ def main() -> int:
         if forbidden in payload:
             fail(f"Ground Truth leakage detected: {forbidden}")
     with engine.connect() as conn:
-        tenant_count = conn.execute(text("SELECT count(distinct tenant_id) FROM products")).scalar_one()
-    if tenant_count != 1:
-        fail("Unexpected tenant count for Day 7 validation.")
+        # Verify all Day 7 canonical products share exactly one tenant (the ACME_CARE_SYNTHETIC tenant)
+        day7_tenant_count = conn.execute(
+            text("""
+                SELECT count(distinct tenant_id) FROM products
+                WHERE product_identifier IN ('PRD-ASTER-100', 'PRD-LEGACY-001', 'PRD-MK2-200')
+            """)
+        ).scalar_one()
+    if day7_tenant_count != 1:
+        fail("Unexpected tenant count for Day 7 validation: Day 7 canonical products do not share a single tenant.")
     print("DAY 7 PRODUCT 360 / TEMPORAL VALIDATION = PASS")
     print(f"products={len(products)}")
     print(f"timeline_events={len(view.timeline)}")

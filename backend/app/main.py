@@ -4,12 +4,16 @@ from fastapi import FastAPI, HTTPException, Query
 from sqlalchemy import text
 
 from backend.app.db.session import engine
+from backend.app.evidence.router import router as evidence_router
 from backend.app.product360.schemas import Product360Response, ProductSummary, TemporalRealityResponse
 from backend.app.product360.service import Product360Error, Product360Service
+from backend.app.retrieval.router import router as retrieval_router
 from graph.schemas import GraphResponse, HealthResponse, RelationshipDetail
 from graph.service import GraphError, RealityGraphService
 
-app = FastAPI(title="MDARIX R1 API", version="0.6.0")
+app = FastAPI(title="MDARIX R1 API", version="0.8.0")
+app.include_router(evidence_router)
+app.include_router(retrieval_router)
 graph_service = RealityGraphService()
 product360_service = Product360Service()
 

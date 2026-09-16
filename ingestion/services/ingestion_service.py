@@ -25,6 +25,7 @@ SOURCE_REGISTRY = {
     "plm/products.csv": ("PLM", "plm", "product", "plm_product_v1.json"),
     "plm/product_versions.csv": ("PLM", "plm", "product_version", "plm_product_version_v1.json"),
     "plm/components.csv": ("PLM", "plm", "component", "plm_component_v1.json"),
+    "plm/product_components.csv": ("PLM", "plm", "product_component", "plm_product_component_v1.json"),
     "plm/requirements.csv": ("PLM", "plm", "requirement", "plm_requirement_v1.json"),
     "plm/changes.csv": ("PLM", "plm", "change", "plm_change_v1.json"),
     "qms/complaints.csv": ("QMS", "qms", "complaint", "qms_complaint_v1.json"),
@@ -304,7 +305,7 @@ class IngestionService:
         return RecordOutcome(quality, issues)
 
     def source_record_id(self, source: SourceFile, raw: dict[str, Any], row_index: int | None) -> str:
-        for key in ["complaint_id", "product_id", "product_version_id", "component_id", "requirement_id", "change_id", "supplier_id", "site_id", "lot_id", "investigation_id", "risk_id", "failure_mode_id", "control_id", "evidence_id", "filename"]:
+        for key in ["complaint_id", "product_component_id", "product_id", "product_version_id", "component_id", "requirement_id", "change_id", "supplier_id", "site_id", "lot_id", "investigation_id", "risk_id", "failure_mode_id", "control_id", "evidence_id", "filename"]:
             if raw.get(key):
                 return str(raw[key])
         return f"{source.record_type}:{row_index}"
