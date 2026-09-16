@@ -1,0 +1,15 @@
+{
+  "source_system": "ERP_MES",
+  "source_type": "erp_mes",
+  "record_type": "supplier",
+  "mapping_version": "ERP_SUPPLIER_V1",
+  "schema_version": "erp.supplier.v1",
+  "required_source_fields": ["supplier_id", "supplier_identifier", "name"],
+  "field_mappings": {
+    "supplier_id": "source_record_id",
+    "supplier_identifier": "supplier_identifier",
+    "name": "supplier_name",
+    "aliases": "supplier_aliases"
+  },
+  "timestamp_semantics": {}
+}

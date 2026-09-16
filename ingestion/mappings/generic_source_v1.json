@@ -1,0 +1,10 @@
+{
+  "source_system": "GENERIC",
+  "source_type": "generic",
+  "record_type": "generic",
+  "mapping_version": "GENERIC_SOURCE_V1",
+  "schema_version": "generic.source.v1",
+  "required_source_fields": [],
+  "field_mappings": {},
+  "timestamp_semantics": {}
+}

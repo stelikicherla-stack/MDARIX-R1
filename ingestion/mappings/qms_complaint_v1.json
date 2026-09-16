@@ -1,0 +1,25 @@
+{
+  "source_system": "QMS",
+  "source_type": "qms",
+  "record_type": "complaint",
+  "mapping_version": "QMS_COMPLAINT_V1",
+  "schema_version": "qms.complaint.v1",
+  "required_source_fields": ["complaint_id", "complaint_identifier", "product_version_id", "event_timestamp", "recorded_timestamp", "ingestion_timestamp", "failure_mode", "narrative"],
+  "field_mappings": {
+    "complaint_id": "source_record_id",
+    "complaint_identifier": "complaint_identifier",
+    "source_product_version": "candidate_product_version",
+    "lot_id": "candidate_lot",
+    "event_timestamp": "event_timestamp",
+    "recorded_timestamp": "recorded_timestamp",
+    "ingestion_timestamp": "source_ingestion_timestamp",
+    "failure_mode": "failure_mode",
+    "narrative": "description",
+    "data_quality_status": "source_quality_status"
+  },
+  "timestamp_semantics": {
+    "event_timestamp": "complaint event date",
+    "recorded_timestamp": "QMS record entry date",
+    "ingestion_timestamp": "MDARIX received date"
+  }
+}

@@ -1,0 +1,18 @@
+{
+  "source_system": "PLM",
+  "source_type": "plm",
+  "record_type": "product_version",
+  "mapping_version": "PLM_PRODUCT_VERSION_V1",
+  "schema_version": "plm.product_version.v1",
+  "required_source_fields": ["product_version_id", "product_id", "version_identifier", "effective_timestamp", "source_alias"],
+  "field_mappings": {
+    "product_version_id": "source_record_id",
+    "product_id": "source_product_id",
+    "version_identifier": "version_identifier",
+    "source_alias": "source_revision_string",
+    "effective_timestamp": "effective_timestamp"
+  },
+  "timestamp_semantics": {
+    "effective_timestamp": "version effective date"
+  }
+}

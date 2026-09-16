@@ -1,0 +1,21 @@
+{
+  "source_system": "PLM",
+  "source_type": "plm",
+  "record_type": "change",
+  "mapping_version": "PLM_CHANGE_V1",
+  "schema_version": "plm.change.v1",
+  "required_source_fields": ["change_id", "change_identifier", "change_type", "description", "event_timestamp", "effective_timestamp"],
+  "field_mappings": {
+    "change_id": "source_record_id",
+    "change_identifier": "change_identifier",
+    "change_type": "change_type",
+    "description": "description",
+    "event_timestamp": "event_timestamp",
+    "effective_timestamp": "effective_timestamp",
+    "related_object_id": "source_related_object_id"
+  },
+  "timestamp_semantics": {
+    "event_timestamp": "change approval/event date",
+    "effective_timestamp": "change effective date"
+  }
+}

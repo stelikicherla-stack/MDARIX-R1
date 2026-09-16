@@ -1,0 +1,14 @@
+{
+  "source_system": "EVIDENCE",
+  "source_type": "evidence",
+  "record_type": "evidence_file",
+  "mapping_version": "EVIDENCE_FILE_V1",
+  "schema_version": "evidence.file.v1",
+  "required_source_fields": ["filename", "relative_path", "content"],
+  "field_mappings": {
+    "filename": "source_record_id",
+    "relative_path": "document_path",
+    "content": "preserved_text"
+  },
+  "timestamp_semantics": {}
+}

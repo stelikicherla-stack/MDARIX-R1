@@ -1,0 +1,17 @@
+{
+  "source_system": "PLM",
+  "source_type": "plm",
+  "record_type": "component",
+  "mapping_version": "PLM_COMPONENT_V1",
+  "schema_version": "plm.component.v1",
+  "required_source_fields": ["component_id", "component_identifier", "name", "revision", "supplier_id"],
+  "field_mappings": {
+    "component_id": "source_record_id",
+    "component_identifier": "component_identifier",
+    "name": "name",
+    "revision": "source_revision_string",
+    "supplier_id": "source_supplier_id",
+    "description": "description"
+  },
+  "timestamp_semantics": {}
+}

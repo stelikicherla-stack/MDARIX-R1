@@ -1,0 +1,19 @@
+{
+  "source_system": "ERP_MES",
+  "source_type": "erp_mes",
+  "record_type": "lot",
+  "mapping_version": "ERP_LOT_V1",
+  "schema_version": "erp.lot.v1",
+  "required_source_fields": ["lot_id", "lot_identifier", "product_version_id", "manufactured_timestamp", "traceability_status"],
+  "field_mappings": {
+    "lot_id": "source_record_id",
+    "lot_identifier": "lot_identifier",
+    "product_version_id": "source_product_version_id",
+    "manufacturing_site_id": "source_site_id",
+    "manufactured_timestamp": "event_timestamp",
+    "traceability_status": "source_quality_status"
+  },
+  "timestamp_semantics": {
+    "manufactured_timestamp": "lot manufacturing date"
+  }
+}

@@ -1,0 +1,15 @@
+{
+  "source_system": "PLM",
+  "source_type": "plm",
+  "record_type": "product",
+  "mapping_version": "PLM_PRODUCT_V1",
+  "schema_version": "plm.product.v1",
+  "required_source_fields": ["product_id", "product_identifier", "name"],
+  "field_mappings": {
+    "product_id": "source_record_id",
+    "product_identifier": "product_identifier",
+    "name": "name",
+    "family_id": "source_family_id"
+  },
+  "timestamp_semantics": {}
+}

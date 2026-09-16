@@ -1,0 +1,14 @@
+{
+  "source_system": "ERP_MES",
+  "source_type": "erp_mes",
+  "record_type": "manufacturing_site",
+  "mapping_version": "ERP_SITE_V1",
+  "schema_version": "erp.site.v1",
+  "required_source_fields": ["site_id", "site_identifier", "name"],
+  "field_mappings": {
+    "site_id": "source_record_id",
+    "site_identifier": "site_identifier",
+    "name": "site_name"
+  },
+  "timestamp_semantics": {}
+}

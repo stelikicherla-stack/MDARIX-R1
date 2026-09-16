@@ -1,0 +1,19 @@
+{
+  "source_system": "QMS",
+  "source_type": "qms",
+  "record_type": "investigation",
+  "mapping_version": "QMS_INVESTIGATION_V1",
+  "schema_version": "qms.investigation.v1",
+  "required_source_fields": ["investigation_id", "investigation_identifier", "product_id", "question", "opened_at", "status"],
+  "field_mappings": {
+    "investigation_id": "source_record_id",
+    "investigation_identifier": "investigation_identifier",
+    "product_id": "source_product_id",
+    "question": "investigation_question",
+    "opened_at": "event_timestamp",
+    "status": "source_status"
+  },
+  "timestamp_semantics": {
+    "opened_at": "investigation opened date"
+  }
+}

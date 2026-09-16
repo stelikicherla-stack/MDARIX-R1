@@ -1,0 +1,16 @@
+{
+  "source_system": "PLM",
+  "source_type": "plm",
+  "record_type": "requirement",
+  "mapping_version": "PLM_REQUIREMENT_V1",
+  "schema_version": "plm.requirement.v1",
+  "required_source_fields": ["requirement_id", "requirement_identifier", "requirement_type", "text"],
+  "field_mappings": {
+    "requirement_id": "source_record_id",
+    "requirement_identifier": "requirement_identifier",
+    "requirement_type": "requirement_type",
+    "product_id": "source_product_id",
+    "text": "text"
+  },
+  "timestamp_semantics": {}
+}
