@@ -1,0 +1,10 @@
+flowchart LR
+  Dev[Windows 11 Workspace] --> Venv[Python 3.13 .venv]
+  Dev --> Node[Node/npm]
+  Dev --> Docker[Docker Desktop]
+  Docker --> PG[mdarix-r1-postgres]
+  PG --> Volume[mdarix-r1-postgres-data]
+  PG --> Network[mdarix-r1_default]
+  Dev --> Git[Git]
+  Git --> GitHub[Private GitHub MDARIX-R1]
+  Dev --> Port[localhost:5433 -> 5432]

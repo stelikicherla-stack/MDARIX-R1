@@ -1,0 +1,8 @@
+flowchart LR
+  User[Authorized Investigator / Reviewer] --> Web[MDARIX Web Application]
+  Web --> API[REST API /api/v1]
+  API --> Services[Application Services]
+  Services --> DB[(PostgreSQL 16 + pgvector)]
+  Services --> Files[Object/File Storage Abstraction]
+  External[QMS / PLM / ERP / MES Sources] --> Ingestion[Ingestion + Normalization]
+  Ingestion --> DB

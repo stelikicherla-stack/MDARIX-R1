@@ -1,0 +1,10 @@
+flowchart LR
+  Source[Source Record] --> Raw[Raw Payload Reference]
+  Source --> Normalize[Normalization]
+  Normalize --> Evidence[Evidence Object]
+  Evidence --> Claim[Fact / Inference / Hypothesis / Unknown]
+  Claim --> Brief[Reality Investigation Brief]
+  AI[AI Execution] --> Claim
+  AI --> Provenance[Model + Prompt + Context + Tools + Output]
+  Human[Human Review] --> Decision[Human Decision]
+  Brief --> Decision

@@ -1,0 +1,13 @@
+flowchart LR
+  Product --> ProductVersion
+  ProductVersion --> Component
+  Component --> Supplier
+  ProductVersion --> LotBatch
+  LotBatch --> Complaint
+  Complaint --> Investigation
+  Investigation --> Evidence
+  Investigation --> Hypothesis
+  Hypothesis --> FailureChain
+  FailureChain --> Decision
+  Evidence -. supports/contradicts .-> Hypothesis
+  Evidence -. proves/qualifies .-> ProductVersion

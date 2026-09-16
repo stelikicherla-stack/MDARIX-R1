@@ -1,0 +1,12 @@
+flowchart TD
+  Request[Investigation Request] --> Orchestrator[Single Controlled AI Orchestrator]
+  Orchestrator --> Retrieval[Retrieval Specialist]
+  Orchestrator --> Timeline[Timeline Specialist]
+  Orchestrator --> Evidence[Evidence Specialist]
+  Orchestrator --> Hypothesis[Hypothesis Specialist]
+  Orchestrator --> Challenger[Challenger Specialist]
+  Orchestrator --> Unknowns[Unknowns Specialist]
+  Orchestrator --> Failure[Failure Chain Specialist]
+  Orchestrator --> Brief[Brief Specialist]
+  Orchestrator --> Provenance[AIExecution + Provenance]
+  Provenance --> Review[Human Review]

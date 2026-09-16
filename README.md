@@ -1,6 +1,6 @@
 # MDARIX R1
 
-MDARIX R1 development foundation for Commercial Release 1.
+MDARIX R1 development foundation for Release 1.
 
 This repository currently contains Day 0 engineering foundation only. It does not contain product functionality, application tables, API endpoints, frontend pages, AI agents, investigation workflows, evidence engines, or decision engines.
 
