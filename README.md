@@ -26,6 +26,8 @@ Global Python installations are not used by MDARIX R1.
 Day 0 uses PostgreSQL 16 with pgvector in Docker.
 
 - Container: `mdarix-r1-postgres`
+- Network: `mdarix-r1_default`
+- Persistent volume: `mdarix-r1-postgres-data`
 - Database: `mdarix_r1`
 - Application role: `mdarix_app`
 - Host port: `localhost:5433`

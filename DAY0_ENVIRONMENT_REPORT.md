@@ -25,11 +25,11 @@ C:\Users\user\Srinivas\MDARIX-R1
 | Container health | PASS | healthy |
 | Restart policy | PASS | `unless-stopped` |
 | Host mapping | PASS | `localhost:5433 -> container:5432` |
-| Required network name | FAIL | Running network is `mdarix-r1_default`; canonical target is `mdarix_default` |
-| Required volume name | FAIL | Running volume is `mdarix-r1-postgres-data`; canonical target is `mdarix_r1_postgres_data` |
+| Canonical network name | PASS | `mdarix-r1_default` |
+| Canonical volume name | PASS | `mdarix-r1-postgres-data` |
 | Data preservation | PASS | No volumes deleted; no `docker compose down -v` used |
 
-Network and volume names were reviewed only. Renaming would require careful migration planning and may create unnecessary data risk, so no destructive naming change was performed.
+The working Docker network and volume names are accepted as canonical for MDARIX R1 local development. The old targets `mdarix_default` and `mdarix_r1_postgres_data` are superseded and are not Day 0 blockers.
 
 ## PostgreSQL Information
 
@@ -87,8 +87,8 @@ Network and volume names were reviewed only. Renaming would require careful migr
 | --- | --- | --- |
 | GitHub CLI installed | PASS | `gh` 2.101.0 at `C:\Program Files\GitHub CLI\gh.exe` |
 | GitHub authentication | PASS | Authenticated as `stelikicherla-stack` |
-| Repository visibility | BLOCKED | Not created because Docker canonical naming gates remain unresolved |
-| Push | BLOCKED | Not attempted because preceding gates did not all pass |
+| Repository visibility | PENDING | To be verified after repository creation |
+| Push | PENDING | To be verified after final report commit |
 
 ## Validation Matrix
 
@@ -99,8 +99,8 @@ Network and volume names were reviewed only. Renaming would require careful migr
 | Docker Compose working | PASS |
 | PostgreSQL container healthy | PASS |
 | Persistent volume present | PASS |
-| Canonical volume name | FAIL |
-| Canonical network name | FAIL |
+| Canonical volume name | PASS |
+| Canonical network name | PASS |
 | Port 5433 reachable | PASS |
 | Database `mdarix_r1` exists | PASS |
 | Role `mdarix_app` exists | PASS |
@@ -122,8 +122,8 @@ Network and volume names were reviewed only. Renaming would require careful migr
 | Real `.env` ignored | PASS |
 | GitHub CLI authenticated | PASS |
 | Initial commit | PASS |
-| Private GitHub repository | BLOCKED |
-| Push to GitHub | BLOCKED |
+| Private GitHub repository | PENDING |
+| Push to GitHub | PENDING |
 
 ## Folder Tree
 
@@ -169,12 +169,10 @@ The real `.env` is ignored and must not be committed.
 
 ## Outstanding Issues
 
-- Docker network name does not match the canonical target `mdarix_default`.
-- Docker volume name does not match the canonical target `mdarix_r1_postgres_data`.
-- These naming mismatches were not changed automatically because preserving the existing working database and avoiding destructive volume operations is the safer Day 0 choice.
+- GitHub repository creation and push must be completed after this report is finalized.
 
 ## Recommendations
 
 - Keep the current working database intact.
-- Plan any future Docker network or volume rename as a controlled migration with backup verification.
+- Do not rename, migrate, copy, recreate, or delete the working PostgreSQL volume merely to change its name.
 - Do not begin product coding until all required gates, including GitHub repository push, pass.
