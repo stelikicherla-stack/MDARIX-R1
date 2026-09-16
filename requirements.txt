@@ -1,0 +1,9 @@
+alembic==1.20.0
+fastapi==0.141.1
+httpx==0.28.1
+pg8000==1.31.5
+pydantic==2.13.5
+pytest==9.1.1
+python-dotenv==1.2.3
+SQLAlchemy==2.0.54
+uvicorn==0.53.0
