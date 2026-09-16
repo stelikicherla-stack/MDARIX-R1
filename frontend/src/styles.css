@@ -138,6 +138,11 @@ h3 {
   cursor: pointer;
 }
 
+.primary-action.secondary {
+  background: #ffffff;
+  color: #1f6f68;
+}
+
 .content {
   padding: 24px 28px 44px;
   display: grid;
@@ -306,6 +311,38 @@ h3 {
   line-height: 1.35;
 }
 
+.hypothesis-section {
+  display: grid;
+  gap: 14px;
+}
+
+.hypothesis-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 18px;
+}
+
+.hypothesis-card {
+  background: #ffffff;
+  border: 1px solid #d8dee6;
+  border-radius: 8px;
+  padding: 16px;
+  display: grid;
+  gap: 8px;
+}
+
+.hypothesis-card h3 {
+  margin-top: 0;
+  font-size: 15px;
+  line-height: 1.35;
+}
+
+.hypothesis-card p {
+  color: #607086;
+  font-size: 13px;
+  line-height: 1.35;
+}
+
 .error.inline {
   margin: 0;
 }
@@ -409,7 +446,7 @@ th {
     align-items: stretch;
     flex-direction: column;
   }
-  .metric-strip, .two-col, .workspace-grid, .analysis-grid {
+  .metric-strip, .two-col, .workspace-grid, .analysis-grid, .hypothesis-grid {
     grid-template-columns: 1fr;
   }
 }

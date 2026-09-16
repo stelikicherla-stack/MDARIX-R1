@@ -91,6 +91,29 @@ type InvestigationAnalysis = {
   model_provenance: Record<string, string | boolean>;
 };
 
+type Hypothesis = {
+  hypothesis_id: string;
+  statement: string;
+  scope: string;
+  status: string;
+  supporting_evidence: Array<{ relationship_type: string; rationale: string; source_references: unknown[] }>;
+  contradicting_evidence: Array<{ relationship_type: string; rationale: string; source_references: unknown[] }>;
+  contextual_evidence: Array<{ relationship_type: string; rationale: string; source_references: unknown[] }>;
+  assumptions: string[];
+  evidence_gaps: string[];
+  falsification_conditions: string[];
+  temporal_consistency: Record<string, string>;
+};
+
+type HypothesisSet = {
+  hypothesis_set_id: string;
+  status: string;
+  hypotheses: Hypothesis[];
+  comparison: Array<Record<string, string | number | boolean>>;
+  validation_summary: Record<string, number | string>;
+  guardrails: Record<string, boolean>;
+};
+
 const api = async <T,>(path: string): Promise<T> => {
   const response = await fetch(path);
   if (!response.ok) throw new Error(`${response.status} ${response.statusText}`);
@@ -252,6 +275,7 @@ function Product360View({ view }: { view: Product360 }) {
 function InvestigationWorkspacePanel({ investigationId }: { investigationId: string }) {
   const [workspace, setWorkspace] = useState<InvestigationWorkspace | null>(null);
   const [analysis, setAnalysis] = useState<InvestigationAnalysis | null>(null);
+  const [hypothesisSet, setHypothesisSet] = useState<HypothesisSet | null>(null);
   const [mode, setMode] = useState<"current" | "event" | "known">("current");
   const [asOf, setAsOf] = useState("2026-02-15");
   const [error, setError] = useState("");
@@ -263,6 +287,7 @@ function InvestigationWorkspacePanel({ investigationId }: { investigationId: str
       .then((item) => {
         setWorkspace(item);
         setAnalysis(null);
+        setHypothesisSet(null);
         setError("");
       })
       .catch((err) => setError(err.message));
@@ -292,6 +317,29 @@ function InvestigationWorkspacePanel({ investigationId }: { investigationId: str
       .catch((err) => setError(err.message));
   };
 
+  const runHypotheses = () => {
+    const body = {
+      investigation_id: investigationId,
+      temporal_mode: mode,
+      as_of: mode === "current" ? null : `${asOf}T00:00:00Z`,
+      investigator_question: "Generate competing hypotheses from the validated investigation analysis.",
+    };
+    fetch(`/api/v1/investigations/${investigationId}/hypotheses`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    })
+      .then((response) => {
+        if (!response.ok) throw new Error(`${response.status} ${response.statusText}`);
+        return response.json();
+      })
+      .then((payload) => {
+        setHypothesisSet(payload.hypothesis_set);
+        setError("");
+      })
+      .catch((err) => setError(err.message));
+  };
+
   return (
     <section className="workspace-section">
       <div className="workspace-header">
@@ -308,6 +356,7 @@ function InvestigationWorkspacePanel({ investigationId }: { investigationId: str
             ))}
           </div>
           <button className="primary-action" onClick={runAnalysis}>Run Analysis</button>
+          <button className="primary-action secondary" onClick={runHypotheses}>Generate Hypotheses</button>
         </div>
       </div>
       {error && <div className="error inline">{error}</div>}
@@ -357,6 +406,32 @@ function InvestigationWorkspacePanel({ investigationId }: { investigationId: str
               <p><strong>Grounding:</strong> {String(analysis.validation_summary.material_grounding_coverage)}</p>
               <p><strong>Source anchors:</strong> {String(analysis.validation_summary.evidence_source_anchor_coverage)}</p>
               <p><strong>Provider:</strong> {String(analysis.model_provenance.provider)}</p>
+            </div>
+          </Panel>
+        </div>
+      )}
+      {hypothesisSet && (
+        <div className="hypothesis-section">
+          <div className="section-title"><GitBranch size={18} /> Competing Hypotheses</div>
+          <div className="hypothesis-grid">
+            {hypothesisSet.hypotheses.map((hypothesis) => (
+              <article className="hypothesis-card" key={hypothesis.hypothesis_id}>
+                <span className="category">{hypothesis.status}</span>
+                <h3>{hypothesis.statement}</h3>
+                <p><strong>Temporal fit:</strong> {hypothesis.temporal_consistency.status}</p>
+                <p><strong>Support:</strong> {hypothesis.supporting_evidence[0]?.rationale ?? "No supporting evidence recorded."}</p>
+                <p><strong>Contradiction:</strong> {hypothesis.contradicting_evidence[0]?.rationale ?? "No contradiction recorded."}</p>
+                <p><strong>Gap:</strong> {hypothesis.evidence_gaps[0] ?? "No gap recorded."}</p>
+                <p><strong>Would weaken:</strong> {hypothesis.falsification_conditions[0] ?? "No falsification condition recorded."}</p>
+              </article>
+            ))}
+          </div>
+          <Panel title="Hypothesis Validation" icon={<ShieldCheck />}>
+            <div className="guardrail-list">
+              <p><strong>Status:</strong> {hypothesisSet.status}</p>
+              <p><strong>Grounding:</strong> {String(hypothesisSet.validation_summary.material_grounding_coverage)}</p>
+              <p><strong>Source anchors:</strong> {String(hypothesisSet.validation_summary.source_anchor_coverage)}</p>
+              <p><strong>No winner score:</strong> {hypothesisSet.comparison.every((row) => row.no_winner_score) ? "Preserved" : "Check required"}</p>
             </div>
           </Panel>
         </div>
