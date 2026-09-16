@@ -1,16 +1,26 @@
+from datetime import datetime
+
 from fastapi import FastAPI, HTTPException, Query
 from sqlalchemy import text
 
 from backend.app.db.session import engine
+from backend.app.product360.schemas import Product360Response, ProductSummary, TemporalRealityResponse
+from backend.app.product360.service import Product360Error, Product360Service
 from graph.schemas import GraphResponse, HealthResponse, RelationshipDetail
 from graph.service import GraphError, RealityGraphService
 
 app = FastAPI(title="MDARIX R1 API", version="0.6.0")
 graph_service = RealityGraphService()
+product360_service = Product360Service()
 
 
 def graph_error(exc: GraphError) -> HTTPException:
     status = 404 if exc.code in {"NODE_NOT_FOUND", "RELATIONSHIP_NOT_FOUND", "PATH_NOT_FOUND"} else 400
+    return HTTPException(status_code=status, detail={"code": exc.code, "message": exc.message})
+
+
+def product_error(exc: Product360Error) -> HTTPException:
+    status = 404 if exc.code == "PRODUCT_NOT_FOUND" else 400
     return HTTPException(status_code=status, detail={"code": exc.code, "message": exc.message})
 
 
@@ -67,3 +77,24 @@ def get_path(source_type: str, source_id: str, target_type: str, target_id: str,
         return graph_service.get_path(source_type, source_id, target_type, target_id, max_depth)
     except GraphError as exc:
         raise graph_error(exc) from exc
+
+
+@app.get("/api/v1/products", response_model=list[ProductSummary])
+def list_products() -> list[ProductSummary]:
+    return product360_service.list_products()
+
+
+@app.get("/api/v1/products/{product_id}/product-360", response_model=Product360Response)
+def get_product360(product_id: str, version_id: str | None = None, as_of: datetime | None = None, mode: str = Query("current", pattern="^(current|event|known)$")) -> Product360Response:
+    try:
+        return product360_service.product360(product_id, version_id, as_of, mode)
+    except Product360Error as exc:
+        raise product_error(exc) from exc
+
+
+@app.get("/api/v1/products/{product_id}/timeline", response_model=TemporalRealityResponse)
+def get_timeline(product_id: str, version_id: str | None = None, as_of: datetime | None = None, mode: str = Query("event", pattern="^(event|known)$")) -> TemporalRealityResponse:
+    try:
+        return product360_service.temporal_reality(product_id, version_id, as_of, mode)
+    except Product360Error as exc:
+        raise product_error(exc) from exc

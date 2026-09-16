@@ -1,0 +1,305 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color: #18212f;
+  background: #f4f6f8;
+  font-family: Inter, "Segoe UI", Arial, sans-serif;
+}
+
+body {
+  margin: 0;
+}
+
+button, input, select {
+  font: inherit;
+}
+
+.app-shell {
+  display: grid;
+  grid-template-columns: 232px 1fr;
+  min-height: 100vh;
+}
+
+.side-nav {
+  background: #101820;
+  color: #f7fafc;
+  padding: 24px 18px;
+}
+
+.brand {
+  font-size: 22px;
+  font-weight: 800;
+  margin-bottom: 28px;
+}
+
+.side-nav nav {
+  display: grid;
+  gap: 6px;
+}
+
+.side-nav span {
+  padding: 10px 12px;
+  border-radius: 6px;
+  color: #c9d2dc;
+}
+
+.side-nav .active {
+  background: #24313f;
+  color: #ffffff;
+}
+
+main {
+  min-width: 0;
+}
+
+.topbar {
+  display: flex;
+  justify-content: space-between;
+  gap: 20px;
+  align-items: center;
+  padding: 22px 28px;
+  border-bottom: 1px solid #d8dee6;
+  background: #ffffff;
+}
+
+h1, h2, h3, p {
+  margin: 0;
+}
+
+h1 {
+  font-size: 28px;
+  line-height: 1.1;
+}
+
+h2 {
+  font-size: 22px;
+}
+
+h3 {
+  font-size: 14px;
+  margin-top: 14px;
+}
+
+.eyebrow {
+  color: #607086;
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.toolbar {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.toolbar select, .toolbar input {
+  border: 1px solid #c7d0db;
+  background: #ffffff;
+  border-radius: 6px;
+  padding: 8px 10px;
+  min-height: 38px;
+}
+
+.segmented {
+  display: inline-flex;
+  border: 1px solid #c7d0db;
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.segmented button {
+  border: 0;
+  background: #ffffff;
+  padding: 8px 12px;
+  cursor: pointer;
+}
+
+.segmented .selected {
+  background: #1f6f68;
+  color: white;
+}
+
+.content {
+  padding: 24px 28px 44px;
+  display: grid;
+  gap: 18px;
+}
+
+.product-header, .panel, .timeline-section {
+  background: #ffffff;
+  border: 1px solid #d8dee6;
+  border-radius: 8px;
+  padding: 18px;
+}
+
+.product-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+}
+
+.version-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  border: 1px solid #b9c8d8;
+  border-radius: 6px;
+  padding: 8px 10px;
+  color: #1f4d5c;
+  background: #eef6f7;
+  font-weight: 700;
+}
+
+.metric-strip {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.metric {
+  display: grid;
+  grid-template-columns: 28px 1fr auto;
+  align-items: center;
+  gap: 8px;
+  background: #ffffff;
+  border: 1px solid #d8dee6;
+  border-radius: 8px;
+  padding: 14px;
+}
+
+.metric svg, .section-title svg {
+  width: 18px;
+  color: #1f6f68;
+}
+
+.metric span {
+  color: #607086;
+}
+
+.metric strong {
+  font-size: 22px;
+}
+
+.two-col {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 18px;
+}
+
+.section-title {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  font-weight: 800;
+  margin-bottom: 12px;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+th, td {
+  text-align: left;
+  border-bottom: 1px solid #e5eaf0;
+  padding: 8px 6px;
+  vertical-align: top;
+}
+
+th {
+  color: #607086;
+  font-weight: 700;
+  text-transform: capitalize;
+}
+
+.limitations {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  gap: 10px;
+}
+
+.limitations li {
+  border-left: 3px solid #c78a2c;
+  padding-left: 10px;
+  display: grid;
+  gap: 4px;
+}
+
+.limitations span, .empty {
+  color: #607086;
+  font-size: 13px;
+}
+
+.timeline {
+  display: grid;
+  gap: 10px;
+}
+
+.timeline article {
+  display: grid;
+  grid-template-columns: 94px 1fr 20px;
+  gap: 14px;
+  align-items: start;
+  border-bottom: 1px solid #e5eaf0;
+  padding: 10px 0;
+}
+
+.event-date {
+  color: #607086;
+  font-weight: 700;
+}
+
+.event-body {
+  display: grid;
+  gap: 4px;
+}
+
+.category, .late {
+  width: fit-content;
+  border-radius: 4px;
+  padding: 2px 6px;
+  font-size: 11px;
+  font-weight: 800;
+  background: #edf2f7;
+  color: #425466;
+}
+
+.late {
+  background: #fff4de;
+  color: #8a5a0a;
+}
+
+.event-body p {
+  color: #607086;
+  font-size: 13px;
+}
+
+.error {
+  margin: 20px 28px 0;
+  color: #9b1c1c;
+}
+
+@media (max-width: 960px) {
+  .app-shell {
+    grid-template-columns: 1fr;
+  }
+  .side-nav {
+    display: none;
+  }
+  .topbar, .product-header {
+    align-items: stretch;
+    flex-direction: column;
+  }
+  .metric-strip, .two-col {
+    grid-template-columns: 1fr;
+  }
+}
