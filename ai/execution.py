@@ -27,13 +27,14 @@ def record_ai_execution(
     validation_status: str = "VALIDATED",
     latency_ms: Optional[int] = None,
     error_state: Optional[str] = None,
+    requestor_ref: str = "MDARIX-EvidenceIntelligence",
 ) -> AIExecution:
     """Records full provenance of an AI execution into the ai_executions table without hidden chain-of-thought."""
     execution_record = AIExecution(
         id=uuid.uuid4(),
         tenant_id=tenant_id,
         investigation_id=investigation_id,
-        requestor_ref="MDARIX-EvidenceIntelligence",
+        requestor_ref=requestor_ref,
         provider=provider,
         model_name=model_name,
         model_version=model_version or "latest",

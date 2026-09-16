@@ -128,6 +128,16 @@ h3 {
   color: white;
 }
 
+.primary-action {
+  border: 1px solid #1f6f68;
+  background: #1f6f68;
+  color: #ffffff;
+  border-radius: 6px;
+  padding: 8px 12px;
+  min-height: 38px;
+  cursor: pointer;
+}
+
 .content {
   padding: 24px 28px 44px;
   display: grid;
@@ -266,6 +276,36 @@ h3 {
   gap: 8px;
 }
 
+.analysis-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 18px;
+}
+
+.analysis-list {
+  display: grid;
+  gap: 10px;
+}
+
+.analysis-list article {
+  border-bottom: 1px solid #e5eaf0;
+  display: grid;
+  gap: 4px;
+  padding-bottom: 8px;
+}
+
+.analysis-list span {
+  color: #607086;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.analysis-list p {
+  color: #263445;
+  font-size: 13px;
+  line-height: 1.35;
+}
+
 .error.inline {
   margin: 0;
 }
@@ -369,7 +409,7 @@ th {
     align-items: stretch;
     flex-direction: column;
   }
-  .metric-strip, .two-col, .workspace-grid {
+  .metric-strip, .two-col, .workspace-grid, .analysis-grid {
     grid-template-columns: 1fr;
   }
 }

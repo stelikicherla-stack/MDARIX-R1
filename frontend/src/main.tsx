@@ -67,6 +67,30 @@ type InvestigationWorkspace = {
   metadata: Record<string, string | boolean>;
 };
 
+type AnalysisItem = {
+  item_id: string;
+  semantic_type: string;
+  statement: string;
+  rationale?: string;
+  grounding_status: string;
+  source_references: unknown[];
+};
+
+type InvestigationAnalysis = {
+  analysis_id: string;
+  status: string;
+  observations: AnalysisItem[];
+  temporal_patterns: AnalysisItem[];
+  evidence_relationships: AnalysisItem[];
+  possible_explanations: AnalysisItem[];
+  contradictions: AnalysisItem[];
+  missing_information: AnalysisItem[];
+  questions_to_investigate: AnalysisItem[];
+  limitations: AnalysisItem[];
+  validation_summary: Record<string, number | string>;
+  model_provenance: Record<string, string | boolean>;
+};
+
 const api = async <T,>(path: string): Promise<T> => {
   const response = await fetch(path);
   if (!response.ok) throw new Error(`${response.status} ${response.statusText}`);
@@ -227,6 +251,7 @@ function Product360View({ view }: { view: Product360 }) {
 
 function InvestigationWorkspacePanel({ investigationId }: { investigationId: string }) {
   const [workspace, setWorkspace] = useState<InvestigationWorkspace | null>(null);
+  const [analysis, setAnalysis] = useState<InvestigationAnalysis | null>(null);
   const [mode, setMode] = useState<"current" | "event" | "known">("current");
   const [asOf, setAsOf] = useState("2026-02-15");
   const [error, setError] = useState("");
@@ -237,10 +262,35 @@ function InvestigationWorkspacePanel({ investigationId }: { investigationId: str
     api<InvestigationWorkspace>(`/api/v1/investigations/${investigationId}/workspace?${params}`)
       .then((item) => {
         setWorkspace(item);
+        setAnalysis(null);
         setError("");
       })
       .catch((err) => setError(err.message));
   }, [investigationId, mode, asOf]);
+
+  const runAnalysis = () => {
+    const body = {
+      investigation_id: investigationId,
+      temporal_mode: mode,
+      as_of: mode === "current" ? null : `${asOf}T00:00:00Z`,
+      analysis_mode: "standard",
+      retrieval_top_k: 8,
+    };
+    fetch(`/api/v1/investigations/${investigationId}/analysis`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    })
+      .then((response) => {
+        if (!response.ok) throw new Error(`${response.status} ${response.statusText}`);
+        return response.json();
+      })
+      .then((payload) => {
+        setAnalysis(payload.analysis);
+        setError("");
+      })
+      .catch((err) => setError(err.message));
+  };
 
   return (
     <section className="workspace-section">
@@ -257,6 +307,7 @@ function InvestigationWorkspacePanel({ investigationId }: { investigationId: str
               <button key={item} className={mode === item ? "selected" : ""} onClick={() => setMode(item)}>{item}</button>
             ))}
           </div>
+          <button className="primary-action" onClick={runAnalysis}>Run Analysis</button>
         </div>
       </div>
       {error && <div className="error inline">{error}</div>}
@@ -293,7 +344,40 @@ function InvestigationWorkspacePanel({ investigationId }: { investigationId: str
           </Panel>
         </div>
       )}
+      {analysis && (
+        <div className="analysis-grid">
+          <AnalysisPanel title="Key Observations" items={analysis.observations.slice(0, 4)} />
+          <AnalysisPanel title="Possible Explanations" items={analysis.possible_explanations.slice(0, 4)} />
+          <AnalysisPanel title="Contradictory Evidence" items={analysis.contradictions.slice(0, 4)} />
+          <AnalysisPanel title="Missing Information" items={analysis.missing_information.slice(0, 4)} />
+          <AnalysisPanel title="Questions To Investigate" items={analysis.questions_to_investigate.slice(0, 5)} />
+          <Panel title="Validation / Provenance" icon={<ShieldCheck />}>
+            <div className="guardrail-list">
+              <p><strong>Status:</strong> {analysis.status}</p>
+              <p><strong>Grounding:</strong> {String(analysis.validation_summary.material_grounding_coverage)}</p>
+              <p><strong>Source anchors:</strong> {String(analysis.validation_summary.evidence_source_anchor_coverage)}</p>
+              <p><strong>Provider:</strong> {String(analysis.model_provenance.provider)}</p>
+            </div>
+          </Panel>
+        </div>
+      )}
     </section>
+  );
+}
+
+function AnalysisPanel({ title, items }: { title: string; items: AnalysisItem[] }) {
+  return (
+    <Panel title={title} icon={<ClipboardList />}>
+      <div className="analysis-list">
+        {items.length === 0 && <p className="empty">No items for this analysis.</p>}
+        {items.map((item) => (
+          <article key={item.item_id}>
+            <span>{item.semantic_type} | {item.grounding_status} | sources {item.source_references.length}</span>
+            <p>{item.statement}</p>
+          </article>
+        ))}
+      </div>
+    </Panel>
   );
 }
 
