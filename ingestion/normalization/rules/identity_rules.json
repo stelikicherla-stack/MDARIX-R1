@@ -1,0 +1,137 @@
+[
+  {
+    "rule_id": "PRODUCT_EXACT_ID_V1",
+    "entity_type": "product",
+    "version": "v1",
+    "precedence": 10,
+    "purpose": "Resolve products by exact source product_id or product_identifier under one tenant.",
+    "match_conditions": {"fields": ["product_id", "product_identifier"], "tenant_bound": true},
+    "ambiguity_behavior": "If the exact identifier is missing, leave the source record unresolved."
+  },
+  {
+    "rule_id": "PRODUCT_VERSION_COMPOSITE_V1",
+    "entity_type": "product_version",
+    "version": "v1",
+    "precedence": 20,
+    "purpose": "Resolve product versions by tenant, canonical product, and normalized revision/version.",
+    "match_conditions": {"fields": ["product_id", "version_identifier", "source_alias"], "tenant_bound": true},
+    "ambiguity_behavior": "If product or revision cannot be resolved, require human review."
+  },
+  {
+    "rule_id": "SOURCE_ALIAS_VERSION_V1",
+    "entity_type": "product_version",
+    "version": "v1",
+    "precedence": 30,
+    "purpose": "Resolve approved source product-version aliases preserved by ingestion.",
+    "match_conditions": {"alias_examples": ["PRD-100-D", "PRD100 Rev D", "Product-100 / Revision D"], "tenant_bound": true},
+    "ambiguity_behavior": "Alias collisions become AMBIGUOUS and do not create authoritative links."
+  },
+  {
+    "rule_id": "SUPPLIER_ALIAS_V1",
+    "entity_type": "supplier",
+    "version": "v1",
+    "precedence": 40,
+    "purpose": "Resolve supplier source aliases only from controlled supplier alias fields.",
+    "match_conditions": {"fields": ["supplier_id", "supplier_identifier", "aliases"], "tenant_bound": true},
+    "ambiguity_behavior": "Alias collisions require human review."
+  },
+  {
+    "rule_id": "COMPONENT_IDENTIFIER_REVISION_V1",
+    "entity_type": "component",
+    "version": "v1",
+    "precedence": 50,
+    "purpose": "Resolve components by component identifier plus revision.",
+    "match_conditions": {"fields": ["component_identifier", "revision"], "tenant_bound": true},
+    "ambiguity_behavior": "Description similarity alone is ignored."
+  },
+  {
+    "rule_id": "SITE_IDENTIFIER_V1",
+    "entity_type": "manufacturing_site",
+    "version": "v1",
+    "precedence": 60,
+    "purpose": "Resolve manufacturing sites by controlled site identifier.",
+    "match_conditions": {"fields": ["site_id", "site_identifier"], "tenant_bound": true},
+    "ambiguity_behavior": "Missing site identifier remains unresolved."
+  },
+  {
+    "rule_id": "LOT_COMPOSITE_V1",
+    "entity_type": "lot_batch",
+    "version": "v1",
+    "precedence": 70,
+    "purpose": "Resolve lots by tenant, lot identifier, product version, and site context.",
+    "match_conditions": {"fields": ["lot_id", "lot_identifier", "product_version_id", "manufacturing_site_id"], "tenant_bound": true},
+    "ambiguity_behavior": "Missing product/site context produces warning provenance but not a false merge."
+  },
+  {
+    "rule_id": "REQUIREMENT_IDENTIFIER_V1",
+    "entity_type": "requirement",
+    "version": "v1",
+    "precedence": 80,
+    "purpose": "Resolve requirements by requirement identifier and product context.",
+    "match_conditions": {"fields": ["requirement_id", "requirement_identifier", "product_id"], "tenant_bound": true},
+    "ambiguity_behavior": "Requirement text similarity is never an authoritative match."
+  },
+  {
+    "rule_id": "CHANGE_IDENTIFIER_V1",
+    "entity_type": "change",
+    "version": "v1",
+    "precedence": 90,
+    "purpose": "Resolve changes by explicit change identifier.",
+    "match_conditions": {"fields": ["change_id", "change_identifier"], "tenant_bound": true},
+    "ambiguity_behavior": "Shared dates or similar descriptions are not enough to merge changes."
+  },
+  {
+    "rule_id": "COMPLAINT_SOURCE_ID_V1",
+    "entity_type": "complaint",
+    "version": "v1",
+    "precedence": 100,
+    "purpose": "Preserve complaint identity by exact complaint source identifier.",
+    "match_conditions": {"fields": ["complaint_id", "complaint_identifier"], "tenant_bound": true},
+    "ambiguity_behavior": "Similar complaint narratives are preserved as distinct unless an explicit duplicate rule exists."
+  },
+  {
+    "rule_id": "INVESTIGATION_SOURCE_ID_V1",
+    "entity_type": "investigation",
+    "version": "v1",
+    "precedence": 110,
+    "purpose": "Resolve investigations by exact source investigation identifier.",
+    "match_conditions": {"fields": ["investigation_id", "investigation_identifier"], "tenant_bound": true},
+    "ambiguity_behavior": "Investigation topic similarity is not enough to merge records."
+  },
+  {
+    "rule_id": "EVIDENCE_IDENTIFIER_V1",
+    "entity_type": "evidence",
+    "version": "v1",
+    "precedence": 120,
+    "purpose": "Resolve evidence metadata and evidence files by evidence identifier or filename.",
+    "match_conditions": {"fields": ["evidence_id", "filename"], "tenant_bound": true},
+    "ambiguity_behavior": "Evidence text similarity is not used for authoritative identity resolution."
+  },
+  {
+    "rule_id": "RISK_IDENTIFIER_V1",
+    "entity_type": "risk",
+    "version": "v1",
+    "precedence": 130,
+    "purpose": "Resolve risks by exact risk identifier and product context.",
+    "match_conditions": {"fields": ["risk_id", "risk_identifier", "product_id"], "tenant_bound": true},
+    "ambiguity_behavior": "Risk text similarity is not used for authoritative merging."
+  },
+  {
+    "rule_id": "FAILURE_MODE_IDENTIFIER_V1",
+    "entity_type": "failure_mode",
+    "version": "v1",
+    "precedence": 140,
+    "purpose": "Resolve failure modes by exact failure mode identifier.",
+    "match_conditions": {"fields": ["failure_mode_id", "failure_mode_identifier"], "tenant_bound": true},
+    "ambiguity_behavior": "Similar labels are not enough to merge failure modes."
+  },
+  {
+    "rule_id": "CONTROL_IDENTIFIER_V1",
+    "entity_type": "control",
+    "version": "v1",
+    "precedence": 150,
+    "purpose": "Resolve controls by exact control identifier.",
+    "match_conditions": {"fields": ["control_id", "control_identifier"], "tenant_bound": true},
+    "ambiguity_behavior": "Controls with similar descriptions remain distinct unless identifiers match."
+  }
+]
