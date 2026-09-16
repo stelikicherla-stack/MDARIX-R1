@@ -87,8 +87,9 @@ The working Docker network and volume names are accepted as canonical for MDARIX
 | --- | --- | --- |
 | GitHub CLI installed | PASS | `gh` 2.101.0 at `C:\Program Files\GitHub CLI\gh.exe` |
 | GitHub authentication | PASS | Authenticated as `stelikicherla-stack` |
-| Repository visibility | PENDING | To be verified after repository creation |
-| Push | PENDING | To be verified after final report commit |
+| Repository visibility | PASS | `stelikicherla-stack/MDARIX-R1` is private |
+| Origin | PASS | `https://github.com/stelikicherla-stack/MDARIX-R1.git` |
+| Push | PASS | `main` pushed to GitHub |
 
 ## Validation Matrix
 
@@ -122,8 +123,8 @@ The working Docker network and volume names are accepted as canonical for MDARIX
 | Real `.env` ignored | PASS |
 | GitHub CLI authenticated | PASS |
 | Initial commit | PASS |
-| Private GitHub repository | PENDING |
-| Push to GitHub | PENDING |
+| Private GitHub repository | PASS |
+| Push to GitHub | PASS |
 
 ## Folder Tree
 
@@ -169,7 +170,7 @@ The real `.env` is ignored and must not be committed.
 
 ## Outstanding Issues
 
-- GitHub repository creation and push must be completed after this report is finalized.
+- None.
 
 ## Recommendations
 
