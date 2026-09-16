@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { createRoot } from "react-dom/client";
-import { AlertTriangle, Boxes, CalendarClock, ChevronRight, CircleDot, Factory, FileText, GitBranch, History, Layers, ShieldCheck } from "lucide-react";
+import { AlertTriangle, Boxes, CalendarClock, ChevronRight, CircleDot, ClipboardList, Factory, FileText, GitBranch, History, Layers, Network, ShieldCheck } from "lucide-react";
 import "./styles.css";
 
 type Product = {
@@ -43,6 +43,28 @@ type Product360 = {
   provenance: Array<Record<string, string | null>>;
   timeline: TimelineEvent[];
   temporal_context: Record<string, string | boolean | null>;
+};
+
+type WorkspaceEvidence = {
+  evidence_identifier: string;
+  evidence_type: string;
+  title: string;
+  reliability_status: string;
+  chunks: Array<{ source_anchor: Record<string, unknown>; excerpt: string; materialized: boolean }>;
+  observations: Array<{ statement: string; quality_status: string; source_anchor: Record<string, unknown> }>;
+  entity_links: Array<{ entity_type: string; resolution_status: string; source: string }>;
+};
+
+type InvestigationWorkspace = {
+  investigation: Record<string, string | null>;
+  product_context: Record<string, unknown>;
+  temporal_context: Record<string, string | boolean | number | null>;
+  relationship_context: { nodes: unknown[]; relationships: unknown[]; metadata: Record<string, unknown> };
+  evidence_context: WorkspaceEvidence[];
+  retrieval_context: { status: string; results_count: number; limitations: string[] } | null;
+  limitations: Array<{ code: string; severity: string; description: string }>;
+  guardrails: Record<string, string | boolean>;
+  metadata: Record<string, string | boolean>;
 };
 
 const api = async <T,>(path: string): Promise<T> => {
@@ -119,6 +141,8 @@ function App() {
 }
 
 function Product360View({ view }: { view: Product360 }) {
+  const investigationId = view.investigations[0]?.id;
+
   return (
     <div className="content">
       <section className="product-header">
@@ -168,6 +192,8 @@ function Product360View({ view }: { view: Product360 }) {
         </Panel>
       </section>
 
+      {investigationId && <InvestigationWorkspacePanel investigationId={investigationId} />}
+
       <section className="two-col">
         <Panel title="Risk & Controls" icon={<ShieldCheck />}>
           <DenseTable rows={view.risks.slice(0, 6)} columns={["risk_identifier", "description", "status"]} />
@@ -196,6 +222,78 @@ function Product360View({ view }: { view: Product360 }) {
         </div>
       </section>
     </div>
+  );
+}
+
+function InvestigationWorkspacePanel({ investigationId }: { investigationId: string }) {
+  const [workspace, setWorkspace] = useState<InvestigationWorkspace | null>(null);
+  const [mode, setMode] = useState<"current" | "event" | "known">("current");
+  const [asOf, setAsOf] = useState("2026-02-15");
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    const params = new URLSearchParams({ temporal_mode: mode, retrieval_top_k: "8" });
+    if (mode !== "current") params.set("as_of", `${asOf}T00:00:00Z`);
+    api<InvestigationWorkspace>(`/api/v1/investigations/${investigationId}/workspace?${params}`)
+      .then((item) => {
+        setWorkspace(item);
+        setError("");
+      })
+      .catch((err) => setError(err.message));
+  }, [investigationId, mode, asOf]);
+
+  return (
+    <section className="workspace-section">
+      <div className="workspace-header">
+        <div>
+          <div className="section-title"><ClipboardList size={18} /> Investigation Workspace</div>
+          <h2>{workspace?.investigation.investigation_identifier ?? "Investigation context"}</h2>
+          <p>{workspace?.investigation.investigation_question ?? "Loading deterministic investigation context."}</p>
+        </div>
+        <div className="toolbar compact">
+          <input type="date" value={asOf} onChange={(event) => setAsOf(event.target.value)} aria-label="Workspace as of date" />
+          <div className="segmented">
+            {(["current", "event", "known"] as const).map((item) => (
+              <button key={item} className={mode === item ? "selected" : ""} onClick={() => setMode(item)}>{item}</button>
+            ))}
+          </div>
+        </div>
+      </div>
+      {error && <div className="error inline">{error}</div>}
+      {workspace && (
+        <div className="workspace-grid">
+          <Panel title="Context Health" icon={<ShieldCheck />}>
+            <div className="context-health">
+              <Metric icon={<FileText />} label="Evidence" value={workspace.evidence_context.length} />
+              <Metric icon={<Network />} label="Graph Nodes" value={workspace.relationship_context.metadata.node_count ?? workspace.relationship_context.nodes.length} />
+              <Metric icon={<GitBranch />} label="Relationships" value={workspace.relationship_context.metadata.relationship_count ?? workspace.relationship_context.relationships.length} />
+            </div>
+            <ul className="limitations">
+              {workspace.limitations.slice(0, 5).map((item) => <li key={item.code}><strong>{item.code}</strong><span>{item.description}</span></li>)}
+            </ul>
+          </Panel>
+          <Panel title="Evidence Context" icon={<FileText />}>
+            <div className="evidence-list">
+              {workspace.evidence_context.slice(0, 6).map((item) => (
+                <article key={item.evidence_identifier}>
+                  <strong>{item.evidence_identifier}</strong>
+                  <span>{item.title}</span>
+                  <small>{item.evidence_type} | {item.reliability_status} | anchors {item.chunks.filter((chunk) => chunk.source_anchor).length}</small>
+                </article>
+              ))}
+            </div>
+          </Panel>
+          <Panel title="Retrieval & Guardrails" icon={<CircleDot />}>
+            <div className="guardrail-list">
+              <p><strong>Retrieval:</strong> {workspace.retrieval_context?.status ?? "Not requested"} ({workspace.retrieval_context?.results_count ?? 0} results)</p>
+              <p><strong>Temporal mode:</strong> {String(workspace.temporal_context.mode)} {workspace.temporal_context.as_of ? `as of ${workspace.temporal_context.as_of}` : ""}</p>
+              <p><strong>Human authority:</strong> {workspace.guardrails.human_authority_required ? "Required" : "Not recorded"}</p>
+              <p><strong>Causality:</strong> {workspace.guardrails.generates_causality ? "Generated" : "Not generated"}</p>
+            </div>
+          </Panel>
+        </div>
+      )}
+    </section>
   );
 }
 
