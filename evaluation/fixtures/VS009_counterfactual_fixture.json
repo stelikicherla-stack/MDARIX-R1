@@ -1,0 +1,15 @@
+{
+  "scenario_id": "VS009",
+  "product_identifier": "PRD-NIMBUS-200",
+  "product_name": "NimbusView 200 Monitor",
+  "product_version_identifier": "B",
+  "investigation_identifier": "INV-009",
+  "intervention_type": "REMOVE_CHANGE",
+  "intervention_target": "CHG-GEN-006",
+  "intervention_description": "Test how the existing NimbusView model-change comparison changes when the identified controlled change is removed from the candidate explanation.",
+  "invariants": ["Observed NimbusView evidence remains observed evidence.", "The canonical product, ProductVersion, investigation, and graph remain unchanged."],
+  "expected_affected_relationships": ["Candidate relationships through CHG-GEN-006 are weakened in the derived context."],
+  "expected_unknowns": ["Available evidence does not establish the alternative outcome."],
+  "prohibited_conclusions": ["The removed change definitely caused the observed outcome.", "Removing the change proves the outcome would not occur."],
+  "source_basis": "Existing INV-009 question and live NimbusView change CHG-GEN-006; this fixture does not copy the AsterFlow/Component Rev B scenario."
+}
