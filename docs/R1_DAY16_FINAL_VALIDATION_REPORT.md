@@ -8,6 +8,18 @@ This validation used the live local application and canonical PostgreSQL environ
 
 The golden scenario index identifies VS009 as `INV-009`, titled Counterfactual. Live data currently identifies `INV-009` as a NimbusView 200 Monitor investigation about AI model-change comparison. The Rev-B shutdown data is associated with AsterFlow `INV-001`. This is a golden-index/live-data alignment defect, not a reason to relabel runtime data.
 
+### Lineage classification
+
+| Artifact | Product | ProductVersion | Investigation | Intervention target | Source / status |
+|---|---|---|---|---|---|
+| `evaluation/ground_truth/VS009/ground_truth.json` | not specified | not specified | INV-009 | not specified | Evaluation-only Ground Truth; authoritative scenario key |
+| `evaluation/scenarios/scenario_index.json` | not specified | not specified | INV-009 | not specified | Derived index; consistent with Ground Truth |
+| `data/golden/generators/generate_r1_golden_dataset.py` | Nimbus mapping by ID | not specified | INV-009 | not specified | Synthetic generator; generic sequential mapping |
+| `data/golden/source/qms/investigations.csv` | NimbusView 200 Monitor | not specified | INV-009 | AI model-change comparison | Live seed source; inconsistent with counterfactual evidence |
+| `data/golden/source/evidence/EV-VS001-*` | AsterFlow 100 Controller | Rev D | INV-001 | Component Rev B | Counterfactual-relevant evidence; valid Rev-B evidence lineage |
+
+Classification: `INCORRECT_LIVE_SEED_DATA` / `MULTIPLE_DEFECTS` in the scenario-to-fixture mapping. Ground Truth was not changed because it is evaluation-only and consistently identifies INV-009. No safe correction can repurpose INV-009 without damaging the separate live AI-model scenario. The correct remediation requires an approved fixture/data-lineage decision: either seed the intended counterfactual records under the canonical INV-009 product/version or revise the scenario mapping through an approved dataset change while preserving Ground Truth semantics.
+
 | Entity | Live value |
 |---|---|
 | Tenant | ACME_CARE_SYNTHETIC (`414e8075-26e8-456e-b2b2-330919f02eed`) |
@@ -43,4 +55,4 @@ Warnings are understood; none are unexplained, application defects, security def
 
 ## Status
 
-Day 16 remains blocked only because the golden VS009 identifier/data alignment is inconsistent and a complete live cross-version temporal matrix cannot be asserted from the current applicability data without broader scope expansion.
+Day 16 remains blocked because the golden VS009 identifier/data alignment is inconsistent and a complete live cross-version temporal matrix cannot be asserted from the current applicability data without an approved applicability-complete fixture. No Ground Truth or runtime canonical record was rewritten to force a pass.
