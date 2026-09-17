@@ -58,6 +58,16 @@ def health() -> HealthResponse:
         conn.execute(text("SELECT 1")).scalar_one()
     return HealthResponse(status="ok", database="reachable")
 
+@app.get("/health/live")
+def liveness() -> dict[str, str]:
+    return {"status": "alive"}
+
+@app.get("/health/ready")
+def readiness() -> dict[str, str]:
+    with engine.connect() as conn:
+        conn.execute(text("SELECT 1")).scalar_one()
+    return {"status": "ready", "database": "reachable"}
+
 
 @app.get("/api/v1/graph/nodes/{entity_type}/{entity_id}")
 def get_node(entity_type: str, entity_id: str):

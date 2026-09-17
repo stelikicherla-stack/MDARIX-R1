@@ -10,8 +10,8 @@ Day 23 controls are preserved; their validation status is unchanged.
 | Controlled export | Field/tenant/limit filtering foundation and focused tests | PARTIAL | Export API, audit persistence, and EXP matrix |
 | Backup / restore | Existing artifacts; isolated restore not evidenced | BLOCKED | Safe backup and restore validation |
 | Connector reliability | Idempotent run foundation, fingerprints, partial failure, and schema drift tests | PARTIAL | Persistent run/reconciliation audit records and API surface |
-| Operational health | Basic `/health` endpoint exists | PARTIAL | Dependency/readiness contract and tests |
-| Configuration lifecycle | Configuration concepts exist | PARTIAL | Versioned activation audit |
+| Operational health | Liveness and database readiness endpoints added | PARTIAL | Dependency health, correlation IDs, and redaction matrix |
+| Configuration lifecycle | Ordered fail-closed transition utility and tests | PARTIAL | Persistent version API and activation audit |
 | Identity and secrets | Local auth and hashing exist | PARTIAL | Enterprise provider and secret inventory evidence |
 | Day 26 readiness | AI boundary foundation added | PARTIAL | Full privacy and authorization integration |
 
