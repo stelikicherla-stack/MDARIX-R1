@@ -490,6 +490,16 @@ class AssuranceCheck(Base):
     message: Mapped[str] = mapped_column(Text, nullable=False); evidence_reference: Mapped[dict | None] = mapped_column(JSONB); details: Mapped[dict | None] = mapped_column(JSONB); created_at = tz(False)
     __table_args__ = (ForeignKeyConstraint(["tenant_id", "assurance_result_id"], ["assurance_results.tenant_id", "assurance_results.id"]), UniqueConstraint("tenant_id", "id", name="uq_assurance_checks_tenant_id_id"))
 
+class EvaluationRun(Base):
+    __tablename__ = "evaluation_runs"
+    id = uuid_pk(); tenant_id = tenant_fk(); suite_version: Mapped[str] = mapped_column(String(120), nullable=False); dataset_version: Mapped[str] = mapped_column(String(120), nullable=False); release_version: Mapped[str] = mapped_column(String(120), nullable=False); configuration_hash: Mapped[str] = mapped_column(String(64), nullable=False); status: Mapped[str] = mapped_column(String(40), nullable=False); results: Mapped[dict] = mapped_column(JSONB, nullable=False); started_at = tz(False); completed_at = tz(False); created_at = tz(False)
+    __table_args__ = (UniqueConstraint("tenant_id", "id", name="uq_evaluation_runs_tenant_id_id"),)
+
+class ReleaseAssuranceResult(Base):
+    __tablename__ = "release_assurance_results"
+    id = uuid_pk(); tenant_id = tenant_fk(); evaluation_run_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), nullable=False); release_version: Mapped[str] = mapped_column(String(120), nullable=False); suite_version: Mapped[str] = mapped_column(String(120), nullable=False); dataset_version: Mapped[str] = mapped_column(String(120), nullable=False); configuration_hash: Mapped[str] = mapped_column(String(64), nullable=False); status: Mapped[str] = mapped_column(String(40), nullable=False); critical_failures: Mapped[dict | None] = mapped_column(JSONB); limitations: Mapped[dict | None] = mapped_column(JSONB); revalidation_required: Mapped[bool] = mapped_column(nullable=False, server_default="false"); review_status: Mapped[str] = mapped_column(String(40), nullable=False, server_default="REQUIRES_HUMAN_REVIEW"); generated_at = tz(False); created_at = tz(False)
+    __table_args__ = (ForeignKeyConstraint(["tenant_id", "evaluation_run_id"], ["evaluation_runs.tenant_id", "evaluation_runs.id"]), UniqueConstraint("tenant_id", "id", name="uq_release_assurance_tenant_id_id"),)
+
 
 class ProductComponent(Base):
     __tablename__ = "product_components"
