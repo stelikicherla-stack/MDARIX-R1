@@ -49,6 +49,23 @@ const pages: Record<string, { eyebrow: string; title: string; copy: string }> = 
   "/request-demo": { eyebrow: "Get started", title: "Explore MDARIX in your lifecycle context.", copy: "Create an account, verify your email, sign in, and enter the tenant-scoped application." },
 };
 
+const anchorPages: Record<string, { eyebrow: string; title: string; copy: string }> = {
+  complaints: { eyebrow: "Solution · Complaint signals", title: "Find out what changed before complaints increased.", copy: "Connect complaint patterns to product versions, changes, components, suppliers, lots, and evidence so investigators can separate a signal from a conclusion." },
+  changes: { eyebrow: "Solution · Product changes", title: "Understand the changes that shaped the signal.", copy: "Compare product revisions and controlled changes with complaint timing, affected lots, configuration, and supporting evidence." },
+  affected: { eyebrow: "Solution · Affected products and lots", title: "Trace impact from version to lot.", copy: "Follow product versions, component relationships, suppliers, and lot context to identify what is affected and what remains unknown." },
+  supplier: { eyebrow: "Solution · Supplier investigation", title: "Connect supplier context to product reality.", copy: "Bring supplier, component, change, lot, and complaint relationships into one investigation workspace." },
+  evidence: { eyebrow: "Solution · Evidence intelligence", title: "Make evidence visible before inference.", copy: "Review source anchors, reliability, temporal context, contradictions, and missing evidence before forming a hypothesis." },
+  challenge: { eyebrow: "Solution · AI Challenger", title: "Challenge the explanation before it becomes a conclusion.", copy: "Expose competing hypotheses, contradictions, unknowns, and limitations so authorized humans can review the reasoning." },
+  unknowns: { eyebrow: "Solution · Unknowns radar", title: "See what the investigation still cannot establish.", copy: "Surface incomplete traceability, missing lot references, unsupported failure chains, and other evidence gaps." },
+  "quality-leaders": { eyebrow: "Role · Quality leaders", title: "Give quality leaders the full investigation picture.", copy: "Review product reality, evidence quality, competing explanations, assurance, and human decisions in one governed view." },
+  investigators: { eyebrow: "Role · Investigators / QA", title: "Move from signal to evidence with confidence.", copy: "Build a traceable investigation across product, change, supplier, lot, complaint, evidence, and hypothesis context." },
+  regulatory: { eyebrow: "Role · Regulatory affairs", title: "Prepare traceable review context.", copy: "Preserve provenance, limitations, temporal context, and human review boundaries for regulated investigation workflows." },
+  product: { eyebrow: "Role · Product and R&D", title: "Connect product changes to outcomes.", copy: "Understand how revisions, components, configuration, and lifecycle events relate to downstream signals." },
+  "supplier-quality": { eyebrow: "Role · Supplier quality", title: "Follow supplier and component relationships.", copy: "Investigate supplier-linked signals with affected lots, component revisions, evidence, and missing context in view." },
+  manufacturing: { eyebrow: "Role · Manufacturing quality", title: "Understand affected lots and changes.", copy: "Connect manufacturing context to product versions, lots, complaints, evidence, and investigation decisions." },
+  executives: { eyebrow: "Role · Executives", title: "Review decision-ready assurance.", copy: "See what is known, what is challenged, what remains unresolved, and where human authorization is required." },
+};
+
 const pricingPlans = [
   { name: "Free", price: "$0", cadence: "forever", note: "Explore the connected investigation workspace.", features: ["1 workspace", "Up to 3 users", "Product 360 and investigation basics", "Community guidance"], action: "Start free" },
   { name: "Individual", price: "$49", cadence: "per user / month", note: "For focused quality and investigation work.", features: ["1 workspace", "Up to 10 users", "Evidence and hypothesis intelligence", "Standard support"], action: "Choose Individual" },
@@ -57,11 +74,13 @@ const pricingPlans = [
 ];
 
 export function PublicMegaSite({ path }: { path: string }) {
-  const [openMenu, setOpenMenu] = useState<string | null>(null); const [mobileOpen, setMobileOpen] = useState(false);
+  const [openMenu, setOpenMenu] = useState<string | null>(null); const [mobileOpen, setMobileOpen] = useState(false); const [hash, setHash] = useState(() => window.location.hash.slice(1));
   useEffect(() => { const close = (event: KeyboardEvent) => { if (event.key === "Escape") { setOpenMenu(null); setMobileOpen(false); } }; window.addEventListener("keydown", close); return () => window.removeEventListener("keydown", close); }, []);
+  useEffect(() => { const update = () => setHash(window.location.hash.slice(1)); window.addEventListener("hashchange", update); return () => window.removeEventListener("hashchange", update); }, [path]);
   const capability = path.startsWith("/platform/") ? (path.split("/").pop() ?? "capability").replace(/-/g, " ").replace(/\b\w/g, letter => letter.toUpperCase()) : null;
   const roadmapTarget = path === "/roadmap" && window.location.hash ? window.location.hash.slice(1).replace(/-/g, " ").replace(/\b\w/g, letter => letter.toUpperCase()) : null;
-  const page = roadmapTarget ? { eyebrow: "Future", title: roadmapTarget, copy: "Planned as part of the broader MDARIX Medical Device Product Lifecycle Intelligence platform. This page is informational and does not represent available functionality." } : capability ? { eyebrow: "Current capability", title: capability, copy: `${capability} contributes to the connected MDARIX product-investigation workflow across product, version, temporal, evidence, tenant, and human-governance boundaries.` } : pages[path] ?? pages["/"];
+  const anchorPage = anchorPages[hash];
+  const page = roadmapTarget ? { eyebrow: "Future", title: roadmapTarget, copy: "Planned as part of the broader MDARIX Medical Device Product Lifecycle Intelligence platform. This page is informational and does not represent available functionality." } : anchorPage ?? (capability ? { eyebrow: "Current capability", title: capability, copy: `${capability} contributes to the connected MDARIX product-investigation workflow across product, version, temporal, evidence, tenant, and human-governance boundaries.` } : pages[path] ?? pages["/"]);
   const questionFlow = ["Complaint signal", "ProductVersion", "Change", "Component", "Supplier", "Affected lots", "Evidence", "Hypotheses", "Contradictions", "Unknowns", "Assurance", "Human decision"];
   const isHome = path === "/";
   if (typeof document !== "undefined") document.documentElement.dataset.publicPath = path;
