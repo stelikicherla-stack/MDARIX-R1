@@ -479,12 +479,17 @@ function InvestigationWorkspacePanel({ investigationId }: { investigationId: str
   const [mode, setMode] = useState<"current" | "event" | "known">("current");
   const [asOf, setAsOf] = useState("2026-02-15");
   const [error, setError] = useState("");
+  const [actionStatus, setActionStatus] = useState("");
+  const [pendingAction, setPendingAction] = useState<string | null>(null);
+  const requestSequence = useRef(0);
 
   useEffect(() => {
+    const sequence = ++requestSequence.current;
     const params = new URLSearchParams({ temporal_mode: mode, retrieval_top_k: "8" });
     if (mode !== "current") params.set("as_of", `${asOf}T00:00:00Z`);
     api<InvestigationWorkspace>(`/api/v1/investigations/${investigationId}/workspace?${params}`)
       .then((item) => {
+        if (sequence !== requestSequence.current) return;
         setWorkspace(item);
         setAnalysis(null);
         setHypothesisSet(null);
@@ -492,11 +497,15 @@ function InvestigationWorkspacePanel({ investigationId }: { investigationId: str
         setFailureChains(null);
         setChallengeSet(null);
         setError("");
+        setActionStatus("");
+        setPendingAction(null);
       })
-      .catch((err) => setError(err.message));
+      .catch((err) => { if (sequence === requestSequence.current) { setError(err.message); setActionStatus("BACKEND ERROR: Investigation context could not be loaded."); setPendingAction(null); } });
   }, [investigationId, mode, asOf]);
 
   const runAnalysis = () => {
+    const sequence = requestSequence.current;
+    setPendingAction("Run Analysis"); setActionStatus("RUNNING: AI Investigator analysis..."); setError("");
     const body = {
       investigation_id: investigationId,
       temporal_mode: mode,
@@ -514,13 +523,18 @@ function InvestigationWorkspacePanel({ investigationId }: { investigationId: str
         return response.json();
       })
       .then((payload) => {
+        if (sequence !== requestSequence.current) return;
         setAnalysis(payload.analysis);
+        setActionStatus(payload.analysis?.observations?.length ? "SUCCESS: Analysis results are displayed below." : "EMPTY RESULT: No observations were returned for this context.");
+        setPendingAction(null);
         setError("");
       })
-      .catch((err) => setError(err.message));
+      .catch((err) => { if (sequence === requestSequence.current) { setError(err.message); setActionStatus(`BACKEND ERROR: Analysis could not be completed (${err.message}).`); setPendingAction(null); } });
   };
 
   const runHypotheses = () => {
+    const sequence = requestSequence.current;
+    setPendingAction("Generate Hypotheses"); setActionStatus("RUNNING: Generating competing hypotheses..."); setError("");
     const body = {
       investigation_id: investigationId,
       temporal_mode: mode,
@@ -537,22 +551,28 @@ function InvestigationWorkspacePanel({ investigationId }: { investigationId: str
         return response.json();
       })
       .then((payload) => {
+        if (sequence !== requestSequence.current) return;
         setHypothesisSet(payload.hypothesis_set);
+        const count = payload.hypothesis_set?.hypotheses?.length ?? 0;
+        setActionStatus(count ? `SUCCESS: ${count} competing hypothesis result(s) are displayed below.` : "INSUFFICIENT EVIDENCE: No supportable hypotheses are available for this temporal context.");
+        setPendingAction(null);
         setError("");
       })
-      .catch((err) => setError(err.message));
+      .catch((err) => { if (sequence === requestSequence.current) { setError(err.message); setActionStatus(`BACKEND ERROR: Hypotheses could not be generated (${err.message}).`); setPendingAction(null); } });
   };
 
   const runDay14 = () => {
+    const sequence = requestSequence.current;
+    setPendingAction("Run Unknowns & Chain"); setActionStatus("RUNNING: Evaluating Unknowns Radar and Failure Chain..."); setError("");
     const body = { investigation_id: investigationId, temporal_mode: mode, as_of: mode === "current" ? null : `${asOf}T00:00:00Z` };
     fetch(`/api/v1/investigations/${investigationId}/challenges`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) })
       .then((response) => { if (!response.ok) throw new Error(`${response.status} ${response.statusText}`); return response.json(); })
-      .then((payload) => { setChallengeSet(payload.challenge_set); return fetch(`/api/v1/investigations/${investigationId}/unknowns`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) }); })
+      .then((payload) => { if (sequence !== requestSequence.current) return Promise.reject(new Error("STALE_CONTEXT")); setChallengeSet(payload.challenge_set); return fetch(`/api/v1/investigations/${investigationId}/unknowns`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) }); })
       .then((response) => { if (!response.ok) throw new Error(`${response.status} ${response.statusText}`); return response.json(); })
-      .then((payload) => { setUnknownSet(payload.unknown_set); return fetch(`/api/v1/investigations/${investigationId}/failure-chains`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) }); })
+      .then((payload) => { if (sequence !== requestSequence.current) return Promise.reject(new Error("STALE_CONTEXT")); setUnknownSet(payload.unknown_set); return fetch(`/api/v1/investigations/${investigationId}/failure-chains`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) }); })
       .then((response) => { if (!response.ok) throw new Error(`${response.status} ${response.statusText}`); return response.json(); })
-      .then((payload) => { setFailureChains(payload.failure_chain_set); setError(""); })
-      .catch((err) => setError(err.message));
+      .then((payload) => { if (sequence !== requestSequence.current) return; setFailureChains(payload.failure_chain_set); setActionStatus(payload.failure_chain_set?.chains?.length ? "SUCCESS: Unknowns and Failure Chain results are displayed below." : "INSUFFICIENT EVIDENCE: No supportable failure chain is available; the controlled result remains unresolved."); setPendingAction(null); setError(""); })
+      .catch((err) => { if (sequence === requestSequence.current && err.message !== "STALE_CONTEXT") { setError(err.message); setActionStatus(`BACKEND ERROR: Unknowns and Failure Chain could not be completed (${err.message}).`); setPendingAction(null); } });
   };
 
   return (
@@ -570,11 +590,12 @@ function InvestigationWorkspacePanel({ investigationId }: { investigationId: str
               <button key={item} className={mode === item ? "selected" : ""} onClick={() => setMode(item)}>{item}</button>
             ))}
           </div>
-          <button className="primary-action" onClick={runAnalysis}>Run Analysis</button>
-          <button className="primary-action secondary" onClick={runHypotheses}>Generate Hypotheses</button>
-          <button className="primary-action secondary" onClick={runDay14}>Run Unknowns & Chain</button>
+          <button className="primary-action" onClick={runAnalysis} disabled={Boolean(pendingAction)}> {pendingAction === "Run Analysis" ? "Running Analysis…" : "Run Analysis"}</button>
+          <button className="primary-action secondary" onClick={runHypotheses} disabled={Boolean(pendingAction)}> {pendingAction === "Generate Hypotheses" ? "Generating…" : "Generate Hypotheses"}</button>
+          <button className="primary-action secondary" onClick={runDay14} disabled={Boolean(pendingAction)}> {pendingAction === "Run Unknowns & Chain" ? "Running Unknowns & Chain…" : "Run Unknowns & Chain"}</button>
         </div>
       </div>
+      {(actionStatus || pendingAction) && <div className={`action-feedback ${actionStatus.startsWith("BACKEND") ? "error-feedback" : ""}`} role="status">{pendingAction ? actionStatus : actionStatus}</div>}
       {error && <div className="error inline">{error}</div>}
       {workspace && (
         <div className="workspace-grid">
@@ -629,6 +650,7 @@ function InvestigationWorkspacePanel({ investigationId }: { investigationId: str
       {hypothesisSet && (
         <div className="hypothesis-section">
           <div className="section-title"><GitBranch size={18} /> Competing Hypotheses</div>
+          {hypothesisSet.hypotheses.length === 0 && <div className="empty-result">No supportable hypotheses are available for the selected temporal context. This is a controlled abstention, not a negative conclusion.</div>}
           <div className="hypothesis-grid">
             {hypothesisSet.hypotheses.map((hypothesis) => (
               <article className="hypothesis-card" key={hypothesis.hypothesis_id}>
@@ -658,7 +680,7 @@ function InvestigationWorkspacePanel({ investigationId }: { investigationId: str
           <div className="analysis-list">{unknownSet.unknowns.length === 0 && <p className="empty">No material unknowns identified.</p>}{unknownSet.unknowns.map((item) => <article key={item.unknown_id}><span>{item.category} | {item.status} | {item.materiality}</span><p><strong>{item.statement}</strong></p><p>Why it matters: {item.why_it_matters}</p><small>Resolution: {item.resolution_requirement}</small></article>)}</div>
         </Panel>
         <Panel title="Failure Chain Intelligence" icon={<GitBranch />}>
-          <div className="analysis-list">{failureChains?.chains.map((chain) => <article key={chain.chain_id}><span>{chain.overall_status}</span><p>{chain.chain_statement}</p>{chain.links.map((link) => <small key={link.link_id}>{link.from_entity_or_state} — {link.relationship} → {link.to_entity_or_state} [{link.epistemic_status}]</small>)}</article>)}</div>
+          <div className="analysis-list">{!failureChains?.chains.length && <p className="empty">No supportable failure chain is available for this context. The chain remains unresolved.</p>}{failureChains?.chains.map((chain) => <article key={chain.chain_id}><span>{chain.overall_status}</span><p>{chain.chain_statement}</p>{chain.links.map((link) => <small key={link.link_id}>{link.from_entity_or_state} — {link.relationship} → {link.to_entity_or_state} [{link.epistemic_status}]</small>)}</article>)}</div>
         </Panel>
       </div>}
     </section>

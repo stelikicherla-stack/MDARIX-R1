@@ -360,6 +360,28 @@ h3 {
   margin-top: 6px;
 }
 
+.action-feedback {
+  padding: 10px 12px;
+  border: 1px solid #b9c8d8;
+  border-radius: 6px;
+  background: #eef6f7;
+  color: #1f4d5c;
+  font-weight: 700;
+}
+
+.action-feedback.error-feedback {
+  border-color: #d5a7a2;
+  background: #fff3f1;
+  color: #9f2d20;
+}
+
+.empty-result {
+  padding: 12px;
+  border-left: 3px solid #c58a27;
+  background: #fffaf0;
+  color: #6b4e19;
+}
+
 .workspace-grid {
   display: grid;
   grid-template-columns: minmax(0, 1.05fr) minmax(0, 1.35fr) minmax(0, 1fr);

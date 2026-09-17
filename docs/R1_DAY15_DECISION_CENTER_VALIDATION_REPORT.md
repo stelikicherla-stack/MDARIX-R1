@@ -38,3 +38,9 @@ Day 14 temporal semantics remain intact: Product 360 may show zero investigation
 ## Known limitations
 
 The R1 development identity mechanism uses the submitted `authorized_by_ref` / `reviewer_ref` values because full authentication is not implemented. The Decision Center is advisory and review-governed; it does not execute downstream QMS, regulatory, supplier, CAPA, recall, or product-release actions.
+
+## Manual UI action feedback remediation
+
+The Investigation Workspace action handlers were present and the live APIs returned successful structured responses. The observed defect was a frontend feedback/state presentation gap: clicks did not expose loading, completion, empty/abstention, or backend-error state, and duplicate submissions were not disabled. The UI now preserves the selected investigation and temporal context, disables action buttons while running, ignores stale responses after context changes, and renders explicit status feedback. Empty hypotheses and unsupported failure chains are shown as controlled outcomes rather than blank sections.
+
+Live INV-002 Event-as-of 2026-02-15 validation used the current UUID returned by PostgreSQL: `f94057fa-52aa-435d-8bb3-5299f2d27845`. Workspace, Analysis, Hypotheses, Unknowns, and Failure Chain returned HTTP 200. Analysis abstained for insufficient evidence; hypotheses returned three controlled competing hypotheses; Unknowns returned fifteen records; Failure Chain returned three records with preserved validation metadata and no future-information leakage.
