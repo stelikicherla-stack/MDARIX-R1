@@ -31,6 +31,10 @@ class LocalAuthService:
         identifier=email.strip().lower(); account=self.accounts.get(identifier) or next((item for item in self.accounts.values() if item.user_id.lower()==identifier),None)
         if not account or not _verify(password,account.password_hash) or account.status!="ACTIVE": raise ValueError("INVALID_CREDENTIALS")
         session=secrets.token_urlsafe(32); self.sessions[hashlib.sha256(session.encode()).hexdigest()]={"user_id":account.user_id,"expires":time.time()+3600}; return session
+    def verify_current_password(self, session, password):
+        context=self.context(session); account=self.accounts.get(context["email"])
+        if not password or not account or not _verify(password, account.password_hash): raise ValueError("INVALID_REAUTHENTICATION")
+        return context
     def context(self, session):
         item=self.sessions.get(hashlib.sha256(session.encode()).hexdigest());
         if not item or item["expires"]<time.time(): raise ValueError("UNAUTHENTICATED")

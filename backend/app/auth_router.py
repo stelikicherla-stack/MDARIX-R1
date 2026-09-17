@@ -19,7 +19,7 @@ def signup(data:Signup, db:Session=Depends(get_db)):
   if db.query(AuthUser).filter(AuthUser.username==data.email.lower()).first(): raise ValueError("ACCOUNT_EXISTS")
   result=auth_service.signup(data.email,data.password,data.display_name,data.organization); account=auth_service.accounts[data.email.lower()]; tenant=db.query(Tenant).first()
   if not tenant: raise ValueError("TENANT_NOT_CONFIGURED")
-  tenant_id=tenant.id; now=datetime.now(timezone.utc)
+  tenant_id=tenant.id; account.tenant_id=str(tenant_id); now=datetime.now(timezone.utc)
   db.add(AuthUser(id=__import__('uuid').uuid4(),tenant_id=tenant_id,username=account.email,display_name=account.display_name,company=data.organization,password_hash=account.password_hash,role=account.role,status=account.status,email_verified=False,created_at=now,updated_at=now)); db.commit()
   result["email_delivery"] = send_verification_email(account.email, result["development_token"])
   return result

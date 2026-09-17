@@ -19,6 +19,7 @@ from backend.app.evaluation_router import router as evaluation_router
 from backend.app.integration_router import router as integration_router
 from backend.app.access_router import router as access_router
 from backend.app.auth_router import router as auth_router
+from backend.app.governance_router import router as governance_router
 from graph.schemas import GraphResponse, HealthResponse, RelationshipDetail
 from graph.service import GraphError, RealityGraphService
 
@@ -36,6 +37,7 @@ app.include_router(evaluation_router)
 app.include_router(integration_router)
 app.include_router(access_router)
 app.include_router(auth_router)
+app.include_router(governance_router)
 graph_service = RealityGraphService()
 product360_service = Product360Service()
 

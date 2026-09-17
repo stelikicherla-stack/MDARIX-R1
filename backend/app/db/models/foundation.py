@@ -506,6 +506,33 @@ class AuthUser(Base):
     __table_args__ = (UniqueConstraint("tenant_id", "username", name="uq_auth_users_tenant_username"), UniqueConstraint("tenant_id", "id", name="uq_auth_users_tenant_id_id"),)
 
 
+class PlanDefinition(Base):
+    __tablename__ = "plan_definitions"
+    id = uuid_pk(); code: Mapped[str] = mapped_column(String(80), nullable=False, unique=True); name: Mapped[str] = mapped_column(String(120), nullable=False); description: Mapped[str | None] = mapped_column(Text); version: Mapped[str] = mapped_column(String(40), nullable=False); status: Mapped[str] = mapped_column(String(30), nullable=False); effective_from = tz(False); effective_to = tz(); created_at = tz(False); updated_at = tz(False)
+
+class FeatureEntitlement(Base):
+    __tablename__ = "feature_entitlements"
+    id = uuid_pk(); plan_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("plan_definitions.id"), nullable=False); feature_code: Mapped[str] = mapped_column(String(120), nullable=False); enabled: Mapped[bool] = mapped_column(nullable=False); limits: Mapped[dict | None] = mapped_column(JSONB); status: Mapped[str] = mapped_column(String(30), nullable=False); created_at = tz(False); updated_at = tz(False)
+    __table_args__ = (UniqueConstraint("plan_id", "feature_code", name="uq_plan_feature_entitlement"),)
+
+class TenantPlanAssignment(Base):
+    __tablename__ = "tenant_plan_assignments"
+    id = uuid_pk(); tenant_id = tenant_fk(); plan_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("plan_definitions.id"), nullable=False); status: Mapped[str] = mapped_column(String(30), nullable=False); effective_from = tz(False); effective_to = tz(); reason: Mapped[str | None] = mapped_column(Text); created_at = tz(False); updated_at = tz(False)
+
+class ApprovalAuthority(Base):
+    __tablename__ = "approval_authorities"
+    id = uuid_pk(); tenant_id = tenant_fk(); role_name: Mapped[str] = mapped_column(String(120), nullable=False); object_type: Mapped[str] = mapped_column(String(120), nullable=False); decision_type: Mapped[str] = mapped_column(String(120), nullable=False); scope: Mapped[dict | None] = mapped_column(JSONB); authority: Mapped[str] = mapped_column(String(30), nullable=False); version: Mapped[str] = mapped_column(String(40), nullable=False); status: Mapped[str] = mapped_column(String(30), nullable=False); effective_from = tz(False); effective_to = tz(); created_at = tz(False); updated_at = tz(False)
+
+class SegregationOfDutiesPolicy(Base):
+    __tablename__ = "segregation_of_duties_policies"
+    id = uuid_pk(); tenant_id = tenant_fk(); name: Mapped[str] = mapped_column(String(160), nullable=False); object_type: Mapped[str] = mapped_column(String(120), nullable=False); decision_type: Mapped[str] = mapped_column(String(120), nullable=False); creator_cannot_approve: Mapped[bool] = mapped_column(nullable=False); last_material_editor_cannot_approve: Mapped[bool] = mapped_column(nullable=False); version: Mapped[str] = mapped_column(String(40), nullable=False); status: Mapped[str] = mapped_column(String(30), nullable=False); effective_from = tz(False); effective_to = tz(); created_at = tz(False); updated_at = tz(False)
+
+class SignedApprovalRecord(Base):
+    __tablename__ = "signed_approval_records"
+    id = uuid_pk(); tenant_id = tenant_fk(); object_type: Mapped[str] = mapped_column(String(120), nullable=False); object_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), nullable=False); object_version: Mapped[str] = mapped_column(String(80), nullable=False); decision_type: Mapped[str] = mapped_column(String(120), nullable=False); decision: Mapped[str] = mapped_column(String(12), nullable=False); remarks: Mapped[str] = mapped_column(Text, nullable=False); signer_user_id: Mapped[str] = mapped_column(String(254), nullable=False); signer_role: Mapped[str] = mapped_column(String(120), nullable=False); signature_meaning: Mapped[str] = mapped_column(Text, nullable=False); content_fingerprint: Mapped[str] = mapped_column(String(64), nullable=False); signature_hash: Mapped[str] = mapped_column(String(64), nullable=False); status: Mapped[str] = mapped_column(String(30), nullable=False); signed_at = tz(False); invalidated_at = tz(); invalidation_reason: Mapped[str | None] = mapped_column(Text); created_at = tz(False)
+    __table_args__ = (UniqueConstraint("tenant_id", "object_type", "object_id", "object_version", "decision_type", name="uq_signed_approval_version"),)
+
+
 class ProductComponent(Base):
     __tablename__ = "product_components"
     id = uuid_pk()
