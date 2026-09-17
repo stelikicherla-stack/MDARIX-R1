@@ -1,0 +1,1 @@
+"""Tenant-configured authorization primitives."""

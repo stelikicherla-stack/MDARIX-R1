@@ -166,6 +166,7 @@ function humanize(value?: string | null) {
 }
 
 function App() {
+  const [securityContext, setSecurityContext] = useState<{display_name:string; active_role:string|null} | null>(null);
   const [products, setProducts] = useState<Product[]>([]);
   const [selectedProduct, setSelectedProduct] = useState<string>("");
   const [version, setVersion] = useState<string>("D");
@@ -177,6 +178,8 @@ function App() {
   const [selectedInvestigationId, setSelectedInvestigationId] = useState("");
   const [investigations, setInvestigations] = useState<InvestigationSummary[]>([]);
   const [investigationsLoading, setInvestigationsLoading] = useState(false);
+
+  useEffect(() => { api<{display_name:string; active_role:string|null}>("/api/v1/me/context").then(setSecurityContext).catch(() => setSecurityContext(null)); }, []);
 
   useEffect(() => {
     api<Product[]>("/api/v1/products").then((items) => {
@@ -227,6 +230,7 @@ function App() {
             <h1>{view?.product.name ?? "MDARIX R1"}</h1>
           </div>
           <div className="toolbar">
+            {securityContext && <span className="context-summary" aria-label="Authenticated user and active role">{securityContext.display_name} | {securityContext.active_role ?? "No active role"}</span>}
             <select value={selectedProduct} onChange={(e) => setSelectedProduct(e.target.value)} aria-label="Product">
               {products.map((product) => <option key={product.id} value={product.id}>{product.name}</option>)}
             </select>
