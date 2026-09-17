@@ -360,6 +360,50 @@ h3 {
   margin-top: 6px;
 }
 
+.context-summary, .helper-copy {
+  color: #607086;
+}
+
+.workflow-tabs {
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+  padding: 4px 0 8px;
+  border-bottom: 1px solid #d8dee6;
+}
+
+.workflow-tabs button {
+  flex: 0 0 auto;
+  border: 0;
+  border-bottom: 3px solid transparent;
+  background: transparent;
+  color: #607086;
+  padding: 9px 10px;
+  font-size: 12px;
+  font-weight: 800;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.workflow-tabs button:hover, .workflow-tabs button.active {
+  color: #1f6f68;
+  border-bottom-color: #1f6f68;
+}
+
+.workflow-action {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding: 14px 16px;
+  border: 1px solid #d8dee6;
+  border-radius: 8px;
+  background: #fff;
+}
+
+.workflow-action h3 { margin: 0; }
+.workflow-action p { flex: 1 1 360px; color: #607086; }
+
 .action-feedback {
   padding: 10px 12px;
   border: 1px solid #b9c8d8;

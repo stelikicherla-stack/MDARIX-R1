@@ -11,6 +11,8 @@ type Product = {
   lifecycle_status: string;
   available_versions: string[];
 };
+type InvestigationSummary = Record<string, string | null>;
+type TemporalMode = "current" | "event" | "known";
 
 type TimelineEvent = {
   event_id: string;
@@ -158,16 +160,22 @@ function fmt(value?: string | null) {
   return value.slice(0, 10);
 }
 
+function humanize(value?: string | null) {
+  return (value ?? "Not recorded").replace(/_/g, " ").replace(/\b\w/g, (letter) => letter.toUpperCase());
+}
+
 function App() {
   const [products, setProducts] = useState<Product[]>([]);
   const [selectedProduct, setSelectedProduct] = useState<string>("");
   const [version, setVersion] = useState<string>("D");
   const [asOf, setAsOf] = useState("2026-02-15");
-  const [mode, setMode] = useState<"event" | "known">("event");
+  const [mode, setMode] = useState<TemporalMode>("event");
   const [view, setView] = useState<Product360 | null>(null);
   const [error, setError] = useState("");
   const [activeView, setActiveView] = useState<"products" | "investigations" | "evidence" | "decision">("products");
   const [selectedInvestigationId, setSelectedInvestigationId] = useState("");
+  const [investigations, setInvestigations] = useState<InvestigationSummary[]>([]);
+  const [investigationsLoading, setInvestigationsLoading] = useState(false);
 
   useEffect(() => {
     api<Product[]>("/api/v1/products").then((items) => {
@@ -182,11 +190,21 @@ function App() {
     api<Product360>(`/api/v1/products/${selectedProduct}/product-360?${params}`)
       .then((item) => {
         setView(item);
-        setSelectedInvestigationId((current) => item.investigations.some((investigation) => investigation.id === current) ? current : item.investigations[0]?.id ?? "");
         setError("");
       })
       .catch((err) => setError(err.message));
   }, [selectedProduct, version, asOf, mode]);
+
+  useEffect(() => {
+    if (!selectedProduct) return;
+    let active = true;
+    setInvestigationsLoading(true);
+    api<InvestigationSummary[]>(`/api/v1/products/${selectedProduct}/investigations`)
+      .then((items) => { if (active) { setInvestigations(items); setSelectedInvestigationId((current) => items.some((item) => item.id === current) ? current : items[0]?.id ?? ""); } })
+      .catch((err) => { if (active) setError(`Investigations could not be loaded: ${err.message}`); })
+      .finally(() => { if (active) setInvestigationsLoading(false); });
+    return () => { active = false; };
+  }, [selectedProduct]);
 
   const selected = useMemo(() => products.find((p) => p.id === selectedProduct), [products, selectedProduct]);
 
@@ -196,16 +214,16 @@ function App() {
         <div className="brand">MDARIX</div>
         <nav>
           <button className={`nav-link ${activeView === "products" ? "active" : ""}`} onClick={() => setActiveView("products")}>Products</button>
-          <button className={`nav-link ${activeView === "decision" ? "active" : ""}`} onClick={() => setActiveView("decision")}>Decision Center</button>
           <button className={`nav-link ${activeView === "investigations" ? "active" : ""}`} onClick={() => setActiveView("investigations")}>Investigations</button>
           <button className={`nav-link ${activeView === "evidence" ? "active" : ""}`} onClick={() => setActiveView("evidence")}>Evidence</button>
+          <button className={`nav-link ${activeView === "decision" ? "active" : ""}`} onClick={() => setActiveView("decision")}>Decision Center</button>
         </nav>
       </aside>
       <main>
         <header className="topbar">
           <div>
-            <p className="eyebrow">Product 360</p>
-            <h1>{view?.product.name ?? "Lifecycle Reality"}</h1>
+            <p className="eyebrow">Persistent workflow context</p>
+            <h1>{view?.product.name ?? "MDARIX R1"}</h1>
           </div>
           <div className="toolbar">
             <select value={selectedProduct} onChange={(e) => setSelectedProduct(e.target.value)} aria-label="Product">
@@ -214,8 +232,13 @@ function App() {
             <select value={version} onChange={(e) => setVersion(e.target.value)} aria-label="Version">
               {(selected?.available_versions ?? ["D"]).map((item) => <option key={item} value={item}>{item}</option>)}
             </select>
+            <select value={selectedInvestigationId} onChange={(e) => setSelectedInvestigationId(e.target.value)} aria-label="Investigation" disabled={investigationsLoading || !investigations.length}>
+              {!investigations.length && <option value="">{investigationsLoading ? "Loading investigations…" : "No investigations"}</option>}
+              {investigations.map((item) => <option key={item.id} value={item.id ?? ""}>{item.investigation_identifier ?? "Investigation"} — {item.status ?? "unknown"}</option>)}
+            </select>
             <input type="date" value={asOf} onChange={(e) => setAsOf(e.target.value)} aria-label="As of date" />
             <div className="segmented">
+              <button className={mode === "current" ? "selected" : ""} onClick={() => setMode("current")}>Current</button>
               <button className={mode === "event" ? "selected" : ""} onClick={() => setMode("event")}>Event</button>
               <button className={mode === "known" ? "selected" : ""} onClick={() => setMode("known")}>Known</button>
             </div>
@@ -223,7 +246,7 @@ function App() {
         </header>
         {error && <div className="error">{error}</div>}
         {view && activeView === "products" && <Product360View view={view} />}
-        {view && activeView === "investigations" && <InvestigationAccessView view={view} selectedInvestigationId={selectedInvestigationId} onSelect={setSelectedInvestigationId} />}
+        {view && activeView === "investigations" && <InvestigationAccessView view={view} selectedInvestigationId={selectedInvestigationId} onSelect={setSelectedInvestigationId} temporalMode={mode} asOf={asOf} onOpenDecision={() => setActiveView("decision")} />}
         {view && activeView === "evidence" && <EvidenceAccessView productEvidenceCount={view.evidence.length} />}
         {view && activeView === "decision" && selectedInvestigationId && <DecisionCenterView investigationId={selectedInvestigationId} temporalMode={mode} asOf={asOf} />}
         {view && activeView === "decision" && !selectedInvestigationId && <div className="content"><section className="panel empty-state"><h2>Select an investigation first</h2><p>Open Investigations and select a live investigation before entering Decision Center.</p></section></div>}
@@ -315,7 +338,7 @@ function Product360View({ view }: { view: Product360 }) {
   );
 }
 
-function InvestigationAccessView({ view, selectedInvestigationId, onSelect }: { view: Product360; selectedInvestigationId: string; onSelect: (id: string) => void }) {
+function InvestigationAccessView({ view, selectedInvestigationId, onSelect, temporalMode, asOf, onOpenDecision }: { view: Product360; selectedInvestigationId: string; onSelect: (id: string) => void; temporalMode: TemporalMode; asOf: string; onOpenDecision: () => void }) {
   const [investigations, setInvestigations] = useState<Array<Record<string, string | null>>>([]);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState("");
@@ -366,7 +389,7 @@ function InvestigationAccessView({ view, selectedInvestigationId, onSelect }: { 
               ))}
             </div>
           </section>
-          {selectedInvestigationId && <InvestigationWorkspacePanel key={selectedInvestigationId} investigationId={selectedInvestigationId} />}
+          {selectedInvestigationId && <InvestigationWorkspacePanel key={selectedInvestigationId} investigationId={selectedInvestigationId} temporalMode={temporalMode} asOf={asOf} onOpenDecision={onOpenDecision} />}
           {!selected && <div className="error inline">The selected investigation is not available in this Product 360 result.</div>}
         </>
       )}
@@ -421,7 +444,7 @@ function EvidenceAccessView({ productEvidenceCount }: { productEvidenceCount: nu
   );
 }
 
-function DecisionCenterView({ investigationId, temporalMode, asOf }: { investigationId: string; temporalMode: "event" | "known"; asOf: string }) {
+function DecisionCenterView({ investigationId, temporalMode, asOf }: { investigationId: string; temporalMode: TemporalMode; asOf: string }) {
   const [context, setContext] = useState<DecisionContext | null>(null);
   const [advisory, setAdvisory] = useState<any>(null);
   const [selectedAction, setSelectedAction] = useState("NO_DECISION_YET");
@@ -435,18 +458,19 @@ function DecisionCenterView({ investigationId, temporalMode, asOf }: { investiga
   const [rationaleError, setRationaleError] = useState("");
   useEffect(() => {
     let active = true;
-    const params = new URLSearchParams({ temporal_mode: temporalMode, as_of: `${asOf}T00:00:00Z` });
+    const params = new URLSearchParams({ temporal_mode: temporalMode });
+    if (temporalMode !== "current") params.set("as_of", `${asOf}T00:00:00Z`);
     api<DecisionContext>(`/api/v1/investigations/${investigationId}/decision-context?${params}`)
       .then((item) => { if (active) { setContext(item); setMessage(""); } })
       .catch((err) => { if (active) setMessage(`Decision context unavailable: ${err.message}`); });
     return () => { active = false; };
   }, [investigationId, temporalMode, asOf]);
-  const temporalBody = JSON.stringify({ temporal_mode: temporalMode, as_of: `${asOf}T00:00:00Z` });
+  const temporalBody = JSON.stringify({ temporal_mode: temporalMode, as_of: temporalMode === "current" ? null : `${asOf}T00:00:00Z` });
   const runAdvisory = () => fetch(`/api/v1/investigations/${investigationId}/decision-advisory`, { method: "POST", headers: { "Content-Type": "application/json" }, body: temporalBody })
     .then((response) => { if (!response.ok) throw new Error(`${response.status} ${response.statusText}`); return response.json(); }).then(setAdvisory).catch((err) => setMessage(err.message));
   const recordDecision = () => {
     if (!rationale.trim()) { setRationaleError("Enter a human rationale before recording this decision."); setMessage("Human rationale is required before recording a decision."); rationaleRef.current?.focus(); return; }
-    fetch(`/api/v1/investigations/${investigationId}/decisions`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ selected_action: selectedAction, rationale, authorized_by_ref: "CONTROLLED_DEVELOPMENT_REVIEWER", temporal_mode: temporalMode, as_of: `${asOf}T00:00:00Z` }) })
+    fetch(`/api/v1/investigations/${investigationId}/decisions`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ selected_action: selectedAction, rationale, authorized_by_ref: "CONTROLLED_DEVELOPMENT_REVIEWER", temporal_mode: temporalMode, as_of: temporalMode === "current" ? null : `${asOf}T00:00:00Z` }) })
       .then((response) => { if (!response.ok) throw new Error(`${response.status} ${response.statusText}`); return response.json(); }).then((payload) => { setDecision(payload); setMessage("Decision recorded as REQUIRES_REVIEW. Complete Human Review below."); }).catch((err) => setMessage(err.message));
   };
   const submitReview = () => fetch(`/api/v1/investigations/decisions/${decision.id}/reviews`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ disposition: reviewDisposition, reviewer_ref: "CONTROLLED_DEVELOPMENT_REVIEWER", comments: reviewComments }) })
@@ -469,15 +493,14 @@ function DecisionItems({ items, empty }: { items: Array<Record<string, any>>; em
   return <div className="decision-items">{items.slice(0, 8).map((item, index) => <article key={String(item.item_id ?? item.hypothesis_id ?? item.unknown_id ?? item.chain_id ?? index)}><strong>{String(item.semantic_type ?? item.category ?? item.overall_status ?? "Structured context")}</strong><span>{String(item.statement ?? item.text ?? item.chain_statement ?? item.description ?? "No statement recorded.")}</span></article>)}</div>;
 }
 
-function InvestigationWorkspacePanel({ investigationId }: { investigationId: string }) {
+function InvestigationWorkspacePanel({ investigationId, temporalMode: mode, asOf, onOpenDecision }: { investigationId: string; temporalMode: TemporalMode; asOf: string; onOpenDecision: () => void }) {
   const [workspace, setWorkspace] = useState<InvestigationWorkspace | null>(null);
   const [analysis, setAnalysis] = useState<InvestigationAnalysis | null>(null);
   const [hypothesisSet, setHypothesisSet] = useState<HypothesisSet | null>(null);
   const [unknownSet, setUnknownSet] = useState<UnknownSet | null>(null);
   const [failureChains, setFailureChains] = useState<FailureChainSet | null>(null);
   const [challengeSet, setChallengeSet] = useState<ChallengeSet | null>(null);
-  const [mode, setMode] = useState<"current" | "event" | "known">("current");
-  const [asOf, setAsOf] = useState("2026-02-15");
+  const [activeTab, setActiveTab] = useState<"overview" | "evidence" | "analysis" | "hypotheses" | "challenger" | "unknowns" | "failure-chain" | "decision">("overview");
   const [error, setError] = useState("");
   const [actionStatus, setActionStatus] = useState("");
   const [pendingAction, setPendingAction] = useState<string | null>(null);
@@ -584,10 +607,10 @@ function InvestigationWorkspacePanel({ investigationId }: { investigationId: str
           <p>{workspace?.investigation.investigation_question ?? "Loading deterministic investigation context."}</p>
         </div>
         <div className="toolbar compact">
-          <input type="date" value={asOf} onChange={(event) => setAsOf(event.target.value)} aria-label="Workspace as of date" />
+          <span className="context-summary">{humanize(mode)} {mode === "current" ? "context" : `as of ${asOf}`}</span>
           <div className="segmented">
             {(["current", "event", "known"] as const).map((item) => (
-              <button key={item} className={mode === item ? "selected" : ""} onClick={() => setMode(item)}>{item}</button>
+              <button key={item} className={mode === item ? "selected" : ""} disabled>{item}</button>
             ))}
           </div>
           <button className="primary-action" onClick={runAnalysis} disabled={Boolean(pendingAction)}> {pendingAction === "Run Analysis" ? "Running Analysis…" : "Run Analysis"}</button>
@@ -595,10 +618,13 @@ function InvestigationWorkspacePanel({ investigationId }: { investigationId: str
           <button className="primary-action secondary" onClick={runDay14} disabled={Boolean(pendingAction)}> {pendingAction === "Run Unknowns & Chain" ? "Running Unknowns & Chain…" : "Run Unknowns & Chain"}</button>
         </div>
       </div>
+      <div className="workflow-tabs" role="tablist" aria-label="Investigation workflow">
+        {(["overview", "evidence", "analysis", "hypotheses", "challenger", "unknowns", "failure-chain", "decision"] as const).map((tab) => <button key={tab} role="tab" aria-selected={activeTab === tab} className={activeTab === tab ? "active" : ""} onClick={() => { setActiveTab(tab); document.getElementById(`workflow-${tab}`)?.scrollIntoView({ behavior: "smooth", block: "start" }); }}>{humanize(tab)}</button>)}
+      </div>
       {(actionStatus || pendingAction) && <div className={`action-feedback ${actionStatus.startsWith("BACKEND") ? "error-feedback" : ""}`} role="status">{pendingAction ? actionStatus : actionStatus}</div>}
       {error && <div className="error inline">{error}</div>}
       {workspace && (
-        <div className="workspace-grid">
+        <div id="workflow-overview" className="workspace-grid">
           <Panel title="Context Health" icon={<ShieldCheck />}>
             <div className="context-health">
               <Metric icon={<FileText />} label="Evidence" value={workspace.evidence_context.length} />
@@ -630,6 +656,7 @@ function InvestigationWorkspacePanel({ investigationId }: { investigationId: str
           </Panel>
         </div>
       )}
+      <section id="workflow-analysis" className="workflow-action"><h3>Analysis</h3><p>Grounded observations and possible explanations for the selected context.</p><button className="primary-action" onClick={runAnalysis} disabled={Boolean(pendingAction)}>{pendingAction === "Run Analysis" ? "Running Analysis…" : "Run Analysis"}</button></section>
       {analysis && (
         <div className="analysis-grid">
           <AnalysisPanel title="Key Observations" items={analysis.observations.slice(0, 4)} />
@@ -647,6 +674,7 @@ function InvestigationWorkspacePanel({ investigationId }: { investigationId: str
           </Panel>
         </div>
       )}
+      <section id="workflow-hypotheses" className="workflow-action"><h3>Competing hypotheses</h3><p>Preserves support, contradiction, gaps, and falsification conditions without choosing a winner.</p><button className="primary-action secondary" onClick={runHypotheses} disabled={Boolean(pendingAction)}>{pendingAction === "Generate Hypotheses" ? "Generating…" : "Generate Hypotheses"}</button></section>
       {hypothesisSet && (
         <div className="hypothesis-section">
           <div className="section-title"><GitBranch size={18} /> Competing Hypotheses</div>
@@ -674,15 +702,18 @@ function InvestigationWorkspacePanel({ investigationId }: { investigationId: str
           </Panel>
         </div>
       )}
+      <section id="workflow-challenger" className="workflow-action"><h3>Challenger, unknowns, and failure chain</h3><p>Surfaces challenges and material unknowns. An unresolved failure chain is a valid controlled result.</p><button className="primary-action secondary" onClick={runDay14} disabled={Boolean(pendingAction)}>{pendingAction === "Run Unknowns & Chain" ? "Running controlled checks…" : "Run Challenger, Unknowns & Chain"}</button></section>
       {challengeSet && <div className="analysis-grid"><Panel title="AI Challenger" icon={<ShieldCheck />}><div className="analysis-list">{challengeSet.challenges.length === 0 && <p className="empty">No material challenge identified.</p>}{challengeSet.challenges.map((item) => <article key={item.challenge_id}><span>{item.challenge_type} | {item.status} | {item.materiality}</span><p>{item.statement}</p><small>{item.rationale}</small></article>)}</div></Panel></div>}
-      {unknownSet && <div className="analysis-grid">
+      {unknownSet && <div id="workflow-unknowns" className="analysis-grid">
         <Panel title="Unknowns Radar" icon={<AlertTriangle />}>
           <div className="analysis-list">{unknownSet.unknowns.length === 0 && <p className="empty">No material unknowns identified.</p>}{unknownSet.unknowns.map((item) => <article key={item.unknown_id}><span>{item.category} | {item.status} | {item.materiality}</span><p><strong>{item.statement}</strong></p><p>Why it matters: {item.why_it_matters}</p><small>Resolution: {item.resolution_requirement}</small></article>)}</div>
         </Panel>
-        <Panel title="Failure Chain Intelligence" icon={<GitBranch />}>
+        <div id="workflow-failure-chain"><Panel title="Failure Chain Intelligence" icon={<GitBranch />}>
           <div className="analysis-list">{!failureChains?.chains.length && <p className="empty">No supportable failure chain is available for this context. The chain remains unresolved.</p>}{failureChains?.chains.map((chain) => <article key={chain.chain_id}><span>{chain.overall_status}</span><p>{chain.chain_statement}</p>{chain.links.map((link) => <small key={link.link_id}>{link.from_entity_or_state} — {link.relationship} → {link.to_entity_or_state} [{link.epistemic_status}]</small>)}</article>)}</div>
-        </Panel>
+        </Panel></div>
       </div>}
+      <section id="workflow-evidence" className="panel empty-state"><h3>Evidence review</h3><p>Use the evidence context above to see identifiers, reliability, and source anchors for the selected investigation.</p></section>
+      <section id="workflow-decision" className="panel empty-state"><h3>Decision readiness</h3><p>AI outputs inform the workflow. Authorized humans record decisions in the Decision Center.</p><button className="primary-action" onClick={onOpenDecision}>Open Decision Center</button></section>
     </section>
   );
 }
