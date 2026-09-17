@@ -325,6 +325,11 @@ h3 {
   background: #f2faf8;
 }
 
+.review-success {
+  color: #1f6f68;
+  font-weight: 700;
+}
+
 .workspace-header {
   display: flex;
   justify-content: space-between;
