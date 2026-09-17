@@ -45,6 +45,32 @@ button, input, select {
   color: #c9d2dc;
 }
 
+.side-nav .nav-link {
+  border: 0;
+  background: transparent;
+  text-align: left;
+  padding: 10px 12px;
+  border-radius: 6px;
+  color: #c9d2dc;
+  cursor: pointer;
+}
+
+.side-nav .nav-link:hover, .side-nav .nav-link.active {
+  background: #24313f;
+  color: #ffffff;
+}
+
+.side-nav .disabled-nav {
+  color: #7f8b98;
+  cursor: not-allowed;
+}
+
+.side-nav .disabled-nav small {
+  display: block;
+  font-size: 10px;
+  color: #a9b3bd;
+}
+
 .side-nav .active {
   background: #24313f;
   color: #ffffff;
@@ -223,6 +249,38 @@ h3 {
   display: grid;
   gap: 16px;
   padding: 4px 0;
+}
+
+.investigation-list {
+  display: grid;
+  gap: 10px;
+}
+
+.investigation-option {
+  display: grid;
+  gap: 5px;
+  width: 100%;
+  padding: 12px;
+  border: 1px solid #c7d0db;
+  border-radius: 6px;
+  background: #ffffff;
+  color: #18212f;
+  text-align: left;
+  cursor: pointer;
+}
+
+.investigation-option:hover, .investigation-option.selected {
+  border-color: #1f6f68;
+  background: #eef6f7;
+}
+
+.investigation-option span, .investigation-option small, .empty-state p {
+  color: #607086;
+}
+
+.empty-state {
+  display: grid;
+  gap: 8px;
 }
 
 .workspace-header {

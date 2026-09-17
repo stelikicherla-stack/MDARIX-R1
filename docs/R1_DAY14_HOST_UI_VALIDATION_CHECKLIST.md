@@ -1,6 +1,6 @@
 # R1 Day 14 Host UI Validation Checklist
 
-Run on the Windows host after PostgreSQL, backend, and frontend are running. Do not fill Actual or Result before performing the check.
+Run on the Windows host after PostgreSQL, backend, and frontend are running. Current frontend URL from the latest host run: `http://127.0.0.1:5178/` (Vite moved from occupied port 5177). Do not fill Actual or Result before performing the check.
 
 | Screen | Action | Expected result | Actual result | Pass/Fail | Notes |
 |---|---|---|---|---|---|

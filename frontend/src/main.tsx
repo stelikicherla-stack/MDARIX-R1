@@ -116,6 +116,16 @@ type HypothesisSet = {
 type UnknownSet = { unknowns: Array<{ unknown_id: string; category: string; statement: string; why_it_matters: string; resolution_requirement: string; status: string; materiality: string; provenance: Record<string, unknown> }> };
 type FailureChainSet = { chains: Array<{ chain_id: string; chain_statement: string; overall_status: string; links: Array<{ link_id: string; from_entity_or_state: string; relationship: string; to_entity_or_state: string; epistemic_status: string; unknowns: string[] }> }> };
 type ChallengeSet = { challenges: Array<{ challenge_id: string; challenge_type: string; statement: string; rationale: string; materiality: string; status: string }> };
+type EvidenceSummary = {
+  id: string;
+  evidence_identifier: string;
+  evidence_type: string;
+  title: string;
+  source_system?: string | null;
+  reliability_status?: string | null;
+  fact_type?: string | null;
+  document_ref?: string | null;
+};
 
 const api = async <T,>(path: string): Promise<T> => {
   const response = await fetch(path);
@@ -136,6 +146,8 @@ function App() {
   const [mode, setMode] = useState<"event" | "known">("event");
   const [view, setView] = useState<Product360 | null>(null);
   const [error, setError] = useState("");
+  const [activeView, setActiveView] = useState<"products" | "investigations" | "evidence">("products");
+  const [selectedInvestigationId, setSelectedInvestigationId] = useState("");
 
   useEffect(() => {
     api<Product[]>("/api/v1/products").then((items) => {
@@ -147,7 +159,13 @@ function App() {
   useEffect(() => {
     if (!selectedProduct) return;
     const params = new URLSearchParams({ version_id: version, as_of: `${asOf}T00:00:00Z`, mode });
-    api<Product360>(`/api/v1/products/${selectedProduct}/product-360?${params}`).then(setView).catch((err) => setError(err.message));
+    api<Product360>(`/api/v1/products/${selectedProduct}/product-360?${params}`)
+      .then((item) => {
+        setView(item);
+        setSelectedInvestigationId((current) => item.investigations.some((investigation) => investigation.id === current) ? current : item.investigations[0]?.id ?? "");
+        setError("");
+      })
+      .catch((err) => setError(err.message));
   }, [selectedProduct, version, asOf, mode]);
 
   const selected = useMemo(() => products.find((p) => p.id === selectedProduct), [products, selectedProduct]);
@@ -157,10 +175,10 @@ function App() {
       <aside className="side-nav">
         <div className="brand">MDARIX</div>
         <nav>
-          <span className="active">Products</span>
-          <span>Decision Center</span>
-          <span>Investigations</span>
-          <span>Evidence</span>
+          <button className={`nav-link ${activeView === "products" ? "active" : ""}`} onClick={() => setActiveView("products")}>Products</button>
+          <span className="disabled-nav" title="Decision Center is planned for Day 15">Decision Center <small>Day 15</small></span>
+          <button className={`nav-link ${activeView === "investigations" ? "active" : ""}`} onClick={() => setActiveView("investigations")}>Investigations</button>
+          <button className={`nav-link ${activeView === "evidence" ? "active" : ""}`} onClick={() => setActiveView("evidence")}>Evidence</button>
         </nav>
       </aside>
       <main>
@@ -184,15 +202,15 @@ function App() {
           </div>
         </header>
         {error && <div className="error">{error}</div>}
-        {view && <Product360View view={view} />}
+        {view && activeView === "products" && <Product360View view={view} />}
+        {view && activeView === "investigations" && <InvestigationAccessView view={view} selectedInvestigationId={selectedInvestigationId} onSelect={setSelectedInvestigationId} />}
+        {view && activeView === "evidence" && <EvidenceAccessView productEvidenceCount={view.evidence.length} />}
       </main>
     </div>
   );
 }
 
 function Product360View({ view }: { view: Product360 }) {
-  const investigationId = view.investigations[0]?.id;
-
   return (
     <div className="content">
       <section className="product-header">
@@ -242,8 +260,6 @@ function Product360View({ view }: { view: Product360 }) {
         </Panel>
       </section>
 
-      {investigationId && <InvestigationWorkspacePanel investigationId={investigationId} />}
-
       <section className="two-col">
         <Panel title="Risk & Controls" icon={<ShieldCheck />}>
           <DenseTable rows={view.risks.slice(0, 6)} columns={["risk_identifier", "description", "status"]} />
@@ -271,6 +287,112 @@ function Product360View({ view }: { view: Product360 }) {
           ))}
         </div>
       </section>
+    </div>
+  );
+}
+
+function InvestigationAccessView({ view, selectedInvestigationId, onSelect }: { view: Product360; selectedInvestigationId: string; onSelect: (id: string) => void }) {
+  const [investigations, setInvestigations] = useState<Array<Record<string, string | null>>>([]);
+  const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState("");
+  const selected = investigations.find((investigation) => investigation.id === selectedInvestigationId);
+
+  useEffect(() => {
+    let active = true;
+    setLoading(true);
+    api<Array<Record<string, string | null>>>(`/api/v1/products/${view.product.id}/investigations`)
+      .then((items) => {
+        if (!active) return;
+        setInvestigations(items);
+        onSelect(items.some((investigation) => investigation.id === selectedInvestigationId) ? selectedInvestigationId : items[0]?.id ?? "");
+        setLoadError("");
+      })
+      .catch((err) => { if (active) setLoadError(err.message); })
+      .finally(() => { if (active) setLoading(false); });
+    return () => { active = false; };
+  }, [view.product.id]);
+
+  return (
+    <div className="content">
+      <section className="product-header">
+        <div>
+          <p className="eyebrow">Investigation access</p>
+          <h2>{view.product.name}</h2>
+          <p>Version {view.selected_version?.version_identifier ?? "not recorded"}. Select an available investigation to open the existing Day 10–14 workspace.</p>
+        </div>
+        <div className="version-pill"><ClipboardList size={16} /> {loading ? "Loading" : `${investigations.length} available`}</div>
+      </section>
+      {loadError && <div className="error">Investigations could not be loaded: {loadError}</div>}
+      {!loading && !loadError && investigations.length === 0 ? (
+        <section className="panel empty-state">
+          <h2>No investigations available</h2>
+          <p>The selected product has no investigation records in the current Product 360 result. No workspace has been created or inferred.</p>
+        </section>
+      ) : (
+        <>
+          <section className="panel">
+            <div className="section-title"><ClipboardList size={18} /> Available investigations</div>
+            <div className="investigation-list">
+              {investigations.map((investigation) => (
+                <button key={investigation.id} className={`investigation-option ${investigation.id === selectedInvestigationId ? "selected" : ""}`} onClick={() => onSelect(investigation.id ?? "")}>
+                  <strong>{investigation.investigation_identifier ?? investigation.id}</strong>
+                  <span>{investigation.investigation_question ?? "No question recorded."}</span>
+                  <small>ID: {investigation.id} | Status: {investigation.status ?? "not recorded"}</small>
+                </button>
+              ))}
+            </div>
+          </section>
+          {selectedInvestigationId && <InvestigationWorkspacePanel key={selectedInvestigationId} investigationId={selectedInvestigationId} />}
+          {!selected && <div className="error inline">The selected investigation is not available in this Product 360 result.</div>}
+        </>
+      )}
+    </div>
+  );
+}
+
+function EvidenceAccessView({ productEvidenceCount }: { productEvidenceCount: number }) {
+  const [evidence, setEvidence] = useState<EvidenceSummary[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    let active = true;
+    setLoading(true);
+    api<EvidenceSummary[]>("/api/v1/evidence?limit=50")
+      .then((items) => { if (active) { setEvidence(items); setError(""); } })
+      .catch((err) => { if (active) setError(err.message); })
+      .finally(() => { if (active) setLoading(false); });
+    return () => { active = false; };
+  }, []);
+
+  return (
+    <div className="content">
+      <section className="product-header">
+        <div>
+          <p className="eyebrow">Evidence access</p>
+          <h2>Tenant evidence records</h2>
+          <p>Product 360 currently shows {productEvidenceCount} evidence record{productEvidenceCount === 1 ? "" : "s"} linked to the selected product scope. This list is tenant-scoped and does not imply a product link.</p>
+        </div>
+        <div className="version-pill"><FileText size={16} /> {loading ? "Loading" : `${evidence.length} available`}</div>
+      </section>
+      {error && <div className="error">Evidence could not be loaded: {error}</div>}
+      {!loading && !error && evidence.length === 0 && (
+        <section className="panel empty-state"><h2>No evidence records available</h2><p>No tenant-scoped evidence records were returned. This is an empty state, not a conclusion about the selected product.</p></section>
+      )}
+      {!loading && evidence.length > 0 && (
+        <section className="panel">
+          <div className="section-title"><FileText size={18} /> Available evidence</div>
+          <div className="evidence-list">
+            {evidence.map((item) => (
+              <article key={item.id}>
+                <strong>{item.evidence_identifier}</strong>
+                <span>{item.title}</span>
+                <small>{item.evidence_type} | {item.reliability_status ?? "reliability not recorded"} | {item.source_system ?? "source not recorded"}</small>
+              </article>
+            ))}
+          </div>
+        </section>
+      )}
     </div>
   );
 }
@@ -362,7 +484,7 @@ function InvestigationWorkspacePanel({ investigationId }: { investigationId: str
   };
 
   return (
-    <section className="workspace-section">
+    <section id="investigation-workspace" className="workspace-section">
       <div className="workspace-header">
         <div>
           <div className="section-title"><ClipboardList size={18} /> Investigation Workspace</div>

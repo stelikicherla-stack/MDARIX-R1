@@ -21,6 +21,8 @@ Day 8–Day 13 routers exist and Day 14 routes are registered through `backend.a
 
 The frontend now exposes a controlled `Run Unknowns & Chain` action and renders Unknowns Radar and Failure Chain panels. Frontend TypeScript/Vite build: **PASS**.
 
+UI remediation finding: Investigations and Evidence were previously plain non-interactive navigation spans. They now scroll to the existing investigation workspace and evidence sections; Decision Center is explicitly marked Day 15. Product 360's `Evidence: 0` is produced by its investigation-scoped evidence query, which joins evidence through staged source records; the UI must use the investigation workspace evidence panel when Product 360 scope has no matching linked evidence. No evidence was fabricated.
+
 Manual host UI procedure: `docs/R1_DAY14_HOST_UI_VALIDATION_CHECKLIST.md`.
 
 ## Automated validation

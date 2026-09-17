@@ -94,6 +94,14 @@ def list_products() -> list[ProductSummary]:
     return product360_service.list_products()
 
 
+@app.get("/api/v1/products/{product_id}/investigations")
+def list_product_investigations(product_id: str) -> list[dict]:
+    try:
+        return product360_service.list_product_investigations(product_id)
+    except Product360Error as exc:
+        raise product_error(exc) from exc
+
+
 @app.get("/api/v1/products/{product_id}/product-360", response_model=Product360Response)
 def get_product360(product_id: str, version_id: str | None = None, as_of: datetime | None = None, mode: str = Query("current", pattern="^(current|event|known)$")) -> Product360Response:
     try:

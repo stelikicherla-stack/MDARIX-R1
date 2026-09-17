@@ -71,6 +71,18 @@ def test_complaint_investigation_context():
     assert any(i["investigation_identifier"] == "INV-001" for i in view.investigations)
 
 
+def test_product_investigation_access_preserves_association_outside_historical_snapshot():
+    product_id = str(primary_product())
+    response = client.get(f"/api/v1/products/{product_id}/investigations")
+    assert response.status_code == 200
+    payload = response.json()
+    assert [item["investigation_identifier"] for item in payload] == [f"INV-{number:03d}" for number in range(1, 8)]
+    assert len({item["id"] for item in payload}) == 7
+
+    historical = service.product360(product_id, version_id="D", as_of=datetime(2026, 2, 15, tzinfo=timezone.utc), mode="event")
+    assert historical.investigations == []
+
+
 def test_risk_failure_mode_control_evidence_context():
     view = service.product360(str(primary_product()), version_id="D")
     assert view.risks

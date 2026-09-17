@@ -203,6 +203,20 @@ class Product360Service:
     def investigations(self, conn, tenant_id: str, product_id: str):
         return conn.execute(text("SELECT id, investigation_identifier, investigation_question, status, opened_at, closed_at FROM investigations WHERE tenant_id=:tenant_id AND product_id=:product_id ORDER BY opened_at"), {"tenant_id": tenant_id, "product_id": product_id}).mappings().all()
 
+    def list_product_investigations(self, product_id: str) -> list[dict[str, Any]]:
+        """Return all investigations associated with a product for workspace access.
+
+        This intentionally does not apply an as-of filter: association access must not
+        reinterpret a historical Product 360 snapshot as absence of an investigation.
+        """
+        tenant_id = self.tenant_id()
+        with engine.connect() as conn:
+            product = conn.execute(text("SELECT id FROM products WHERE tenant_id=:tenant_id AND id=:id"), {"tenant_id": tenant_id, "id": product_id}).mappings().one_or_none()
+            if not product:
+                raise Product360Error("PRODUCT_NOT_FOUND", "Product not found")
+            rows = self.investigations(conn, tenant_id, product_id)
+        return [rowdict(row) for row in rows]
+
     def evidence(self, conn, tenant_id: str, investigations, as_of: datetime | None, mode: str):
         ids = [str(row["id"]) for row in investigations]
         if not ids:
