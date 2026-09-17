@@ -500,6 +500,11 @@ class ReleaseAssuranceResult(Base):
     id = uuid_pk(); tenant_id = tenant_fk(); evaluation_run_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), nullable=False); release_version: Mapped[str] = mapped_column(String(120), nullable=False); suite_version: Mapped[str] = mapped_column(String(120), nullable=False); dataset_version: Mapped[str] = mapped_column(String(120), nullable=False); configuration_hash: Mapped[str] = mapped_column(String(64), nullable=False); status: Mapped[str] = mapped_column(String(40), nullable=False); critical_failures: Mapped[dict | None] = mapped_column(JSONB); limitations: Mapped[dict | None] = mapped_column(JSONB); revalidation_required: Mapped[bool] = mapped_column(nullable=False, server_default="false"); review_status: Mapped[str] = mapped_column(String(40), nullable=False, server_default="REQUIRES_HUMAN_REVIEW"); generated_at = tz(False); created_at = tz(False)
     __table_args__ = (ForeignKeyConstraint(["tenant_id", "evaluation_run_id"], ["evaluation_runs.tenant_id", "evaluation_runs.id"]), UniqueConstraint("tenant_id", "id", name="uq_release_assurance_tenant_id_id"),)
 
+class AuthUser(Base):
+    __tablename__ = "auth_users"
+    id = uuid_pk(); tenant_id = tenant_fk(); username: Mapped[str] = mapped_column(String(254), nullable=False); display_name: Mapped[str] = mapped_column(String(120), nullable=False); company: Mapped[str] = mapped_column(String(160), nullable=False); password_hash: Mapped[str] = mapped_column(Text, nullable=False); role: Mapped[str] = mapped_column(String(120), nullable=False, server_default="Viewer"); status: Mapped[str] = mapped_column(String(40), nullable=False, server_default="PENDING_VERIFICATION"); email_verified: Mapped[bool] = mapped_column(nullable=False, server_default="false"); created_at = tz(False); updated_at = tz(False)
+    __table_args__ = (UniqueConstraint("tenant_id", "username", name="uq_auth_users_tenant_username"), UniqueConstraint("tenant_id", "id", name="uq_auth_users_tenant_id_id"),)
+
 
 class ProductComponent(Base):
     __tablename__ = "product_components"
