@@ -21,6 +21,11 @@ type TimelineEvent = {
   effective_time?: string;
   recorded_time?: string;
   knowledge_available_time?: string;
+  description?: string;
+  related_entity_type?: string;
+  related_entity_id?: string;
+  source?: string;
+  metadata?: Record<string, unknown>;
   quality_status?: string;
   late_arriving: boolean;
 };
@@ -228,6 +233,7 @@ function App() {
 }
 
 function Product360View({ view }: { view: Product360 }) {
+  const [expandedEventId, setExpandedEventId] = useState<string | null>(null);
   return (
     <div className="content">
       <section className="product-header">
@@ -291,15 +297,16 @@ function Product360View({ view }: { view: Product360 }) {
         <div className="section-title"><CalendarClock size={18} /> Lifecycle Timeline</div>
         <div className="timeline">
           {view.timeline.slice(0, 40).map((event) => (
-            <article key={event.event_id}>
+            <article key={event.event_id} className={expandedEventId === event.event_id ? "timeline-event expanded" : "timeline-event"}>
               <div className="event-date">{fmt(event.event_time ?? event.effective_time)}</div>
               <div className="event-body">
                 <span className="category">{event.category}</span>
                 <h3>{event.title}</h3>
                 <p>Event {fmt(event.event_time)} · Effective {fmt(event.effective_time)} · Recorded {fmt(event.recorded_time)} · Known {fmt(event.knowledge_available_time)}</p>
                 {event.late_arriving && <span className="late">Late-arriving evidence</span>}
+                {expandedEventId === event.event_id && <div className="event-details"><p><strong>Description:</strong> {event.description ?? "No additional description recorded."}</p><p><strong>Related entity:</strong> {event.related_entity_type ?? "Not recorded"} / {event.related_entity_id ?? "Not recorded"}</p><p><strong>Source:</strong> {event.source ?? "Not recorded"}</p><p><strong>Provenance:</strong> {event.metadata?.provenance_available === false ? "Not available" : "Available when recorded by the source context."}</p></div>}
               </div>
-              <ChevronRight size={16} />
+              <button className="timeline-toggle" aria-label={`${expandedEventId === event.event_id ? "Collapse" : "Expand"} ${event.title}`} aria-expanded={expandedEventId === event.event_id} onClick={() => setExpandedEventId((current) => current === event.event_id ? null : event.event_id)}><ChevronRight size={16} /></button>
             </article>
           ))}
         </div>

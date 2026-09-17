@@ -505,6 +505,43 @@ th {
   padding: 10px 0;
 }
 
+.timeline-event {
+  transition: background 120ms ease;
+}
+
+.timeline-event.expanded {
+  background: #f6f9fa;
+}
+
+.timeline-toggle {
+  display: grid;
+  place-items: center;
+  border: 0;
+  background: transparent;
+  color: #18212f;
+  cursor: pointer;
+  border-radius: 50%;
+  padding: 4px;
+}
+
+.timeline-toggle:hover, .timeline-toggle:focus-visible {
+  background: #dfeeed;
+  outline: 2px solid #1f6f68;
+}
+
+.timeline-event.expanded .timeline-toggle svg {
+  transform: rotate(90deg);
+}
+
+.event-details {
+  display: grid;
+  gap: 5px;
+  margin-top: 10px;
+  padding: 10px;
+  border-left: 3px solid #1f6f68;
+  background: #ffffff;
+}
+
 .event-date {
   color: #607086;
   font-weight: 700;
