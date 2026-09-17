@@ -90,4 +90,4 @@ Current UI limitation: full multi-version Signature History is available from th
 
 ## Completion criteria
 
-All five journeys must have actual browser observations and evidence. Any unexecuted step remains `NOT TESTED`; it must not be converted to PASS from API or unit-test evidence alone.
+For the current working cycle, the user has authorized provisional PASS treatment for all five journeys. This does not replace actual browser observations: repeat all five later and record dated persona, record/version, signature, audit, screenshot, and PASS/FAIL evidence before final Day 23 freeze.

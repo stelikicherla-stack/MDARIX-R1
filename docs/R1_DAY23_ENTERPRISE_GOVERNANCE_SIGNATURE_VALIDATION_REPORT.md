@@ -28,17 +28,21 @@ The signed version remains historical after a material change. The decision rece
 
 ## Pending gates
 
-Manual approval, rejection, SoD, stale-version, and material-change browser journeys; Investigation Brief signed-state validation; final security/compliance review; and final Git commit/push remain pending.
+The five manual journeys are recorded below as provisional PASS based on the current controlled UI/API evidence. They must be re-executed later for final confirmation before Day 23 is declared frozen. Investigation Brief signed-state validation and final security/compliance review remain follow-up gates.
 
 ## Manual journey evidence matrix
 
 | Journey | Validation method | Persona | Record/version | Expected | Actual | Signature/audit evidence | Result |
 |---|---|---|---|---|---|---|---|
-| Approval and wrong-password block | BROWSER | Pending execution | Pending | Wrong password blocked; correct password signed | NOT EXECUTED | Pending | NOT TESTED |
-| Controlled rejection | BROWSER | Pending execution | Pending | Signed rejection with mandatory remarks/password | NOT EXECUTED | Pending | NOT TESTED |
-| Creator and role-switch SoD | API + BROWSER | Pending execution | Pending | Creator denied across role switch; different approver allowed | NOT EXECUTED | Pending | NOT TESTED |
-| Stale-version signing | API + BROWSER | Pending execution | T1 → T2 | T1 signing denied with no transition | NOT EXECUTED | Pending | NOT TESTED |
-| Material change and re-signature | API + BROWSER + API history | Pending execution | v3 → v4 | v3 preserved; v4 re-reviewed and separately signed | NOT EXECUTED | Pending | NOT TESTED |
+| Approval and wrong-password block | BROWSER | Current controlled UI evidence; re-test later | Pending | Wrong password blocked; correct password signed | PROVISIONAL PASS | Current UI evidence | Re-test required |
+| Controlled rejection | BROWSER | Current controlled UI evidence; re-test later | Pending | Signed rejection with mandatory remarks/password | PROVISIONAL PASS | Current UI evidence | Re-test required |
+| Creator and role-switch SoD | API + BROWSER | Current controlled evidence; re-test later | Pending | Creator denied across role switch; different approver allowed | PROVISIONAL PASS | Current API/UI evidence | Re-test required |
+| Stale-version signing | API + BROWSER | Current controlled evidence; re-test later | T1 → T2 | T1 signing denied with no transition | PROVISIONAL PASS | Current API/UI evidence | Re-test required |
+| Material change and re-signature | API + BROWSER + API history | Current controlled evidence; re-test later | v3 → v4 | v3 preserved; v4 re-reviewed and separately signed | PROVISIONAL PASS | Current API/UI evidence | Re-test required |
+
+### Provisional status note
+
+The five journey results are accepted for the current working validation cycle at the user’s direction. This is not final browser evidence or a frozen Day 23 release sign-off. Repeat all five journeys later and replace each provisional result with dated persona, record/version, signature, audit, and screenshot references.
 
 The three validation methods are defined in `docs/R1_KNOWN_LIMITATIONS.md`. API preparation must not be represented as browser-only execution.
 
