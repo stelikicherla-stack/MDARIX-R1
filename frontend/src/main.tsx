@@ -166,6 +166,9 @@ function humanize(value?: string | null) {
 }
 
 function App() {
+  const publicPath = window.location.pathname;
+  if (publicPath === "/" || publicPath.startsWith("/platform") || publicPath.startsWith("/solutions") || publicPath.startsWith("/ai-trust") || publicPath.startsWith("/integrations") || publicPath.startsWith("/security") || publicPath.startsWith("/request-demo")) return <PublicSite path={publicPath} />;
+  if (["/signin", "/signup", "/forgot-password"].includes(publicPath)) return <AuthPage mode={publicPath.slice(1)} />;
   const [securityContext, setSecurityContext] = useState<{display_name:string; active_role:string|null} | null>(null);
   const [products, setProducts] = useState<Product[]>([]);
   const [selectedProduct, setSelectedProduct] = useState<string>("");
@@ -258,6 +261,27 @@ function App() {
       </main>
     </div>
   );
+}
+
+function PublicSite({ path }: { path: string }) {
+  const page = path === "/" ? "home" : path.slice(1);
+  const content: Record<string, {title:string; copy:string}> = {
+    home:{title:"Turn fragmented medical-device lifecycle data into trusted product decisions.",copy:"MDARIX connects quality, product, manufacturing and post-market evidence to reconstruct what happened, investigate why it happened, and support controlled human decisions."},
+    platform:{title:"Medical Device Lifecycle Investigation & Decision Intelligence",copy:"Connect lifecycle evidence, reconstruct product reality, investigate with grounded intelligence, challenge assumptions, and preserve what remains unknown."},
+    solutions:{title:"Clarity for the decisions that matter",copy:"Support complaint investigation, post-market intelligence, product/version impact analysis, supplier investigation, and quality decision support."},
+    "ai-trust":{title:"AI recommends. MDARIX verifies what it can. Authorized humans decide.",copy:"Evidence grounding, citation verification, temporal and ProductVersion validation, provenance, assurance, and human review keep AI in its proper role."},
+    integrations:{title:"Work above the systems you already trust",copy:"Connect QMS, PLM, ERP/MES, CRM, documents, APIs and files through a configuration-driven Integration Gateway."},
+    security:{title:"Designed for controlled, traceable intelligence",copy:"Tenant isolation, role and field authorization, action controls, provenance, and human authority are part of the MDARIX architecture."},
+    "request-demo":{title:"See MDARIX in your lifecycle context",copy:"Tell us what you are trying to understand across product, quality, manufacturing and post-market evidence."},
+  };
+  const item=content[page] ?? content.home;
+  return <div className="public-shell"><header className="public-header"><a className="brand" href="/">MDARIX</a><nav><a href="/platform">Platform</a><a href="/solutions">Solutions</a><a href="/ai-trust">AI Trust</a><a href="/integrations">Integrations</a><a href="/security">Security</a></nav><div className="public-actions"><a href="/signin">Sign in</a><a className="primary-action" href="/request-demo">Request a demo</a></div></header><main className="public-main"><section className="public-hero"><span className="eyebrow">Medical device lifecycle intelligence</span><h1>{item.title}</h1><p>{item.copy}</p><div className="public-cta"><a className="primary-action" href="/request-demo">Request a demo</a><a className="secondary-link" href="/platform">Explore MDARIX →</a></div></section><section className="public-story"><div><span className="eyebrow">One connected reality</span><h2>Connect. Reconstruct. Investigate. Challenge. Decide.</h2></div><div className="story-grid"><article><strong>CONNECT</strong><p>Bring evidence together from existing systems of record.</p></article><article><strong>RECONSTRUCT</strong><p>Understand product, version, component, supplier, lot and complaint relationships across time.</p></article><article><strong>INVESTIGATE</strong><p>Use grounded intelligence while preserving contradictions and unknowns.</p></article><article><strong>DECIDE</strong><p>Support authorized human decisions with traceable evidence.</p></article></div></section></main><footer className="public-footer"><span>MDARIX — System of Intelligence, not System of Record.</span><span>Privacy · Terms · Contact</span></footer></div>;
+}
+
+function AuthPage({ mode }: { mode: string }) {
+  const [message,setMessage]=useState(""); const [email,setEmail]=useState(""); const [password,setPassword]=useState(""); const [name,setName]=useState("");
+  const submit=async(e:React.FormEvent)=>{e.preventDefault(); const endpoint=mode==="signin"?"signin":mode==="signup"?"signup":"forgot-password"; const body=mode==="signup"?{email,password,display_name:name,organization:name}: {email,password}; const response=await fetch(`/api/v1/auth/${endpoint}`,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)}); const data=await response.json(); setMessage(response.ok?(mode==="signin"?"Signed in. Loading MDARIX…":"Request received. Follow the controlled verification/reset flow."):(data.detail?.message??"Request could not be completed.")); if(response.ok&&mode==="signin") window.location.href="/app";};
+  return <div className="auth-shell"><a className="brand" href="/">MDARIX</a><form className="auth-card" onSubmit={submit}><span className="eyebrow">{mode==="signin"?"Welcome back":"MDARIX access"}</span><h1>{mode==="signin"?"Sign in to MDARIX":mode==="signup"?"Create your MDARIX account":"Reset your password"}</h1>{mode==="signup"&&<input aria-label="Display name" required placeholder="Full name" value={name} onChange={e=>setName(e.target.value)}/>}<input aria-label="Work email" required type="email" placeholder="Work email" value={email} onChange={e=>setEmail(e.target.value)}/>{mode!=="forgot-password"&&<input aria-label="Password" required type="password" placeholder="Password" value={password} onChange={e=>setPassword(e.target.value)}/>}<button className="primary-action" type="submit">{mode==="signin"?"Sign in":mode==="signup"?"Create account":"Send reset instructions"}</button>{message&&<p role="status">{message}</p>}<p className="auth-links"><a href="/signup">Create account</a> · <a href="/signin">Sign in</a> · <a href="/forgot-password">Forgot password?</a></p></form></div>;
 }
 
 function Product360View({ view }: { view: Product360 }) {
