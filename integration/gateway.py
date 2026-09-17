@@ -77,3 +77,32 @@ def reconcile(source_count, accepted, rejected, unresolved, duplicates, persiste
 def resolve_identity(value, candidates):
     matches=[candidate for candidate in candidates if candidate.get("key") == value]
     return {"status":"RESOLVED","match":matches[0]} if len(matches)==1 else {"status":"AMBIGUOUS" if len(matches)>1 else "UNRESOLVED","match":None}
+
+CONNECTOR_STATES = {"HEALTHY", "DEGRADED", "FAILED", "STALE", "DISABLED", "UNKNOWN"}
+
+def source_record_fingerprint(tenant_id: str, source_system: str, source_record_id: str, source_record_version: str | None, record: dict) -> str:
+    payload = json.dumps({"tenant_id": tenant_id, "source_system": source_system, "source_record_id": source_record_id, "source_record_version": source_record_version, "record": record}, sort_keys=True, default=str).encode()
+    return hashlib.sha256(payload).hexdigest()
+
+@dataclass
+class ConnectorRun:
+    tenant_id: str; connection_id: str; run_id: str; state: str = "UNKNOWN"; processed: int = 0; accepted: int = 0; rejected: int = 0; duplicates: int = 0; failures: list[dict] = field(default_factory=list); seen_fingerprints: set[str] = field(default_factory=set)
+    def __post_init__(self):
+        if self.state not in CONNECTOR_STATES: raise ValueError("unsupported connector state")
+    def ingest(self, records: list[dict], *, source_system: str, required_fields: set[str]) -> dict:
+        accepted = []
+        for record in records:
+            self.processed += 1
+            missing = sorted(required_fields - set(record))
+            if missing:
+                self.rejected += 1; self.failures.append({"category":"MAPPING","reason":"REQUIRED_FIELD_MISSING","fields":missing}); continue
+            fp = source_record_fingerprint(self.tenant_id, source_system, str(record.get("source_record_id")), str(record.get("source_record_version")), record)
+            if fp in self.seen_fingerprints:
+                self.duplicates += 1; continue
+            self.seen_fingerprints.add(fp); self.accepted += 1; accepted.append(record)
+        self.state = "DEGRADED" if self.failures else "HEALTHY"
+        return {"status":"PARTIAL" if self.failures and accepted else "FAILED" if self.failures and not accepted else "COMPLETE", "accepted":accepted, "processed":self.processed, "duplicates":self.duplicates, "failures":self.failures, "state":self.state}
+
+def detect_schema_drift(expected_fields: set[str], actual_fields: set[str]) -> dict:
+    missing = sorted(expected_fields - actual_fields); added = sorted(actual_fields - expected_fields)
+    return {"status":"DRIFT" if missing or added else "MATCH", "missing":missing, "added":added}
