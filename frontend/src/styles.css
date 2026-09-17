@@ -292,6 +292,23 @@ h3 {
   margin: 8px 0;
 }
 
+.required-field {
+  display: block;
+  margin-top: 12px;
+  font-weight: 700;
+}
+
+.required-field span {
+  color: #b45f14;
+  font-weight: 500;
+}
+
+.field-error {
+  color: #b42318;
+  font-weight: 700;
+  margin-top: 4px;
+}
+
 .decision-items {
   display: grid;
   gap: 10px;
