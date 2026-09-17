@@ -77,6 +77,7 @@ export function PublicMegaSite({ path }: { path: string }) {
   const [openMenu, setOpenMenu] = useState<string | null>(null); const [mobileOpen, setMobileOpen] = useState(false); const [hash, setHash] = useState(() => window.location.hash.slice(1));
   useEffect(() => { const close = (event: KeyboardEvent) => { if (event.key === "Escape") { setOpenMenu(null); setMobileOpen(false); } }; window.addEventListener("keydown", close); return () => window.removeEventListener("keydown", close); }, []);
   useEffect(() => { const update = () => setHash(window.location.hash.slice(1)); window.addEventListener("hashchange", update); return () => window.removeEventListener("hashchange", update); }, [path]);
+  useEffect(() => { const closeAfterMenuLink = (event: MouseEvent) => { if ((event.target as HTMLElement).closest(".mega-menu a")) { setOpenMenu(null); setMobileOpen(false); } }; document.addEventListener("click", closeAfterMenuLink); return () => document.removeEventListener("click", closeAfterMenuLink); }, []);
   const capability = path.startsWith("/platform/") ? (path.split("/").pop() ?? "capability").replace(/-/g, " ").replace(/\b\w/g, letter => letter.toUpperCase()) : null;
   const roadmapTarget = path === "/roadmap" && window.location.hash ? window.location.hash.slice(1).replace(/-/g, " ").replace(/\b\w/g, letter => letter.toUpperCase()) : null;
   const anchorPage = anchorPages[hash];
