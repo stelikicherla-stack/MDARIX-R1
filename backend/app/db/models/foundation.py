@@ -437,6 +437,35 @@ class AuditEvent(Base):
     created_at = tz(False)
 
 
+class InvestigationBrief(Base):
+    """Immutable, versioned investigation brief snapshot."""
+    __tablename__ = "investigation_briefs"
+    id = uuid_pk()
+    tenant_id = tenant_fk()
+    investigation_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), nullable=False)
+    product_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True))
+    product_version_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True))
+    brief_version: Mapped[int] = mapped_column(nullable=False)
+    status: Mapped[str] = mapped_column(String(40), nullable=False, server_default="GENERATED")
+    title: Mapped[str] = mapped_column(String(255), nullable=False)
+    generated_by: Mapped[str] = mapped_column(String(255), nullable=False)
+    temporal_mode: Mapped[str] = mapped_column(String(20), nullable=False)
+    temporal_cutoff = tz(True)
+    ai_execution_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True))
+    human_review_state: Mapped[str] = mapped_column(String(40), nullable=False, server_default="NOT_REVIEWED")
+    decision_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True))
+    limitations: Mapped[dict | None] = mapped_column(JSONB)
+    content: Mapped[dict] = mapped_column(JSONB, nullable=False)
+    provenance: Mapped[dict] = mapped_column(JSONB, nullable=False)
+    created_at = tz(False)
+    updated_at = tz(False)
+    __table_args__ = (
+        ForeignKeyConstraint(["tenant_id", "investigation_id"], ["investigations.tenant_id", "investigations.id"]),
+        UniqueConstraint("tenant_id", "investigation_id", "brief_version", name="uq_briefs_tenant_investigation_version"),
+        UniqueConstraint("tenant_id", "id", name="uq_briefs_tenant_id_id"),
+    )
+
+
 class ProductComponent(Base):
     __tablename__ = "product_components"
     id = uuid_pk()
