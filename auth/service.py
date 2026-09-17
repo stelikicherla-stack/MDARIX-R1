@@ -26,7 +26,7 @@ class LocalAuthService:
         if not item or item["kind"]!="verify" or item["used"] or item["expires"]<time.time(): raise ValueError("INVALID_VERIFICATION_TOKEN")
         account=next(a for a in self.accounts.values() if a.user_id==item["user_id"]); item["used"]=True; account.verified=True; account.status="ACTIVE"; return {"status":"ACTIVE","user_id":account.user_id}
     def signin(self,email,password):
-        account=self.accounts.get(email.strip().lower());
+        identifier=email.strip().lower(); account=self.accounts.get(identifier) or next((item for item in self.accounts.values() if item.user_id.lower()==identifier),None)
         if not account or not _verify(password,account.password_hash) or account.status!="ACTIVE": raise ValueError("INVALID_CREDENTIALS")
         session=secrets.token_urlsafe(32); self.sessions[hashlib.sha256(session.encode()).hexdigest()]={"user_id":account.user_id,"expires":time.time()+3600}; return session
     def context(self, session):

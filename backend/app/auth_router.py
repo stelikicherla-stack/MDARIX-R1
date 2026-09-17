@@ -15,16 +15,20 @@ def fail(exc): return HTTPException(400,detail={"code":str(exc),"message":"Reque
 @router.post('/signup')
 def signup(data:Signup, db:Session=Depends(get_db)):
  try:
+  if db.query(AuthUser).filter(AuthUser.username==data.email.lower()).first(): raise ValueError("ACCOUNT_EXISTS")
   result=auth_service.signup(data.email,data.password,data.display_name,data.organization); account=auth_service.accounts[data.email.lower()]; tenant=db.query(Tenant).first()
   if not tenant: raise ValueError("TENANT_NOT_CONFIGURED")
   tenant_id=tenant.id; now=datetime.now(timezone.utc)
   db.add(AuthUser(id=__import__('uuid').uuid4(),tenant_id=tenant_id,username=account.email,display_name=account.display_name,company=data.organization,password_hash=account.password_hash,role=account.role,status=account.status,email_verified=False,created_at=now,updated_at=now)); db.commit(); return result
  except ValueError as e: raise fail(e)
- except Exception as e: db.rollback(); raise HTTPException(400,detail={"code":"ACCOUNT_CREATE_FAILED","message":"Account could not be created. Check the form and try again."}) from e
+ except Exception as e: db.rollback(); raise HTTPException(400,detail={"code":"ACCOUNT_CREATE_FAILED","message":"Account could not be created. Check company, email, and password requirements."}) from e
  except ValueError as e: raise fail(e)
 @router.post('/verify-email')
-def verify(data:Verify):
- try:return auth_service.verify_email(data.token)
+def verify(data:Verify, db:Session=Depends(get_db)):
+ try:
+  result=auth_service.verify_email(data.token); account=next(item for item in auth_service.accounts.values() if item.user_id==result["user_id"]); row=db.query(AuthUser).filter(AuthUser.username==account.email).first()
+  if row: row.status="ACTIVE"; row.email_verified=True; row.updated_at=datetime.now(timezone.utc); db.commit()
+  return result
  except ValueError as e: raise fail(e)
 @router.post('/signin')
 def signin(data:Signin,response:Response):
