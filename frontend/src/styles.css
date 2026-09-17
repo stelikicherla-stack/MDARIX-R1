@@ -404,6 +404,12 @@ h3 {
 .workflow-action h3 { margin: 0; }
 .workflow-action p { flex: 1 1 360px; color: #607086; }
 
+.counterfactual-panel { border-left: 4px solid #7357a6; }
+.counterfactual-controls { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; margin-top: 12px; }
+.counterfactual-controls select, .counterfactual-controls input { flex: 1 1 240px; min-height: 38px; border: 1px solid #c7d0db; border-radius: 6px; padding: 8px 10px; }
+.counterfactual-result { margin-top: 14px; padding: 14px; background: #faf8ff; border: 1px solid #c9bce0; }
+.counterfactual-result h3 { color: #49356e; }
+
 .action-feedback {
   padding: 10px 12px;
   border: 1px solid #b9c8d8;

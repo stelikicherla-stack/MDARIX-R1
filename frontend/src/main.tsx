@@ -500,7 +500,11 @@ function InvestigationWorkspacePanel({ investigationId, temporalMode: mode, asOf
   const [unknownSet, setUnknownSet] = useState<UnknownSet | null>(null);
   const [failureChains, setFailureChains] = useState<FailureChainSet | null>(null);
   const [challengeSet, setChallengeSet] = useState<ChallengeSet | null>(null);
-  const [activeTab, setActiveTab] = useState<"overview" | "evidence" | "analysis" | "hypotheses" | "challenger" | "unknowns" | "failure-chain" | "decision">("overview");
+  const [activeTab, setActiveTab] = useState<"overview" | "evidence" | "analysis" | "hypotheses" | "challenger" | "unknowns" | "failure-chain" | "counterfactual" | "decision">("overview");
+  const [counterfactual, setCounterfactual] = useState<any>(null);
+  const [counterfactualTarget, setCounterfactualTarget] = useState("Component Rev B");
+  const [counterfactualType, setCounterfactualType] = useState("REMOVE_CHANGE");
+  const [counterfactualStatus, setCounterfactualStatus] = useState("IDLE");
   const [error, setError] = useState("");
   const [actionStatus, setActionStatus] = useState("");
   const [pendingAction, setPendingAction] = useState<string | null>(null);
@@ -597,6 +601,15 @@ function InvestigationWorkspacePanel({ investigationId, temporalMode: mode, asOf
       .then((payload) => { if (sequence !== requestSequence.current) return; setFailureChains(payload.failure_chain_set); setActionStatus(payload.failure_chain_set?.chains?.length ? "SUCCESS: Unknowns and Failure Chain results are displayed below." : "INSUFFICIENT EVIDENCE: No supportable failure chain is available; the controlled result remains unresolved."); setPendingAction(null); setError(""); })
       .catch((err) => { if (sequence === requestSequence.current && err.message !== "STALE_CONTEXT") { setError(err.message); setActionStatus(`BACKEND ERROR: Unknowns and Failure Chain could not be completed (${err.message}).`); setPendingAction(null); } });
   };
+  const runCounterfactual = () => {
+    const sequence = requestSequence.current;
+    setCounterfactualStatus("VALIDATING");
+    setCounterfactual(null);
+    fetch(`/api/v1/investigations/${investigationId}/counterfactuals`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ temporal_mode: mode, as_of: mode === "current" ? null : `${asOf}T00:00:00Z`, intervention_type: counterfactualType, intervention_target: counterfactualTarget, intervention_description: `Explore the constrained alternative condition where ${counterfactualTarget} is removed from the candidate explanation.` }) })
+      .then(async (response) => { const payload = await response.json(); if (!response.ok) throw new Error(payload.detail?.message ?? response.statusText); return payload; })
+      .then((payload) => { if (sequence !== requestSequence.current) return; setCounterfactual(payload.result); setCounterfactualStatus(payload.status ?? "SUCCESS"); })
+      .catch((err) => { if (sequence === requestSequence.current) setCounterfactualStatus(err.message.includes("INSUFFICIENT") ? "INSUFFICIENT EVIDENCE" : `ERROR: ${err.message}`); });
+  };
 
   return (
     <section id="investigation-workspace" className="workspace-section">
@@ -619,7 +632,7 @@ function InvestigationWorkspacePanel({ investigationId, temporalMode: mode, asOf
         </div>
       </div>
       <div className="workflow-tabs" role="tablist" aria-label="Investigation workflow">
-        {(["overview", "evidence", "analysis", "hypotheses", "challenger", "unknowns", "failure-chain", "decision"] as const).map((tab) => <button key={tab} role="tab" aria-selected={activeTab === tab} className={activeTab === tab ? "active" : ""} onClick={() => { setActiveTab(tab); document.getElementById(`workflow-${tab}`)?.scrollIntoView({ behavior: "smooth", block: "start" }); }}>{humanize(tab)}</button>)}
+        {(["overview", "evidence", "analysis", "hypotheses", "challenger", "unknowns", "failure-chain", "counterfactual", "decision"] as const).map((tab) => <button key={tab} role="tab" aria-selected={activeTab === tab} className={activeTab === tab ? "active" : ""} onClick={() => { setActiveTab(tab); document.getElementById(`workflow-${tab}`)?.scrollIntoView({ behavior: "smooth", block: "start" }); }}>{humanize(tab)}</button>)}
       </div>
       {(actionStatus || pendingAction) && <div className={`action-feedback ${actionStatus.startsWith("BACKEND") ? "error-feedback" : ""}`} role="status">{pendingAction ? actionStatus : actionStatus}</div>}
       {error && <div className="error inline">{error}</div>}
@@ -713,6 +726,7 @@ function InvestigationWorkspacePanel({ investigationId, temporalMode: mode, asOf
         </Panel></div>
       </div>}
       <section id="workflow-evidence" className="panel empty-state"><h3>Evidence review</h3><p>Use the evidence context above to see identifiers, reliability, and source anchors for the selected investigation.</p></section>
+      <section id="workflow-counterfactual" className="panel counterfactual-panel"><div className="section-title"><GitBranch size={18} /> Constrained Counterfactual</div><p className="helper-copy">Explore how the current explanation changes under a controlled alternative condition. Results are hypothetical and are not observed evidence.</p><div className="counterfactual-controls"><select value={counterfactualType} onChange={(event) => setCounterfactualType(event.target.value)} aria-label="Intervention type"><option value="REMOVE_CHANGE">Remove change</option><option value="REPLACE_COMPONENT_REVISION">Replace component revision</option><option value="REMOVE_SUPPLIER_CHANGE">Remove supplier change</option><option value="REMOVE_FAILURE_CHAIN_LINK">Remove failure-chain link</option></select><input value={counterfactualTarget} onChange={(event) => setCounterfactualTarget(event.target.value)} aria-label="Counterfactual target" placeholder="Readable target, e.g. Component Rev B" /><button className="primary-action" onClick={runCounterfactual} disabled={counterfactualStatus === "VALIDATING"}>{counterfactualStatus === "VALIDATING" ? "Validating…" : "Run Counterfactual"}</button></div><p className="action-feedback" role="status">Status: {counterfactualStatus}</p>{counterfactual && <div className="counterfactual-result"><strong>{counterfactual.label}</strong><h3>What stays the same</h3><ul>{counterfactual.invariants?.map((item: string) => <li key={item}>{item}</li>)}</ul><h3>What changes / becomes unsupported</h3><ul>{counterfactual.relationships_no_longer_supported?.map((item: string) => <li key={item}>{item}</li>)}</ul><h3>What remains unexplained</h3><ul>{counterfactual.observations_still_unexplained?.map((item: string) => <li key={item}>{item}</li>)}</ul><h3>Limitations</h3><ul>{counterfactual.limitations?.map((item: any, index: number) => <li key={index}>{typeof item === "string" ? item : item.description}</li>)}</ul><p><strong>Conclusion:</strong> {counterfactual.conclusion}</p></div>}</section>
       <section id="workflow-decision" className="panel empty-state"><h3>Decision readiness</h3><p>AI outputs inform the workflow. Authorized humans record decisions in the Decision Center.</p><button className="primary-action" onClick={onOpenDecision}>Open Decision Center</button></section>
     </section>
   );
