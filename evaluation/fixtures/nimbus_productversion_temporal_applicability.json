@@ -1,0 +1,19 @@
+{
+  "product_identifier": "PRD-NIMBUS-200",
+  "tenant": "ACME_CARE_SYNTHETIC",
+  "cutoff": "2026-02-15T00:00:00+00:00",
+  "records": [
+    {"key":"NV-A-EVID-PRE","kind":"evidence","version":"A","classification":"PRODUCTVERSION_SPECIFIC","event":"2026-02-01T00:00:00+00:00","known":"2026-02-02T00:00:00+00:00"},
+    {"key":"NV-A-EVID-POST","kind":"evidence","version":"A","classification":"PRODUCTVERSION_SPECIFIC","event":"2026-03-01T00:00:00+00:00","known":"2026-03-02T00:00:00+00:00"},
+    {"key":"NV-B-EVID-PRE","kind":"evidence","version":"B","classification":"PRODUCTVERSION_SPECIFIC","event":"2026-02-01T00:00:00+00:00","known":"2026-02-02T00:00:00+00:00"},
+    {"key":"NV-B-EVID-POST","kind":"evidence","version":"B","classification":"PRODUCTVERSION_SPECIFIC","event":"2026-03-01T00:00:00+00:00","known":"2026-03-02T00:00:00+00:00"},
+    {"key":"NV-SHARED-EVID-PRE","kind":"evidence","version":null,"classification":"PRODUCT_LEVEL_SHARED","event":"2026-02-01T00:00:00+00:00","known":"2026-02-02T00:00:00+00:00"},
+    {"key":"NV-LATE-KNOWN","kind":"evidence","version":"A","classification":"PRODUCTVERSION_SPECIFIC","event":"2026-02-10T00:00:00+00:00","known":"2026-02-20T00:00:00+00:00"},
+    {"key":"NV-A-CHANGE-PRE","kind":"change","version":"A","classification":"PRODUCTVERSION_SPECIFIC","event":"2026-02-05T00:00:00+00:00","known":"2026-02-05T00:00:00+00:00"},
+    {"key":"NV-B-CHANGE-PRE","kind":"change","version":"B","classification":"PRODUCTVERSION_SPECIFIC","event":"2026-02-05T00:00:00+00:00","known":"2026-02-05T00:00:00+00:00"},
+    {"key":"NV-A-GRAPH-PRE","kind":"graph","version":"A","classification":"PRODUCTVERSION_SPECIFIC","event":"2026-02-05T00:00:00+00:00","known":"2026-02-05T00:00:00+00:00"},
+    {"key":"NV-B-GRAPH-PRE","kind":"graph","version":"B","classification":"PRODUCTVERSION_SPECIFIC","event":"2026-02-05T00:00:00+00:00","known":"2026-02-05T00:00:00+00:00"},
+    {"key":"NV-B-GRAPH-POST","kind":"graph","version":"B","classification":"PRODUCTVERSION_SPECIFIC","event":"2026-03-01T00:00:00+00:00","known":"2026-03-01T00:00:00+00:00"},
+    {"key":"NV-FOREIGN-EVID-PRE","kind":"evidence","version":"A","classification":"FOREIGN_TENANT","tenant":"OTHER_SYNTHETIC_TENANT","event":"2026-02-01T00:00:00+00:00","known":"2026-02-02T00:00:00+00:00"}
+  ]
+}

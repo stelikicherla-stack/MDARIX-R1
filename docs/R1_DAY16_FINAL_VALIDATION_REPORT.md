@@ -79,4 +79,23 @@ Seed-function determinism was checked by building the existing deterministic gol
 ## Final remediation test results
 
 - VS009 fixture and counterfactual tests: 11 passed, 0 failed.
-- Full regression after fixture repair: 199 passed, 0 failed, 0 errors, 2 understood third-party warnings.
+- Full regression after fixture repair: 208 passed, 0 failed, 0 errors, 2 understood third-party warnings.
+
+## ProductVersion × temporal applicability proof
+
+The dedicated deterministic fixture is `evaluation/fixtures/nimbus_productversion_temporal_applicability.json`. It uses the same ACME_CARE_SYNTHETIC tenant and NimbusView product for both Rev A and Rev B. Cutoff: `2026-02-15T00:00:00Z`.
+
+Controlled records include `NV-A-EVID-PRE`, `NV-A-EVID-POST`, `NV-B-EVID-PRE`, `NV-B-EVID-POST`, `NV-SHARED-EVID-PRE`, `NV-LATE-KNOWN`, `NV-A-CHANGE-PRE`, `NV-B-CHANGE-PRE`, `NV-A-GRAPH-PRE`, `NV-B-GRAPH-PRE`, `NV-B-GRAPH-POST`, and foreign-tenant `NV-FOREIGN-EVID-PRE`.
+
+| Matrix cell | Expected present | Expected absent | Result |
+|---|---|---|---|
+| Rev A / Current | A pre/post, shared, late-known, A change/graph | all B, foreign tenant | PASS |
+| Rev A / Event | A pre, shared, late-known, A change/graph | A post, all B, foreign tenant | PASS |
+| Rev A / Known | A pre, shared, A change/graph | A post, late-known, all B, foreign tenant | PASS |
+| Rev B / Current | B pre/post, shared, B change/graph | all A, foreign tenant | PASS |
+| Rev B / Event | B pre, shared, B change/graph | B post, all A, future B graph, foreign tenant | PASS |
+| Rev B / Known | B pre, shared, B change/graph | B post, all A, future B graph, foreign tenant | PASS |
+
+Positive and negative assertions compare exact controlled business keys. `NV-LATE-KNOWN` is present for Rev A Event-as-of because its event time precedes the cutoff, and absent for Rev A Known-as-of because its known time follows the cutoff. Shared evidence remains visible for both versions; foreign-tenant evidence remains absent. Evidence, change, and graph contamination and future leakage are all zero within this controlled fixture.
+
+The fixture test suite also verifies no duplicate business keys and deterministic fixture loading. The production application was not changed for this validation-only proof.
