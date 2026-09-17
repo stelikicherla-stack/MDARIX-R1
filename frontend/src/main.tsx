@@ -113,6 +113,9 @@ type HypothesisSet = {
   validation_summary: Record<string, number | string>;
   guardrails: Record<string, boolean>;
 };
+type UnknownSet = { unknowns: Array<{ unknown_id: string; category: string; statement: string; why_it_matters: string; resolution_requirement: string; status: string; materiality: string; provenance: Record<string, unknown> }> };
+type FailureChainSet = { chains: Array<{ chain_id: string; chain_statement: string; overall_status: string; links: Array<{ link_id: string; from_entity_or_state: string; relationship: string; to_entity_or_state: string; epistemic_status: string; unknowns: string[] }> }> };
+type ChallengeSet = { challenges: Array<{ challenge_id: string; challenge_type: string; statement: string; rationale: string; materiality: string; status: string }> };
 
 const api = async <T,>(path: string): Promise<T> => {
   const response = await fetch(path);
@@ -276,6 +279,9 @@ function InvestigationWorkspacePanel({ investigationId }: { investigationId: str
   const [workspace, setWorkspace] = useState<InvestigationWorkspace | null>(null);
   const [analysis, setAnalysis] = useState<InvestigationAnalysis | null>(null);
   const [hypothesisSet, setHypothesisSet] = useState<HypothesisSet | null>(null);
+  const [unknownSet, setUnknownSet] = useState<UnknownSet | null>(null);
+  const [failureChains, setFailureChains] = useState<FailureChainSet | null>(null);
+  const [challengeSet, setChallengeSet] = useState<ChallengeSet | null>(null);
   const [mode, setMode] = useState<"current" | "event" | "known">("current");
   const [asOf, setAsOf] = useState("2026-02-15");
   const [error, setError] = useState("");
@@ -288,6 +294,9 @@ function InvestigationWorkspacePanel({ investigationId }: { investigationId: str
         setWorkspace(item);
         setAnalysis(null);
         setHypothesisSet(null);
+        setUnknownSet(null);
+        setFailureChains(null);
+        setChallengeSet(null);
         setError("");
       })
       .catch((err) => setError(err.message));
@@ -340,6 +349,18 @@ function InvestigationWorkspacePanel({ investigationId }: { investigationId: str
       .catch((err) => setError(err.message));
   };
 
+  const runDay14 = () => {
+    const body = { investigation_id: investigationId, temporal_mode: mode, as_of: mode === "current" ? null : `${asOf}T00:00:00Z` };
+    fetch(`/api/v1/investigations/${investigationId}/challenges`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) })
+      .then((response) => { if (!response.ok) throw new Error(`${response.status} ${response.statusText}`); return response.json(); })
+      .then((payload) => { setChallengeSet(payload.challenge_set); return fetch(`/api/v1/investigations/${investigationId}/unknowns`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) }); })
+      .then((response) => { if (!response.ok) throw new Error(`${response.status} ${response.statusText}`); return response.json(); })
+      .then((payload) => { setUnknownSet(payload.unknown_set); return fetch(`/api/v1/investigations/${investigationId}/failure-chains`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) }); })
+      .then((response) => { if (!response.ok) throw new Error(`${response.status} ${response.statusText}`); return response.json(); })
+      .then((payload) => { setFailureChains(payload.failure_chain_set); setError(""); })
+      .catch((err) => setError(err.message));
+  };
+
   return (
     <section className="workspace-section">
       <div className="workspace-header">
@@ -357,6 +378,7 @@ function InvestigationWorkspacePanel({ investigationId }: { investigationId: str
           </div>
           <button className="primary-action" onClick={runAnalysis}>Run Analysis</button>
           <button className="primary-action secondary" onClick={runHypotheses}>Generate Hypotheses</button>
+          <button className="primary-action secondary" onClick={runDay14}>Run Unknowns & Chain</button>
         </div>
       </div>
       {error && <div className="error inline">{error}</div>}
@@ -436,6 +458,15 @@ function InvestigationWorkspacePanel({ investigationId }: { investigationId: str
           </Panel>
         </div>
       )}
+      {challengeSet && <div className="analysis-grid"><Panel title="AI Challenger" icon={<ShieldCheck />}><div className="analysis-list">{challengeSet.challenges.length === 0 && <p className="empty">No material challenge identified.</p>}{challengeSet.challenges.map((item) => <article key={item.challenge_id}><span>{item.challenge_type} | {item.status} | {item.materiality}</span><p>{item.statement}</p><small>{item.rationale}</small></article>)}</div></Panel></div>}
+      {unknownSet && <div className="analysis-grid">
+        <Panel title="Unknowns Radar" icon={<AlertTriangle />}>
+          <div className="analysis-list">{unknownSet.unknowns.length === 0 && <p className="empty">No material unknowns identified.</p>}{unknownSet.unknowns.map((item) => <article key={item.unknown_id}><span>{item.category} | {item.status} | {item.materiality}</span><p><strong>{item.statement}</strong></p><p>Why it matters: {item.why_it_matters}</p><small>Resolution: {item.resolution_requirement}</small></article>)}</div>
+        </Panel>
+        <Panel title="Failure Chain Intelligence" icon={<GitBranch />}>
+          <div className="analysis-list">{failureChains?.chains.map((chain) => <article key={chain.chain_id}><span>{chain.overall_status}</span><p>{chain.chain_statement}</p>{chain.links.map((link) => <small key={link.link_id}>{link.from_entity_or_state} — {link.relationship} → {link.to_entity_or_state} [{link.epistemic_status}]</small>)}</article>)}</div>
+        </Panel>
+      </div>}
     </section>
   );
 }

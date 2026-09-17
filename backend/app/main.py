@@ -10,6 +10,7 @@ from backend.app.product360.schemas import Product360Response, ProductSummary, T
 from backend.app.product360.service import Product360Error, Product360Service
 from backend.app.retrieval.router import router as retrieval_router
 from backend.app.challenger_router import router as challenger_router
+from backend.app.day14_router import router as day14_router
 from graph.schemas import GraphResponse, HealthResponse, RelationshipDetail
 from graph.service import GraphError, RealityGraphService
 
@@ -18,6 +19,7 @@ app.include_router(evidence_router)
 app.include_router(investigations_router)
 app.include_router(retrieval_router)
 app.include_router(challenger_router)
+app.include_router(day14_router)
 graph_service = RealityGraphService()
 product360_service = Product360Service()
 

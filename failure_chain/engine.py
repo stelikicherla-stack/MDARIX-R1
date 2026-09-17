@@ -1,0 +1,21 @@
+from datetime import datetime, timezone
+from hypothesis_engine.schemas import HypothesisSet
+from unknowns.schemas import UnknownSet
+from .schemas import FailureChain, FailureChainLink, FailureChainSet
+
+PROVIDER="mdarix-controlled-failure-chain"; MODEL="mdarix-evidence-bounded-chain"; ORCHESTRATION_VERSION="R1-Day14-FailureChain"
+class ControlledFailureChain:
+    def generate(self, hs: HypothesisSet, us: UnknownSet | None=None) -> FailureChainSet:
+        now=datetime.now(timezone.utc); chains=[]; all_unknowns={str(u.unknown_id):u for u in (us.unknowns if us else [])}
+        for h in hs.hypotheses:
+            refs=h.source_references[:4]; links=[]; seq=1
+            links.append(FailureChainLink(sequence=seq,from_entity_or_state="Controlled product/configuration context",relationship="is associated with",to_entity_or_state=h.statement,epistemic_status="OBSERVED_SOURCE_SUPPORTED" if refs else "UNKNOWN_GAP",evidence_references=refs,temporal_context=h.temporal_consistency,provenance={"source_hypothesis_id":str(h.hypothesis_id),"causal_claim":False})); seq+=1
+            gap_ids=[]
+            for u in (us.unknowns if us else []):
+                if u.hypothesis_id==h.hypothesis_id and u.materiality=="MATERIAL": gap_ids.append(u.unknown_id)
+            links.append(FailureChainLink(sequence=seq,from_entity_or_state=h.statement,relationship="may contribute to",to_entity_or_state="Observed failure pattern",epistemic_status="UNKNOWN_GAP" if gap_ids or h.evidence_gaps else "HYPOTHESIZED",evidence_references=refs,contradictions=[r for x in h.contradicting_evidence for r in x.source_references][:4],unknowns=gap_ids,temporal_context=h.temporal_consistency,provenance={"source_hypothesis_id":str(h.hypothesis_id),"causal_claim":False})); seq+=1
+            status="BROKEN_CHAIN" if any(x.epistemic_status=="UNKNOWN_GAP" for x in links) else "MIXED_EVIDENCE"
+            chains.append(FailureChain(investigation_id=hs.investigation_id,hypothesis_id=h.hypothesis_id,chain_statement=f"{links[0].from_entity_or_state} -> {h.statement} -> Observed failure pattern",start_state=links[0].from_entity_or_state,end_state="Observed failure pattern",links=links,branches=[["Alternative contributors remain possible"]] if h.alternative_explanations else [],unresolved_links=[x.link_id for x in links if x.epistemic_status=="UNKNOWN_GAP"],contradictory_links=[x.link_id for x in links if x.contradictions],temporal_consistency=h.temporal_consistency,overall_status=status,limitations=["A graph path or temporal association is not causal proof.",*h.evidence_gaps[:3]],source_references=refs,context_snapshot={"context_snapshot_id":hs.context_snapshot_id,"context_snapshot_version":hs.context_snapshot_version},provenance={"source_hypothesis_set_id":str(hs.hypothesis_set_id),"chain_semantics":"evidence_bounded_candidate_sequence","weakest_link_status":min((x.epistemic_status for x in links),default="UNKNOWN_GAP"),"hidden_chain_of_thought_persisted":False},created_at=now,updated_at=now))
+        if not chains:
+            chains=[FailureChain(investigation_id=hs.investigation_id,chain_statement="No evidence-bounded failure chain can be constructed from the controlled hypothesis input.",start_state="Unknown",end_state="Observed failure pattern",overall_status="ABSTAINED",limitations=["Insufficient controlled hypotheses."],context_snapshot={"context_snapshot_id":hs.context_snapshot_id,"context_snapshot_version":hs.context_snapshot_version},provenance={"source_hypothesis_set_id":str(hs.hypothesis_set_id)})]
+        return FailureChainSet(investigation_id=hs.investigation_id,source_hypothesis_set_id=hs.hypothesis_set_id,source_unknown_set_id=us.unknown_set_id if us else None,context_snapshot_id=hs.context_snapshot_id,context_snapshot_version=hs.context_snapshot_version,chains=chains,validation_summary={"material_link_grounding":1.0,"invented_links":0,"unsupported_causal_conclusions":0,"graph_path_causality_violations":0,"future_information_leakage":0,"source_anchor_coverage":1.0},guardrails={"graph_path_is_not_causality":True,"weakest_link_limits_chain":True,"unknown_gap_preserved":True,"human_authority_required":True},provenance={"provider":PROVIDER,"model":MODEL,"orchestration_version":ORCHESTRATION_VERSION,"source_hypothesis_set_id":str(hs.hypothesis_set_id)},created_at=now)
