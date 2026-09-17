@@ -64,9 +64,11 @@ class CounterfactualService:
             "conclusion": "The intervention weakens the current explanation, but available evidence is insufficient to determine the alternative outcome.",
             "provenance": {"ground_truth_used": False, "source": "investigation workspace", "derived": True, "temporal_mode": request.temporal_mode},
         }
-        execution = AIExecution(tenant_id=tenant_id, investigation_id=investigation_id, requestor_ref="CONTROLLED_COUNTERFACTUAL", provider="deterministic-r1", model_name="constrained-counterfactual", model_version="day16", prompt_template_version="D16-1", orchestration_version="D16-1", context_refs={"investigation_id": str(investigation_id), "temporal_mode": request.temporal_mode}, evidence_refs={"count": evidence_count}, structured_input=request.model_dump(mode="json"), structured_output=result, rationale_summary=result["conclusion"], confidence_label="NOT_A_CONFIDENCE_SCORE", validation_status="VALIDATED")
+        execution = AIExecution(tenant_id=tenant_id, investigation_id=investigation_id, requestor_ref="CONTROLLED_COUNTERFACTUAL", provider="deterministic-r1", model_name="constrained-counterfactual", model_version="day16", prompt_template_version="D16-1", orchestration_version="D16-1", context_refs={"investigation_id": str(investigation_id), "temporal_mode": request.temporal_mode}, evidence_refs={"count": evidence_count}, structured_input=request.model_dump(mode="json"), structured_output=result, rationale_summary=result["conclusion"], confidence_label="NOT_A_CONFIDENCE_SCORE", validation_status="VALIDATED", execution_timestamp=datetime.now(timezone.utc))
         db.add(execution)
-        scenario = Scenario(tenant_id=tenant_id, investigation_id=investigation_id, scenario_identifier=f"CF-{datetime.now(timezone.utc).strftime('%Y%m%d%H%M%S%f')}", question=request.intervention_description, assumptions={"kind": "COUNTERFACTUAL", "DERIVED": True, "NON_OBSERVED": True, "request": request.model_dump(mode="json"), "result": result, "ai_execution_id": str(execution.id) if execution.id else None}, uncertainty=result["conclusion"], status=result["status"])
+        db.flush()
+        now = datetime.now(timezone.utc)
+        scenario = Scenario(tenant_id=tenant_id, investigation_id=investigation_id, scenario_identifier=f"CF-{now.strftime('%Y%m%d%H%M%S%f')}", question=request.intervention_description, assumptions={"kind": "COUNTERFACTUAL", "DERIVED": True, "NON_OBSERVED": True, "request": request.model_dump(mode="json"), "result": result, "ai_execution_id": str(execution.id)}, uncertainty=result["conclusion"], status=result["status"], created_at=now, updated_at=now)
         db.add(scenario)
         db.commit()
         db.refresh(scenario)
