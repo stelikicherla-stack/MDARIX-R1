@@ -12,7 +12,7 @@ body {
   margin: 0;
 }
 
-button, input, select {
+button, input, select, textarea {
   font: inherit;
 }
 
@@ -281,6 +281,39 @@ h3 {
 .empty-state {
   display: grid;
   gap: 8px;
+}
+
+.panel textarea, .panel select {
+  width: 100%;
+  box-sizing: border-box;
+  border: 1px solid #c7d0db;
+  border-radius: 6px;
+  padding: 10px;
+  margin: 8px 0;
+}
+
+.decision-items {
+  display: grid;
+  gap: 10px;
+}
+
+.decision-items article {
+  display: grid;
+  gap: 4px;
+  padding: 10px;
+  border-left: 3px solid #1f6f68;
+  background: #f6f9fa;
+}
+
+.decision-items span, .empty-copy {
+  color: #607086;
+}
+
+.advisory-box {
+  margin-top: 12px;
+  padding: 12px;
+  border: 1px solid #c58a27;
+  background: #fffaf0;
 }
 
 .workspace-header {
