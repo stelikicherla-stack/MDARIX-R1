@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
 import { createRoot } from "react-dom/client";
 import { AlertTriangle, Boxes, CalendarClock, ChevronRight, CircleDot, ClipboardList, Factory, FileText, GitBranch, History, Layers, Network, ShieldCheck } from "lucide-react";
 import "./styles.css";
+import { PublicMegaSite } from "./PublicMegaSite";
 
 type Product = {
   id: string;
@@ -167,8 +168,20 @@ function humanize(value?: string | null) {
 
 function App() {
   const publicPath = window.location.pathname;
-  if (publicPath === "/" || publicPath.startsWith("/platform") || publicPath.startsWith("/solutions") || publicPath.startsWith("/ai-trust") || publicPath.startsWith("/integrations") || publicPath.startsWith("/security") || publicPath.startsWith("/request-demo")) return <PublicSite path={publicPath} />;
+  if (publicPath === "/" || ["/platform", "/product-lifecycle", "/post-market", "/trust-governance", "/resources", "/plans", "/roadmap", "/r1", "/solutions", "/ai-trust", "/integrations", "/security", "/request-demo"].some((route) => publicPath.startsWith(route))) return <PublicMegaSite path={publicPath} />;
   if (["/signin", "/signup", "/forgot-password", "/verify-email"].includes(publicPath)) return <AuthPage mode={publicPath.slice(1)} />;
+  return <PrivateApplicationGate />;
+}
+
+function PrivateApplicationGate() {
+  const [state,setState]=useState<"CHECKING"|"AUTHORIZED"|"DENIED">("CHECKING");
+  useEffect(()=>{fetch("/api/v1/auth/session").then(response=>setState(response.ok?"AUTHORIZED":"DENIED")).catch(()=>setState("DENIED"))},[]);
+  useEffect(()=>{if(state==="DENIED")window.location.replace(`/signin?returnTo=${encodeURIComponent(window.location.pathname)}`)},[state]);
+  if(state!=="AUTHORIZED")return <div className="auth-shell"><div className="auth-card"><span className="eyebrow">MDARIX secure application</span><h1>{state==="CHECKING"?"Checking your session…":"Sign in required"}</h1><p>Customer application routes require an authenticated session.</p></div></div>;
+  return <PrivateApplication />;
+}
+
+function PrivateApplication() {
   const [securityContext, setSecurityContext] = useState<{display_name:string; active_role:string|null} | null>(null);
   const [products, setProducts] = useState<Product[]>([]);
   const [selectedProduct, setSelectedProduct] = useState<string>("");
