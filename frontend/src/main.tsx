@@ -247,7 +247,7 @@ function PrivateApplication() {
         <div className="side-nav-footer"><p>Evidence before inference.<br/>Authorized humans decide.</p></div>
       </aside>
       <main>
-        <header className="topbar">
+        <header className={`topbar ${activeView === "home" ? "home-topbar" : ""}`}>
           <div>
             <p className="eyebrow">{activeView === "home" ? "Intelligence workspace" : "Persistent workflow context"}</p>
             <h1>{activeView === "home" ? "Good decisions start with product reality" : view?.product.name ?? "MDARIX"}</h1>
