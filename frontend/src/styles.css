@@ -316,6 +316,15 @@ h3 {
   background: #fffaf0;
 }
 
+.human-review-box {
+  display: grid;
+  gap: 8px;
+  margin-top: 14px;
+  padding: 14px;
+  border: 1px solid #1f6f68;
+  background: #f2faf8;
+}
+
 .workspace-header {
   display: flex;
   justify-content: space-between;
