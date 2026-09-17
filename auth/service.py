@@ -18,7 +18,9 @@ class LocalAuthService:
         if "@" not in parseaddr(email)[1] or len(email)>254: raise ValueError("VALID_EMAIL_REQUIRED")
         if len(password)<12 or len(password)>128: raise ValueError("PASSWORD_POLICY")
         if email in self.accounts: raise ValueError("ACCOUNT_EXISTS")
-        account=Account(secrets.token_hex(16),email,display_name[:120],"sandbox-"+secrets.token_hex(6),_hash(password)); self.accounts[email]=account; token=self._token(account.user_id,"verify"); return {"user_id":account.user_id,"status":account.status,"verification_required":True,"development_token":token}
+        # The verified email address is the account's sign-in identifier.  This
+        # is more useful to people than exposing an opaque internal UUID.
+        account=Account(email,email,display_name[:120],"sandbox-"+secrets.token_hex(6),_hash(password)); self.accounts[email]=account; token=self._token(account.user_id,"verify"); return {"user_id":account.user_id,"status":account.status,"verification_required":True,"development_token":token}
     def _token(self, user_id, kind):
         raw=secrets.token_urlsafe(32); self.tokens[hashlib.sha256(raw.encode()).hexdigest()]={"user_id":user_id,"kind":kind,"expires":time.time()+3600,"used":False}; return raw
     def verify_email(self, raw):

@@ -1,6 +1,7 @@
 from fastapi import APIRouter, HTTPException, Response, Request, Depends
 from pydantic import BaseModel, Field
 from auth.service import auth_service
+from auth.emailer import send_verification_email
 from backend.app.db.session import get_db
 from backend.app.db.models.foundation import AuthUser, Tenant
 from sqlalchemy.orm import Session
@@ -19,7 +20,9 @@ def signup(data:Signup, db:Session=Depends(get_db)):
   result=auth_service.signup(data.email,data.password,data.display_name,data.organization); account=auth_service.accounts[data.email.lower()]; tenant=db.query(Tenant).first()
   if not tenant: raise ValueError("TENANT_NOT_CONFIGURED")
   tenant_id=tenant.id; now=datetime.now(timezone.utc)
-  db.add(AuthUser(id=__import__('uuid').uuid4(),tenant_id=tenant_id,username=account.email,display_name=account.display_name,company=data.organization,password_hash=account.password_hash,role=account.role,status=account.status,email_verified=False,created_at=now,updated_at=now)); db.commit(); return result
+  db.add(AuthUser(id=__import__('uuid').uuid4(),tenant_id=tenant_id,username=account.email,display_name=account.display_name,company=data.organization,password_hash=account.password_hash,role=account.role,status=account.status,email_verified=False,created_at=now,updated_at=now)); db.commit()
+  result["email_delivery"] = send_verification_email(account.email, result["development_token"])
+  return result
  except ValueError as e: raise fail(e)
  except Exception as e: db.rollback(); raise HTTPException(400,detail={"code":"ACCOUNT_CREATE_FAILED","message":"Account could not be created. Check company, email, and password requirements."}) from e
  except ValueError as e: raise fail(e)
