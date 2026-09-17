@@ -19,6 +19,7 @@ SUPPORTED_INTERVENTIONS = (
 class CounterfactualRequest(BaseModel):
     temporal_mode: str = Field("current", pattern="^(current|event|known)$")
     as_of: datetime | None = None
+    product_version_id: UUID | None = None
     intervention_type: str
     intervention_target: str = Field(min_length=1, max_length=255)
     intervention_description: str = Field(min_length=1, max_length=2000)

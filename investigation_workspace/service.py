@@ -6,7 +6,7 @@ from sqlalchemy import or_, text
 from sqlalchemy.orm import Session
 
 from backend.app.db.models.evidence_intelligence import EvidenceChunk, EvidenceEntityLink, EvidenceObservation
-from backend.app.db.models.foundation import Evidence, Investigation
+from backend.app.db.models.foundation import Evidence, Investigation, ProductVersion
 from backend.app.product360.service import Product360Service, rowdict
 from graph.service import GraphError, RealityGraphService
 from investigation_workspace.schemas import InvestigationWorkspaceRequest, InvestigationWorkspaceResponse
@@ -51,7 +51,11 @@ class InvestigationWorkspaceService:
         if investigation is None:
             raise InvestigationWorkspaceError("INVESTIGATION_NOT_FOUND", "Investigation not found")
 
-        product_version_id = self._select_product_version_id(db, request.tenant_id, investigation.id)
+        product_version_id = str(request.product_version_id) if request.product_version_id else self._select_product_version_id(db, request.tenant_id, investigation.id)
+        if product_version_id:
+            version = db.query(ProductVersion).filter(ProductVersion.tenant_id == request.tenant_id, ProductVersion.id == product_version_id, ProductVersion.product_id == investigation.product_id).first()
+            if version is None:
+                raise InvestigationWorkspaceError("PRODUCT_VERSION_NOT_FOUND", "ProductVersion is not available for this investigation product")
         product_context = self._product_context(investigation, product_version_id, request)
         relationship_context = self._relationship_context(investigation.id)
         evidence_context = self._evidence_context(db, request.tenant_id, investigation, request.temporal_mode, request.as_of)

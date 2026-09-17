@@ -13,6 +13,7 @@ WorkspaceTemporalMode = Literal["current", "event", "known"]
 class InvestigationWorkspaceRequest(BaseModel):
     tenant_id: uuid.UUID | None = None
     investigation_id: uuid.UUID
+    product_version_id: uuid.UUID | None = None
     temporal_mode: WorkspaceTemporalMode = "current"
     as_of: datetime | None = None
     include_retrieval: bool = True

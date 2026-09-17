@@ -4,7 +4,7 @@ from uuid import UUID
 
 from sqlalchemy.orm import Session
 
-from backend.app.db.models.foundation import AIExecution, Investigation, Scenario
+from backend.app.db.models.foundation import AIExecution, Investigation, Scenario, ProductVersion
 from investigation_workspace.schemas import InvestigationWorkspaceRequest
 from investigation_workspace.service import InvestigationWorkspaceService
 from .schemas import CounterfactualRequest, SUPPORTED_INTERVENTIONS
@@ -31,8 +31,12 @@ class CounterfactualService:
             raise CounterfactualError("INVALID_TEMPORAL_CONTEXT", "Current context cannot include an as-of date")
         if request.temporal_mode != "current" and request.as_of is None:
             raise CounterfactualError("INVALID_TEMPORAL_CONTEXT", "Event and Known contexts require an as-of date")
+        if request.product_version_id:
+            version = db.query(ProductVersion).filter(ProductVersion.tenant_id == tenant_id, ProductVersion.id == request.product_version_id, ProductVersion.product_id == investigation.product_id).first()
+            if version is None:
+                raise CounterfactualError("PRODUCT_VERSION_NOT_FOUND", "ProductVersion is not available for this investigation product")
         baseline = self.workspace.workspace(db, InvestigationWorkspaceRequest(
-            tenant_id=tenant_id, investigation_id=investigation_id, temporal_mode=request.temporal_mode,
+            tenant_id=tenant_id, investigation_id=investigation_id, product_version_id=request.product_version_id, temporal_mode=request.temporal_mode,
             as_of=request.as_of, include_retrieval=True, retrieval_top_k=8,
         )).model_dump(mode="json")
         target = request.intervention_target.casefold()
