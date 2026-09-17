@@ -220,7 +220,7 @@ function App() {
         {view && activeView === "products" && <Product360View view={view} />}
         {view && activeView === "investigations" && <InvestigationAccessView view={view} selectedInvestigationId={selectedInvestigationId} onSelect={setSelectedInvestigationId} />}
         {view && activeView === "evidence" && <EvidenceAccessView productEvidenceCount={view.evidence.length} />}
-        {view && activeView === "decision" && selectedInvestigationId && <DecisionCenterView investigationId={selectedInvestigationId} />}
+        {view && activeView === "decision" && selectedInvestigationId && <DecisionCenterView investigationId={selectedInvestigationId} temporalMode={mode} asOf={asOf} />}
         {view && activeView === "decision" && !selectedInvestigationId && <div className="content"><section className="panel empty-state"><h2>Select an investigation first</h2><p>Open Investigations and select a live investigation before entering Decision Center.</p></section></div>}
       </main>
     </div>
@@ -414,7 +414,7 @@ function EvidenceAccessView({ productEvidenceCount }: { productEvidenceCount: nu
   );
 }
 
-function DecisionCenterView({ investigationId }: { investigationId: string }) {
+function DecisionCenterView({ investigationId, temporalMode, asOf }: { investigationId: string; temporalMode: "event" | "known"; asOf: string }) {
   const [context, setContext] = useState<DecisionContext | null>(null);
   const [advisory, setAdvisory] = useState<any>(null);
   const [selectedAction, setSelectedAction] = useState("NO_DECISION_YET");
@@ -422,17 +422,19 @@ function DecisionCenterView({ investigationId }: { investigationId: string }) {
   const [message, setMessage] = useState("");
   useEffect(() => {
     let active = true;
-    api<DecisionContext>(`/api/v1/investigations/${investigationId}/decision-context`)
+    const params = new URLSearchParams({ temporal_mode: temporalMode, as_of: `${asOf}T00:00:00Z` });
+    api<DecisionContext>(`/api/v1/investigations/${investigationId}/decision-context?${params}`)
       .then((item) => { if (active) { setContext(item); setMessage(""); } })
       .catch((err) => { if (active) setMessage(`Decision context unavailable: ${err.message}`); });
     return () => { active = false; };
-  }, [investigationId]);
-  const runAdvisory = () => fetch(`/api/v1/investigations/${investigationId}/decision-advisory`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ temporal_mode: "current" }) })
+  }, [investigationId, temporalMode, asOf]);
+  const temporalBody = JSON.stringify({ temporal_mode: temporalMode, as_of: `${asOf}T00:00:00Z` });
+  const runAdvisory = () => fetch(`/api/v1/investigations/${investigationId}/decision-advisory`, { method: "POST", headers: { "Content-Type": "application/json" }, body: temporalBody })
     .then((response) => { if (!response.ok) throw new Error(`${response.status} ${response.statusText}`); return response.json(); }).then(setAdvisory).catch((err) => setMessage(err.message));
-  const recordDecision = () => fetch(`/api/v1/investigations/${investigationId}/decisions`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ selected_action: selectedAction, rationale, authorized_by_ref: "CONTROLLED_DEVELOPMENT_REVIEWER", temporal_mode: "current" }) })
+  const recordDecision = () => fetch(`/api/v1/investigations/${investigationId}/decisions`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ selected_action: selectedAction, rationale, authorized_by_ref: "CONTROLLED_DEVELOPMENT_REVIEWER", temporal_mode: temporalMode, as_of: `${asOf}T00:00:00Z` }) })
     .then((response) => { if (!response.ok) throw new Error(`${response.status} ${response.statusText}`); return response.json(); }).then(() => setMessage("Human decision recorded as REQUIRES_REVIEW; explicit review remains required.")).catch((err) => setMessage(err.message));
   return <div className="content">
-    <section className="product-header"><div><p className="eyebrow">Decision Center</p><h2>{context?.investigation.identifier ?? "Loading investigation"}</h2><p>AI recommends. Authorized humans decide. Temporal context: {String(context?.temporal_context.mode ?? "current")}.</p></div><div className="version-pill"><ShieldCheck size={16} /> Human review required</div></section>
+    <section className="product-header"><div><p className="eyebrow">Decision Center</p><h2>{context?.investigation.identifier ?? "Loading investigation"}</h2><p>AI recommends. Authorized humans decide. Temporal context: {String(context?.temporal_context.mode ?? temporalMode)} as of {asOf}.</p></div><div className="version-pill"><ShieldCheck size={16} /> Human review required</div></section>
     {message && <div className="error">{message}</div>}
     {context && <>
       <section className="panel readiness-panel"><div className="section-title"><ShieldCheck size={18} /> Decision Readiness</div><h2>{context.readiness.state}</h2><ul className="limitations">{context.readiness.reasons.map((reason) => <li key={reason}><strong>LIMITATION</strong><span>{reason}</span></li>)}</ul></section>
