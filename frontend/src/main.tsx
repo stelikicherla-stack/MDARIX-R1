@@ -250,7 +250,7 @@ function PrivateApplication() {
         <header className={`topbar ${activeView === "home" ? "home-topbar" : ""}`}>
           <div>
             <p className="eyebrow">{activeView === "home" ? "Intelligence workspace" : "Persistent workflow context"}</p>
-            <h1>{activeView === "home" ? "Good decisions start with product reality" : view?.product.name ?? "MDARIX"}</h1>
+            <h1>{activeView === "home" ? "Good decisions start with product reality" : view?.product.name ?? "MDARIX"}</h1><div className="workflow-storyline" aria-label="End-to-end investigation workflow"><span className={activeView === "products" ? "active" : ""}>Product reality</span><i>›</i><span className={activeView === "investigations" ? "active" : ""}>Investigate</span><i>›</i><span className={activeView === "evidence" ? "active" : ""}>Evidence</span><i>›</i><span className={activeView === "decision" ? "active" : ""}>Decide</span><i>›</i><span className={activeView === "assurance" ? "active" : ""}>Assurance</span><i>›</i><span className={activeView === "audit" ? "active" : ""}>Audit</span></div>
           </div>
           <div className="toolbar">
             {securityContext && <span className="context-summary" aria-label="Authenticated user and active role">{securityContext.display_name} | {securityContext.active_role ?? "No active role"}</span>}
