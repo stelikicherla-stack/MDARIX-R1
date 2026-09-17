@@ -1,0 +1,1 @@
+"""Deterministic AI output assurance."""

@@ -14,6 +14,7 @@ from backend.app.day14_router import router as day14_router
 from backend.app.decision_router import router as decision_router
 from counterfactual.router import router as counterfactual_router
 from backend.app.investigations.brief_router import router as brief_router
+from backend.app.trust_router import router as trust_router
 from graph.schemas import GraphResponse, HealthResponse, RelationshipDetail
 from graph.service import GraphError, RealityGraphService
 
@@ -26,6 +27,7 @@ app.include_router(day14_router)
 app.include_router(decision_router)
 app.include_router(counterfactual_router)
 app.include_router(brief_router)
+app.include_router(trust_router)
 graph_service = RealityGraphService()
 product360_service = Product360Service()
 

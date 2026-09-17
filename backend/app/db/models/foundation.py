@@ -465,6 +465,31 @@ class InvestigationBrief(Base):
         UniqueConstraint("tenant_id", "id", name="uq_briefs_tenant_id_id"),
     )
 
+class AssuranceResult(Base):
+    __tablename__ = "assurance_results"
+    id = uuid_pk(); tenant_id = tenant_fk()
+    investigation_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True))
+    ai_execution_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), nullable=False)
+    output_type: Mapped[str] = mapped_column(String(80), nullable=False)
+    output_id: Mapped[str | None] = mapped_column(String(255))
+    assurance_version: Mapped[int] = mapped_column(nullable=False, server_default="1")
+    status: Mapped[str] = mapped_column(String(40), nullable=False)
+    generated_at = tz(False); trust_policy_version: Mapped[str] = mapped_column(String(120), nullable=False)
+    product_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True)); product_version_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True))
+    temporal_mode: Mapped[str | None] = mapped_column(String(20)); temporal_cutoff = tz(True)
+    human_review_required: Mapped[bool] = mapped_column(nullable=False, server_default="true")
+    revalidation_required: Mapped[bool] = mapped_column(nullable=False, server_default="false")
+    limitations: Mapped[dict | None] = mapped_column(JSONB); configuration_hash: Mapped[str | None] = mapped_column(String(64))
+    created_at = tz(False)
+    __table_args__ = (ForeignKeyConstraint(["tenant_id", "ai_execution_id"], ["ai_executions.tenant_id", "ai_executions.id"]), UniqueConstraint("tenant_id", "id", name="uq_assurance_results_tenant_id_id"))
+
+class AssuranceCheck(Base):
+    __tablename__ = "assurance_checks"
+    id = uuid_pk(); tenant_id = tenant_fk(); assurance_result_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), nullable=False)
+    check_type: Mapped[str] = mapped_column(String(80), nullable=False); status: Mapped[str] = mapped_column(String(40), nullable=False); severity: Mapped[str] = mapped_column(String(20), nullable=False)
+    message: Mapped[str] = mapped_column(Text, nullable=False); evidence_reference: Mapped[dict | None] = mapped_column(JSONB); details: Mapped[dict | None] = mapped_column(JSONB); created_at = tz(False)
+    __table_args__ = (ForeignKeyConstraint(["tenant_id", "assurance_result_id"], ["assurance_results.tenant_id", "assurance_results.id"]), UniqueConstraint("tenant_id", "id", name="uq_assurance_checks_tenant_id_id"))
+
 
 class ProductComponent(Base):
     __tablename__ = "product_components"
