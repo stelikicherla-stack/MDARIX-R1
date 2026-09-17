@@ -190,7 +190,7 @@ function PrivateApplication() {
   const [mode, setMode] = useState<TemporalMode>("event");
   const [view, setView] = useState<Product360 | null>(null);
   const [error, setError] = useState("");
-  const [activeView, setActiveView] = useState<"products" | "investigations" | "evidence" | "decision">("products");
+  const [activeView, setActiveView] = useState<"home" | "products" | "investigations" | "evidence" | "decision">("home");
   const [selectedInvestigationId, setSelectedInvestigationId] = useState("");
   const [investigations, setInvestigations] = useState<InvestigationSummary[]>([]);
   const [investigationsLoading, setInvestigationsLoading] = useState(false);
@@ -231,19 +231,26 @@ function PrivateApplication() {
   return (
     <div className="app-shell">
       <aside className="side-nav">
-        <div className="brand">MDARIX</div>
+        <div className="brand-block"><div className="brand">MDARIX</div><span>Product Lifecycle Intelligence</span></div>
         <nav>
+          <p className="nav-section-label">Workspace</p>
+          <button className={`nav-link ${activeView === "home" ? "active" : ""}`} onClick={() => setActiveView("home")}>Home</button>
           <button className={`nav-link ${activeView === "products" ? "active" : ""}`} onClick={() => setActiveView("products")}>Products</button>
+          <p className="nav-section-label">Investigation</p>
           <button className={`nav-link ${activeView === "investigations" ? "active" : ""}`} onClick={() => setActiveView("investigations")}>Investigations</button>
           <button className={`nav-link ${activeView === "evidence" ? "active" : ""}`} onClick={() => setActiveView("evidence")}>Evidence</button>
+          <p className="nav-section-label">Decision & Trust</p>
           <button className={`nav-link ${activeView === "decision" ? "active" : ""}`} onClick={() => setActiveView("decision")}>Decision Center</button>
+          <span className="nav-link disabled-nav">AI Assurance <small>Available through investigation workflow</small></span>
+          <span className="nav-link disabled-nav">Audit Trail <small>Controlled foundation</small></span>
         </nav>
+        <div className="side-nav-footer"><span className="status-r1">R1</span><p>Evidence before inference.<br/>Authorized humans decide.</p></div>
       </aside>
       <main>
         <header className="topbar">
           <div>
-            <p className="eyebrow">Persistent workflow context</p>
-            <h1>{view?.product.name ?? "MDARIX R1"}</h1>
+            <p className="eyebrow">{activeView === "home" ? "Intelligence workspace" : "Persistent workflow context"}</p>
+            <h1>{activeView === "home" ? "Good decisions start with product reality" : view?.product.name ?? "MDARIX R1"}</h1>
           </div>
           <div className="toolbar">
             {securityContext && <span className="context-summary" aria-label="Authenticated user and active role">{securityContext.display_name} | {securityContext.active_role ?? "No active role"}</span>}
@@ -266,6 +273,7 @@ function PrivateApplication() {
           </div>
         </header>
         {error && <div className="error">{error}</div>}
+        {view && activeView === "home" && <ApplicationHome view={view} investigations={investigations} onNavigate={setActiveView} />}
         {view && activeView === "products" && <Product360View view={view} />}
         {view && activeView === "investigations" && <InvestigationAccessView view={view} selectedInvestigationId={selectedInvestigationId} onSelect={setSelectedInvestigationId} temporalMode={mode} asOf={asOf} onOpenDecision={() => setActiveView("decision")} />}
         {view && activeView === "evidence" && <EvidenceAccessView productEvidenceCount={view.evidence.length} />}
@@ -295,6 +303,20 @@ function AuthPage({ mode }: { mode: string }) {
   const [message,setMessage]=useState(""); const [email,setEmail]=useState(""); const [password,setPassword]=useState(""); const [name,setName]=useState(""); const [company,setCompany]=useState(""); const [token,setToken]=useState(new URLSearchParams(window.location.search).get("token")??""); const [userId,setUserId]=useState("");
   const submit=async(e:React.FormEvent)=>{e.preventDefault(); const endpoint=mode==="signin"?"signin":mode==="signup"?"signup":mode==="verify-email"?"verify-email":"forgot-password"; const body=mode==="signup"?{email,password,display_name:name,organization:company}:mode==="verify-email"?{token}:{email,password}; const response=await fetch(`/api/v1/auth/${endpoint}`,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)}); const data=await response.json(); if(response.ok){if(mode==="signup"){setUserId(data.user_id); setToken(data.development_token??""); setMessage(data.email_delivery==="SENT"?`Account created. Your User ID is ${data.user_id}. A verification email was sent.`:`Account created. Your User ID is ${data.user_id}. Email delivery is not configured on this host; use the controlled verification link below.`);}else if(mode==="verify-email"){setMessage("Email verified. You can now sign in with your User ID and password.");}else if(mode==="signin"){setMessage("Signed in. Loading MDARIX…"); window.location.href="/app";}else setMessage("If the account exists, reset instructions are available.");}else {setMessage(data.detail?.code==="PASSWORD_POLICY"?"Password must be at least 12 characters.":data.detail?.code==="ACCOUNT_EXISTS"?"An account with this email already exists. Use Sign in or verify the existing account.":(data.detail?.message??"Request could not be completed."));}};
   return <div className="auth-shell"><a className="brand" href="/">MDARIX</a><form className="auth-card" onSubmit={submit}><span className="eyebrow">{mode==="signin"?"Welcome back":"MDARIX access"}</span><h1>{mode==="signin"?"Sign in to MDARIX":mode==="signup"?"Create your MDARIX account":mode==="verify-email"?"Verify your email":"Reset your password"}</h1>{mode==="signup"&&<><input aria-label="Display name" required placeholder="Full name" value={name} onChange={e=>setName(e.target.value)}/><input aria-label="Company" required placeholder="Company / organization" value={company} onChange={e=>setCompany(e.target.value)}/></>}{mode==="verify-email"?<input aria-label="Verification token" required placeholder="Verification token" value={token} onChange={e=>setToken(e.target.value)}/>:<input aria-label="User ID or work email" required type={mode==="forgot-password"?"email":"text"} placeholder={mode==="signin"?"User ID or work email":"Work email"} value={email} onChange={e=>setEmail(e.target.value)}/>} {mode!=="forgot-password"&&mode!=="verify-email"&&<><input aria-label="Password" required minLength={12} type="password" placeholder="Password (minimum 12 characters)" value={password} onChange={e=>setPassword(e.target.value)}/>{mode==="signup"&&<small>Password is stored securely and never as plain text.</small>}</>}<button className="primary-action" type="submit">{mode==="signin"?"Sign in":mode==="signup"?"Create account":mode==="verify-email"?"Verify email":"Send reset instructions"}</button>{message&&<p role="status">{message}{userId&&token&&<> <br/><a href={`/verify-email?token=${encodeURIComponent(token)}`}>Continue to email verification</a></>}</p>}<p className="auth-links"><a href="/signup">Create account</a> · <a href="/signin">Sign in</a> · <a href="/verify-email">Verify email</a> · <a href="/forgot-password">Forgot password?</a></p></form></div>;
+}
+
+function ApplicationHome({ view, investigations, onNavigate }: { view: Product360; investigations: InvestigationSummary[]; onNavigate: (view: "products" | "investigations" | "evidence" | "decision") => void }) {
+  const stages = [
+    { key: "products" as const, step: "01", label: "Reconstruct", title: "Understand product reality", copy: "See the selected product version, configuration, suppliers, lots, changes, complaints, and timeline in one temporal context." },
+    { key: "investigations" as const, step: "02", label: "Investigate", title: "Follow the evidence", copy: "Open an investigation workspace that preserves source anchors, relationships, contradictions, and material unknowns." },
+    { key: "evidence" as const, step: "03", label: "Ground", title: "Review trusted evidence", copy: "Inspect the available evidence universe without implying unsupported product links or conclusions." },
+    { key: "decision" as const, step: "04", label: "Decide", title: "Keep humans accountable", copy: "Move grounded findings into controlled review, advisory, approval, rejection, and signature workflows." },
+  ];
+  return <div className="content app-home">
+    <section className="app-story-hero"><div><span className="eyebrow">Your R1 investigation story</span><h2>From fragmented lifecycle records to a traceable human decision.</h2><p>MDARIX connects context from existing systems, reconstructs what was true when, challenges explanations, exposes gaps, and preserves the evidence behind the decision.</p><div className="hero-actions"><button className="primary-action" onClick={() => onNavigate("investigations")}>Continue investigation</button><button className="primary-action secondary" onClick={() => onNavigate("products")}>Explore Product 360</button></div></div><div className="story-context"><span>Selected product</span><strong>{view.product.name}</strong><p>{view.selected_version?.version_identifier ? `Version ${view.selected_version.version_identifier}` : "No version selected"}</p><div><span>{investigations.length}</span> investigations <span>{view.evidence.length}</span> linked evidence</div></div></section>
+    <section className="app-story-section"><div className="section-heading"><div><span className="eyebrow">How the work moves</span><h2>A controlled path from reality to decision</h2></div><p>Each stage carries the same product, version, investigation, and temporal context forward.</p></div><div className="app-journey-grid">{stages.map((stage, index) => <article key={stage.step} onClick={() => onNavigate(stage.key)} tabIndex={0} role="button" onKeyDown={event => { if (event.key === "Enter" || event.key === " ") onNavigate(stage.key); }}><div className="journey-step"><span>{stage.step}</span>{index < stages.length - 1 && <i />}</div><strong>{stage.label}</strong><h3>{stage.title}</h3><p>{stage.copy}</p><button>Open {stage.label} <ChevronRight size={16} /></button></article>)}</div></section>
+    <section className="home-insight-grid"><article><span className="eyebrow">What MDARIX knows</span><strong>{view.overview.component_count} components · {view.overview.lot_count} lots · {view.overview.complaint_count} complaints</strong><p>Structured product context available for the selected scope.</p></article><article><span className="eyebrow">What MDARIX qualifies</span><strong>{view.limitations.length} visible limitations</strong><p>Gaps and constraints stay visible rather than being converted into false certainty.</p></article><article><span className="eyebrow">Who decides</span><strong>Authorized human reviewers</strong><p>AI supports investigation and challenge; it does not make the final regulated decision.</p></article></section>
+  </div>;
 }
 
 function Product360View({ view }: { view: Product360 }) {

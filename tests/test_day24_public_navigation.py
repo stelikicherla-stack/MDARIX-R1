@@ -43,3 +43,17 @@ def test_mega_menu_supports_escape_and_responsive_navigation():
     assert 'event.key === "Escape"' in SITE
     assert 'aria-expanded={openMenu === name}' in SITE
     assert 'aria-controls="public-navigation"' in SITE
+
+
+def test_authenticated_home_tells_and_connects_the_r1_workflow_story():
+    for phrase in (
+        "Your R1 investigation story",
+        "Understand product reality",
+        "Follow the evidence",
+        "Review trusted evidence",
+        "Keep humans accountable",
+        "Authorized human reviewers",
+    ):
+        assert phrase in MAIN
+    assert 'onNavigate("investigations")' in MAIN
+    assert 'onNavigate("products")' in MAIN
