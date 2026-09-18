@@ -1,6 +1,7 @@
 from datetime import datetime
 
-from fastapi import FastAPI, HTTPException, Query
+from fastapi import FastAPI, HTTPException, Query, Request
+from fastapi.responses import JSONResponse
 from sqlalchemy import text
 
 from backend.app.db.session import engine
@@ -25,6 +26,18 @@ from graph.schemas import GraphResponse, HealthResponse, RelationshipDetail
 from graph.service import GraphError, RealityGraphService
 
 app = FastAPI(title="MDARIX R1 API", version="0.8.0")
+
+
+@app.exception_handler(Exception)
+async def safe_internal_error(request: Request, exc: Exception) -> JSONResponse:
+    """Keep unexpected customer-facing errors free of implementation details."""
+    correlation_id = request.headers.get("X-Correlation-ID")
+    body = {"code": "INTERNAL_ERROR", "message": "The request could not be completed."}
+    if correlation_id:
+        body["correlation_id"] = correlation_id
+    return JSONResponse(status_code=500, content={"detail": body})
+
+
 app.include_router(evidence_router)
 app.include_router(investigations_router)
 app.include_router(retrieval_router)

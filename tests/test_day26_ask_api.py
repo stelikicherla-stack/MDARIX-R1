@@ -64,3 +64,33 @@ def test_missing_server_entitlement_is_denied(monkeypatch):
         app.dependency_overrides.clear()
     assert response.status_code == 403
     assert response.json()["detail"]["code"] == "ASK_NOT_ENTITLED"
+
+
+def test_unexpected_ask_dependency_error_is_customer_safe(monkeypatch):
+    tenant_id = uuid4()
+    monkeypatch.setattr("backend.app.ask_router._authenticated_context", lambda request: {"user_id": "u1", "tenant_id": str(tenant_id), "active_role": "Viewer"})
+    monkeypatch.setattr("backend.app.ask_router._has_ask_entitlement", lambda db, tenant: (_ for _ in ()).throw(RuntimeError("DATABASE_PASSWORD=TEST_DB_PASSWORD_DAY26")))
+    tenant = SimpleNamespace(id=tenant_id, status="active")
+
+    class Query:
+        def filter(self, *args): return self
+        def first(self): return tenant
+
+    class DB:
+        def query(self, model): return Query()
+
+    app.dependency_overrides[get_db] = lambda: DB()
+    try:
+        response = TestClient(app, raise_server_exceptions=False).post(
+            "/api/v1/ask/",
+            json={"question": "show complaints"},
+            headers={"X-Correlation-ID": "corr-error"},
+        )
+    finally:
+        app.dependency_overrides.clear()
+    body = response.json()
+    serialized = response.text
+    assert response.status_code == 500
+    assert body["detail"] == {"code": "INTERNAL_ERROR", "message": "The request could not be completed.", "correlation_id": "corr-error"}
+    assert "Traceback" not in serialized
+    assert "TEST_DB_PASSWORD_DAY26" not in serialized

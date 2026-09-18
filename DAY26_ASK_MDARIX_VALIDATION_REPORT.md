@@ -7,8 +7,9 @@ and automated regression are healthy, but the complete security-zero matrix and
 runtime evidence required by the Day 26 completion gate have not all been
 executed in this validation run. No completion commit is created.
 
-Security-closure checkpoint: `e12b872` plus the executable closure tests and
-Ask audit-boundary changes in the current working state.
+Security-closure checkpoint: `9691da2` plus the executable closure tests,
+Ask audit-boundary changes, and customer-safe error handling in the current
+working state.
 
 ## Implementation baseline
 
@@ -33,7 +34,8 @@ Live migration evidence previously verified: `j26asksessions (head)` and
 | Focused Day 26 suite | PASS | 22 passed, 0 failed, 0 errors |
 | Expanded focused/security suite | PASS | 27 passed, 0 failed, 0 errors, 3 warnings |
 | Final focused/security suite | PASS | 28 passed, 0 failed, 0 errors, 3 warnings |
-| New full backend regression | PASS | 280 passed, 0 failed, 0 errors, 3 warnings, 92.43s |
+| Final focused/security suite after error handling | PASS | 29 passed, 0 failed, 0 errors, 3 warnings |
+| New full backend regression after final blocker work | PASS | 281 passed, 0 failed, 0 errors, 3 warnings, 551.66s |
 | Frontend production build | PASS | `npm.cmd --prefix frontend run build` |
 | Python compilation | PASS | `compileall` for backend, Ask, and counterfactual packages |
 | `git diff --check` | PASS | no whitespace errors |
@@ -84,7 +86,23 @@ or dependency injection are not present in the repository test harness.
 | Unauthorized evidence retrieval | UNPROVEN — repository result path pending |
 | Dependency false success | UNPROVEN — injected API dependency failures pending |
 | Audit secret leakage/correlation continuity | PARTIAL — safe event construction and correlation tests pass; persisted runtime inspection pending |
-| Raw stack traces | UNPROVEN — controlled internal-failure API tests pending |
+| Raw stack traces | PASS for unexpected Ask exception path | API test confirms sanitized HTTP 500, correlation retained, no traceback or sentinel |
+
+The current Day 26 endpoint does not invoke a retrieval repository or AI
+provider. Retrieval-failure injection, provider-unavailable, timeout, and
+malformed-provider-response tests are therefore **N/A for this foundation**;
+there is no executable provider/repository boundary to inject without adding
+Day 27 functionality. This is a technical scope limitation, not a PASS.
+
+An unexpected Ask dependency exception is now normalized by the application
+error handler and tested through the API: HTTP 500, safe `INTERNAL_ERROR`,
+correlation ID retained, no traceback or secret sentinel.
+
+The remaining Tenant A/B and persisted-audit items cannot be honestly promoted
+to PASS from the current harness: the Day 26 Ask endpoint does not resolve
+Product, ProductVersion, or Evidence records, and the tests do not connect to
+the live database to inspect committed Ask audit rows. They remain explicit
+blockers rather than being inferred from unit-level boundary tests.
 
 Critical defects: 0 observed. High security defects: 0 observed. Unproven is
 not treated as zero for the formal completion gate.
