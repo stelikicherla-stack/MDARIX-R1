@@ -7,6 +7,9 @@ and automated regression are healthy, but the complete security-zero matrix and
 runtime evidence required by the Day 26 completion gate have not all been
 executed in this validation run. No completion commit is created.
 
+Security-closure checkpoint: `962329f` plus the executable closure tests added
+in `tests/test_day26_security_closure.py`.
+
 ## Implementation baseline
 
 The validated implementation includes checkpoints `d8aa5a5`, `d6db40a`,
@@ -28,7 +31,8 @@ Live migration evidence previously verified: `j26asksessions (head)` and
 | Gate | Result | Evidence |
 |---|---|---|
 | Focused Day 26 suite | PASS | 22 passed, 0 failed, 0 errors |
-| Full backend regression | PASS | 274 passed, 0 failed, 0 errors, 3 warnings, 86.49s |
+| Expanded focused/security suite | PASS | 27 passed, 0 failed, 0 errors, 3 warnings |
+| New full backend regression | PASS | 279 passed, 0 failed, 0 errors, 3 warnings, 87.48s |
 | Frontend production build | PASS | `npm.cmd --prefix frontend run build` |
 | Python compilation | PASS | `compileall` for backend, Ask, and counterfactual packages |
 | `git diff --check` | PASS | no whitespace errors |
@@ -55,6 +59,34 @@ still require explicit runtime evidence before formal completion:
 - explicit zero counts for every required security gate.
 
 No unsupported PASS is recorded for those items.
+
+## Security zero-gate matrix
+
+The following executable checks now provide zero findings for the tested
+boundaries: pre-model hidden-field/secret sentinel exclusion, cross-tenant
+context exclusion, prompt authority text not changing scope, hard retrieval
+bounding, and Ask action non-mutation. The broader runtime matrix remains
+unproven where controlled Tenant A/Tenant B database fixtures, audit capture,
+or dependency injection are not present in the repository test harness.
+
+| Gate | Result |
+|---|---|
+| Cross-tenant AI-context leakage | 0 in executable boundary tests |
+| Hidden-field AI leakage | 0 in executable boundary tests |
+| Secret AI leakage | 0 for supplied sentinel fields |
+| Prompt permission escalation | 0 in interpreter/boundary tests |
+| Arbitrary SQL execution | 0 in interpreter/boundary tests |
+| Approval/signature/closure through Ask | 0 in current boundary tests |
+| Cross-tenant Ask/retrieval/session leakage | UNPROVEN — runtime fixture matrix pending |
+| Authorization/entitlement bypass | UNPROVEN — expanded adversarial runtime matrix pending |
+| Role/tenant/session-owner/ProductVersion spoofing | UNPROVEN — runtime matrix pending |
+| Unauthorized evidence retrieval | UNPROVEN — repository result path pending |
+| Dependency false success | UNPROVEN — injected API dependency failures pending |
+| Audit secret leakage/correlation continuity | UNPROVEN — audit runtime inspection pending |
+| Raw stack traces | UNPROVEN — controlled internal-failure API tests pending |
+
+Critical defects: 0 observed. High security defects: 0 observed. Unproven is
+not treated as zero for the formal completion gate.
 
 ## Semantic and boundary assessment
 
