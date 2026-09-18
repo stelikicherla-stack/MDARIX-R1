@@ -40,10 +40,43 @@ def main() -> int:
     sessions = {a_email: sign_in(a_email), b_email: sign_in(b_email)}
     failures = 0
     try:
+        if os.environ.get("DAY28_EXPECT_LIFECYCLE") == "1":
+            lifecycle_keys = ("A_PRODUCT_ID", "A_VERSION_ID", "A_EVIDENCE_ID", "A_COMPLAINT_ID", "A_INVESTIGATION_ID", "A_COMPONENT_ID", "A_SUPPLIER_ID", "B_PRODUCT_ID", "B_VERSION_ID", "B_EVIDENCE_ID", "B_COMPLAINT_ID", "B_INVESTIGATION_ID", "B_COMPONENT_ID", "B_SUPPLIER_ID")
+            lifecycle_ids = {key: os.environ.get(f"DAY27_{key}") for key in lifecycle_keys}
+            if not all(lifecycle_ids.values()):
+                raise SystemExit("Set all DAY27_* lifecycle IDs from the fixture output.")
+            def lifecycle_scope(prefix: str, correlation: str) -> dict:
+                return {"label": prefix, "correlation_id": correlation, "product_id": lifecycle_ids[f"{prefix[0]}_PRODUCT_ID"], "product_version_id": lifecycle_ids[f"{prefix[0]}_VERSION_ID"], "complaint_id": lifecycle_ids[f"{prefix[0]}_COMPLAINT_ID"], "investigation_id": lifecycle_ids[f"{prefix[0]}_INVESTIGATION_ID"], "evidence_id": lifecycle_ids[f"{prefix[0]}_EVIDENCE_ID"]}
+            def lifecycle_pass(body: dict, own: str, foreign: str) -> bool:
+                data = body.get("lifecycle", {}) if isinstance(body, dict) else {}
+                serialized = str(data).lower()
+                forbidden = [f"tenant_{foreign}_".lower()]
+                expected = (("products", f"tenant_{own}_product_canary"), ("product_versions", f"tenant_{own}_version_canary"), ("complaints", f"tenant_{own}_complaint_canary"), ("investigations", f"day27-{own}"), ("components", f"tenant_{own}_component_canary"), ("suppliers", f"tenant_{own}_supplier_canary"), ("evidence", f"tenant_{own}_evidence_canary"))
+                own_present = all(any(marker.lower() in str(item).lower() for item in data.get(field, [])) for field, marker in expected)
+                # The payload must retain the explicit non-causal limitation;
+                # reject causal conclusions, not the word "causal" itself.
+                causal_conclusion = "root cause" in serialized or "causal conclusion" in serialized
+                return own_present and not any(marker in serialized for marker in forbidden) and not causal_conclusion
+            status_a, body_a = ask(sessions[a_email], lifecycle_scope("A-LIFECYCLE", "DAY28-LIVE-A-LIFECYCLE"))
+            status_b, body_b = ask(sessions[b_email], lifecycle_scope("B-LIFECYCLE", "DAY28-LIVE-B-LIFECYCLE"))
+            print(f"{'PASS' if status_a == 200 and lifecycle_pass(body_a, 'A', 'B') else 'FAIL'} | Tenant A lifecycle | status={status_a}")
+            print(f"{'PASS' if status_b == 200 and lifecycle_pass(body_b, 'B', 'A') else 'FAIL'} | Tenant B lifecycle | status={status_b}")
+            foreign_a = {"label": "A-FOREIGN-LIFECYCLE", "correlation_id": "DAY28-LIVE-A-FOREIGN-LIFECYCLE", "product_id": lifecycle_ids["A_PRODUCT_ID"], "product_version_id": lifecycle_ids["A_VERSION_ID"], "complaint_id": lifecycle_ids["B_COMPLAINT_ID"], "investigation_id": lifecycle_ids["B_INVESTIGATION_ID"], "evidence_id": lifecycle_ids["B_EVIDENCE_ID"]}
+            foreign_b = {"label": "B-FOREIGN-LIFECYCLE", "correlation_id": "DAY28-LIVE-B-FOREIGN-LIFECYCLE", "product_id": lifecycle_ids["B_PRODUCT_ID"], "product_version_id": lifecycle_ids["B_VERSION_ID"], "complaint_id": lifecycle_ids["A_COMPLAINT_ID"], "investigation_id": lifecycle_ids["A_INVESTIGATION_ID"], "evidence_id": lifecycle_ids["A_EVIDENCE_ID"]}
+            status_fa, body_fa = ask(sessions[a_email], foreign_a); status_fb, body_fb = ask(sessions[b_email], foreign_b)
+            def foreign_clean(body: dict, marker: str) -> bool:
+                data = body.get("lifecycle", {}) if isinstance(body, dict) else {}
+                return marker.lower() not in str(data).lower() and all(not data.get(field) for field in ("complaints", "investigations", "evidence"))
+            pa = status_fa == 200 and foreign_clean(body_fa, "TENANT_B_")
+            pb = status_fb == 200 and foreign_clean(body_fb, "TENANT_A_")
+            print(f"{'PASS' if pa else 'FAIL'} | A foreign lifecycle relationship | status={status_fa} | canary_leakage={int(not pa)}")
+            print(f"{'PASS' if pb else 'FAIL'} | B foreign lifecycle relationship | status={status_fb} | canary_leakage={int(not pb)}")
+            return int(not (status_a == 200 and status_b == 200 and lifecycle_pass(body_a, 'A', 'B') and lifecycle_pass(body_b, 'B', 'A') and pa and pb))
         if os.environ.get("DAY27_EXPECT_DEPENDENCY_FAILURE") == "1":
+            dependency_correlation = "DAY28-LIVE-DEPENDENCY-FAILURE" if os.environ.get("DAY28_EXPECT_DEPENDENCY_FAILURE") == "1" else "DAY27-LIVE-DEPENDENCY-FAILURE-001"
             status, body = ask(sessions[a_email], {
                 "label": "DEPENDENCY-FAILURE",
-                "correlation_id": "DAY27-LIVE-DEPENDENCY-FAILURE-001",
+                "correlation_id": dependency_correlation,
                 "product_id": ids["A_PRODUCT_ID"],
             })
             detail = body.get("detail", {}) if isinstance(body, dict) else {}

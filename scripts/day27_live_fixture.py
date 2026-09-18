@@ -19,7 +19,11 @@ if str(REPO_ROOT) not in sys.path:
 from sqlalchemy.orm import Session
 
 from auth.service import _hash
-from backend.app.db.models.foundation import AuthUser, Evidence, Investigation, Product, ProductVersion, Tenant
+from backend.app.db.models.foundation import (
+    AuthUser, Complaint, Component, ComponentSupplier, Evidence,
+    Investigation, InvestigationComplaint, InvestigationEvidence,
+    Product, ProductComponent, ProductVersion, Supplier, Tenant,
+)
 from backend.app.db.session import SessionLocal
 from backend.app.governance_router import bootstrap
 
@@ -70,8 +74,34 @@ def ensure_fixture(db: Session, suffix: str) -> dict[str, str]:
     if evidence is None:
         evidence = Evidence(id=uuid.uuid4(), tenant_id=tenant.id, investigation_id=investigation.id, evidence_identifier=evidence_identifier, evidence_type="DAY27_SYNTHETIC", title=f"Synthetic Evidence {suffix}", source_reference=f"DAY27-{suffix}", reliability_status="reviewed", fact_type="source_fact", content=f"TENANT_{suffix}_EVIDENCE_CANARY", created_at=timestamp, updated_at=timestamp)
         db.add(evidence)
+        db.flush()
+
+    component_identifier = f"TENANT_{suffix}_COMPONENT_CANARY"
+    component = db.query(Component).filter(Component.tenant_id == tenant.id, Component.component_identifier == component_identifier).first()
+    if component is None:
+        component = Component(id=uuid.uuid4(), tenant_id=tenant.id, component_identifier=component_identifier, name=f"Synthetic Component {suffix}", revision="A", status="active", created_at=timestamp, updated_at=timestamp)
+        db.add(component); db.flush()
+    supplier_identifier = f"TENANT_{suffix}_SUPPLIER_CANARY"
+    supplier = db.query(Supplier).filter(Supplier.tenant_id == tenant.id, Supplier.supplier_identifier == supplier_identifier).first()
+    if supplier is None:
+        supplier = Supplier(id=uuid.uuid4(), tenant_id=tenant.id, supplier_identifier=supplier_identifier, name=f"Synthetic Supplier {suffix}", status="active", created_at=timestamp, updated_at=timestamp)
+        db.add(supplier); db.flush()
+    complaint_identifier = f"TENANT_{suffix}_COMPLAINT_CANARY"
+    complaint = db.query(Complaint).filter(Complaint.tenant_id == tenant.id, Complaint.complaint_identifier == complaint_identifier).first()
+    if complaint is None:
+        complaint = Complaint(id=uuid.uuid4(), tenant_id=tenant.id, complaint_identifier=complaint_identifier, product_id=product.id, product_version_id=version.id, description=f"TENANT_{suffix}_COMPLAINT_CANARY", status="open", created_at=timestamp, updated_at=timestamp)
+        db.add(complaint); db.flush()
+
+    def ensure_link(model, **kwargs):
+        if not db.query(model).filter_by(**kwargs).first():
+            db.add(model(id=uuid.uuid4(), created_at=timestamp, **kwargs))
+
+    ensure_link(ProductComponent, tenant_id=tenant.id, product_version_id=version.id, component_id=component.id, relationship_status="active")
+    ensure_link(ComponentSupplier, tenant_id=tenant.id, component_id=component.id, supplier_id=supplier.id)
+    ensure_link(InvestigationComplaint, tenant_id=tenant.id, investigation_id=investigation.id, complaint_id=complaint.id)
+    ensure_link(InvestigationEvidence, tenant_id=tenant.id, investigation_id=investigation.id, evidence_id=evidence.id, relevance="supporting")
     db.commit()
-    return {"tenant_key": tenant_key, "tenant_id": str(tenant.id), "email": email, "product_id": str(product.id), "version_id": str(version.id), "evidence_id": str(evidence.id)}
+    return {"tenant_key": tenant_key, "tenant_id": str(tenant.id), "email": email, "product_id": str(product.id), "version_id": str(version.id), "evidence_id": str(evidence.id), "complaint_id": str(complaint.id), "investigation_id": str(investigation.id), "component_id": str(component.id), "supplier_id": str(supplier.id)}
 
 
 if __name__ == "__main__":
