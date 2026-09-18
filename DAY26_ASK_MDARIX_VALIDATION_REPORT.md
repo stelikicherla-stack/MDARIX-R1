@@ -23,6 +23,41 @@ Final full regression after remediation: **283 passed, 0 failed, 0 errors,
 3 warnings**. Frontend build, Python compilation, and diff check passed.
 The three warnings remain dependency/cache warnings and are non-blocking.
 
+## Ask entitlement provisioning remediation
+
+Live inspection found the active `R1_GOVERNANCE_DEMO` plan had only
+`DECISION_CENTER_SIGNATURES`; no persisted plan contained `ASK_MDARIX`.
+The Ask authorization check was correctly fail-closed, so live Ask requests
+were denied without generating successful audit events.
+
+The existing governance `bootstrap()` mechanism is now idempotently extended
+to provision an enabled, ACTIVE `ASK_MDARIX` feature on `R1_GOVERNANCE_DEMO`.
+It does not special-case a user or tenant and does not change `_has_ask_entitlement()`.
+No migration was required.
+
+Focused entitlement/auth/Ask tests: **16 passed, 0 failed, 0 errors**.
+Full regression after provisioning change: **284 passed, 0 failed, 0 errors,
+3 warnings**. Frontend build, Python compilation, and diff check passed.
+
+Legitimate live provisioning command, after authenticating against the R1
+backend, is the existing governance bootstrap path:
+
+```powershell
+Invoke-RestMethod `
+  -Method Get `
+  -Uri 'http://127.0.0.1:8007/api/v1/governance/effective-access' `
+  -WebSession $AuthenticatedSession
+```
+
+This uses the authenticated tenant context and creates only missing
+configuration rows. It must not be replaced with direct SQL inserts.
+
+Read-only verification:
+
+```powershell
+docker exec mdarix-r1-postgres psql -U mdarix_app -d mdarix_r1 -c "SELECT p.code, p.status, f.feature_code, f.enabled, f.status AS feature_status FROM plan_definitions p JOIN feature_entitlements f ON f.plan_id = p.id WHERE p.code = 'R1_GOVERNANCE_DEMO' AND f.feature_code = 'ASK_MDARIX';"
+```
+
 Security-closure checkpoint: `9691da2` plus the executable closure tests,
 Ask audit-boundary changes, and customer-safe error handling in the current
 working state.

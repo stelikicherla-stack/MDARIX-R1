@@ -8,7 +8,7 @@ from backend.app.db.session import get_db
 from backend.app.db.models.foundation import (ApprovalAuthority, AuditEvent, Decision, FeatureEntitlement, PlanDefinition, SegregationOfDutiesPolicy, SignedApprovalRecord, Tenant, TenantPlanAssignment)
 
 router=APIRouter(prefix="/api/v1/governance",tags=["Enterprise Governance"])
-FEATURE="DECISION_CENTER_SIGNATURES"; NOW=lambda: datetime.now(timezone.utc)
+FEATURE="DECISION_CENTER_SIGNATURES"; ASK_FEATURE="ASK_MDARIX"; NOW=lambda: datetime.now(timezone.utc)
 class SignatureRequest(BaseModel):
  decision:str=Field(pattern="^(APPROVE|REJECT)$"); remarks:str=Field(min_length=1,max_length=4000); password:str=Field(min_length=1,max_length=128); object_version:str
 class MaterialChangeRequest(BaseModel):
@@ -17,12 +17,20 @@ class MaterialChangeRequest(BaseModel):
 def audit(db,tenant,actor,action,entity_id,details=None): db.add(AuditEvent(id=uuid.uuid4(),tenant_id=tenant.id,actor_ref=actor,action=action,entity_type="Decision",entity_id=entity_id,details=details or {},created_at=NOW()))
 def bootstrap(db,tenant):
  plan=db.query(PlanDefinition).filter_by(code="R1_GOVERNANCE_DEMO").first()
- if plan:return plan
- plan=PlanDefinition(id=uuid.uuid4(),code="R1_GOVERNANCE_DEMO",name="R1 Governance Demo",description="Synthetic non-commercial Day 23 entitlement configuration",version="v1",status="ACTIVE",effective_from=NOW(),effective_to=None,created_at=NOW(),updated_at=NOW()); db.add(plan); db.flush()
- db.add(FeatureEntitlement(id=uuid.uuid4(),plan_id=plan.id,feature_code=FEATURE,enabled=True,limits={},status="ACTIVE",created_at=NOW(),updated_at=NOW()))
- db.add(TenantPlanAssignment(id=uuid.uuid4(),tenant_id=tenant.id,plan_id=plan.id,status="ACTIVE",effective_from=NOW(),effective_to=None,reason="Day 23 synthetic demo",created_at=NOW(),updated_at=NOW()))
- db.add(ApprovalAuthority(id=uuid.uuid4(),tenant_id=tenant.id,role_name="Viewer",object_type="Decision",decision_type="INVESTIGATION_REVIEW",scope={},authority="AUTHORIZED",version="v1",status="ACTIVE",effective_from=NOW(),effective_to=None,created_at=NOW(),updated_at=NOW()))
- db.add(SegregationOfDutiesPolicy(id=uuid.uuid4(),tenant_id=tenant.id,name="Decision creator separation",object_type="Decision",decision_type="INVESTIGATION_REVIEW",creator_cannot_approve=True,last_material_editor_cannot_approve=True,version="v1",status="ACTIVE",effective_from=NOW(),effective_to=None,created_at=NOW(),updated_at=NOW())); db.commit(); return plan
+ now=NOW(); changed=False
+ if not plan:
+  plan=PlanDefinition(id=uuid.uuid4(),code="R1_GOVERNANCE_DEMO",name="R1 Governance Demo",description="Synthetic non-commercial Day 23 entitlement configuration",version="v1",status="ACTIVE",effective_from=now,effective_to=None,created_at=now,updated_at=now); db.add(plan); db.flush(); changed=True
+ for feature in (FEATURE,ASK_FEATURE):
+  if not db.query(FeatureEntitlement).filter_by(plan_id=plan.id,feature_code=feature).first():
+   db.add(FeatureEntitlement(id=uuid.uuid4(),plan_id=plan.id,feature_code=feature,enabled=True,limits={},status="ACTIVE",created_at=now,updated_at=now)); changed=True
+ if not db.query(TenantPlanAssignment).filter_by(tenant_id=tenant.id,plan_id=plan.id).first():
+  db.add(TenantPlanAssignment(id=uuid.uuid4(),tenant_id=tenant.id,plan_id=plan.id,status="ACTIVE",effective_from=now,effective_to=None,reason="Day 23 synthetic demo",created_at=now,updated_at=now)); changed=True
+ if not db.query(ApprovalAuthority).filter_by(tenant_id=tenant.id,role_name="Viewer",object_type="Decision",decision_type="INVESTIGATION_REVIEW").first():
+  db.add(ApprovalAuthority(id=uuid.uuid4(),tenant_id=tenant.id,role_name="Viewer",object_type="Decision",decision_type="INVESTIGATION_REVIEW",scope={},authority="AUTHORIZED",version="v1",status="ACTIVE",effective_from=now,effective_to=None,created_at=now,updated_at=now)); changed=True
+ if not db.query(SegregationOfDutiesPolicy).filter_by(tenant_id=tenant.id,object_type="Decision",decision_type="INVESTIGATION_REVIEW").first():
+  db.add(SegregationOfDutiesPolicy(id=uuid.uuid4(),tenant_id=tenant.id,name="Decision creator separation",object_type="Decision",decision_type="INVESTIGATION_REVIEW",creator_cannot_approve=True,last_material_editor_cannot_approve=True,version="v1",status="ACTIVE",effective_from=now,effective_to=None,created_at=now,updated_at=now)); changed=True
+ if changed: db.commit()
+ return plan
 def tenant(db,actor):
  try: tenant_id=uuid.UUID(actor["tenant_id"])
  except (ValueError,TypeError): raise HTTPException(403,detail={"code":"TENANT_CONTEXT_INVALID","message":"Authenticated tenant context is invalid"})
