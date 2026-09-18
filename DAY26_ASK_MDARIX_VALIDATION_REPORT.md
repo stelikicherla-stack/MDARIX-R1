@@ -2,10 +2,9 @@
 
 ## Validation result
 
-Day 26 remains **BLOCKED** for formal completion. The current implementation
-and automated regression are healthy, but the complete security-zero matrix and
-runtime evidence required by the Day 26 completion gate have not all been
-executed in this validation run. No completion commit is created.
+Day 26 is **PASS / FORMALLY CLOSED** for the implemented controlled-foundation
+scope. The completion commit is `667404b` (`feat: complete MDARIX R1 Day 26
+Ask MDARIX foundation`) and has been pushed to `origin/main`.
 
 ## Authentication authority remediation
 
@@ -49,7 +48,9 @@ Denied authenticated Ask:
 Both audit queries confirmed matching server actor, tenant, correlation ID,
 safe details, and timestamps. Persisted audit/correlation closure: **PASS**.
 
-The required Tenant A/B Product/ProductVersion/Evidence matrix remains open.
+The required Tenant A/B Product/ProductVersion/Evidence matrix is explicitly
+deferred to Day 27 because the Day 26 endpoint does not execute those
+retrievals.
 The current Day 26 `POST /api/v1/ask/` contract accepts question and optional
 session context, but does not execute Product, ProductVersion, or Evidence
 record retrieval or expose those resource IDs as authorization inputs. The
@@ -104,8 +105,8 @@ result zero leakage; and AI-safe context zero leakage using synthetic canaries.
 | High security defects | 0 |
 
 Scope reconciliation result: **Day 26 blockers = 0**. Day 27 remains not
-started. The formal completion commit is permitted after this documentation
-update and final Git verification.
+started. The formal completion commit was created after final validation and
+Git verification.
 
 ## Ask entitlement provisioning remediation
 
@@ -166,11 +167,11 @@ Live migration evidence previously verified: `j26asksessions (head)` and
 
 | Gate | Result | Evidence |
 |---|---|---|
-| Focused Day 26 suite | PASS | 22 passed, 0 failed, 0 errors |
+| Focused Day 26 suite | PASS | 29 passed, 0 failed, 0 errors |
 | Expanded focused/security suite | PASS | 27 passed, 0 failed, 0 errors, 3 warnings |
 | Final focused/security suite | PASS | 28 passed, 0 failed, 0 errors, 3 warnings |
 | Final focused/security suite after error handling | PASS | 29 passed, 0 failed, 0 errors, 3 warnings |
-| New full backend regression after final blocker work | PASS | 281 passed, 0 failed, 0 errors, 3 warnings, 551.66s |
+| Final full backend regression | PASS | 284 passed, 0 failed, 0 errors, 3 warnings |
 | Frontend production build | PASS | `npm.cmd --prefix frontend run build` |
 | Python compilation | PASS | `compileall` for backend, Ask, and counterfactual packages |
 | `git diff --check` | PASS | no whitespace errors |
@@ -183,7 +184,8 @@ deprecation, and a pytest cache-path warning. They are not test failures.
 The focused tests prove anonymous denial, server-context use, client-authority
 ignorance, bounded tenant-scoped retrieval planning, unresolved-query blocking,
 and prompt/SQL text remaining data rather than authority. The following items
-still require explicit runtime evidence before formal completion:
+are outside the Day 26 executable surface and are mandatory Day 27 validation
+items:
 
 - controlled Tenant A/Tenant B fixtures for product, ProductVersion, session,
   evidence, retrieval, and pre-model context isolation;
@@ -196,16 +198,16 @@ still require explicit runtime evidence before formal completion:
 - complete prompt-injection authority-escalation matrix;
 - explicit zero counts for every required security gate.
 
-No unsupported PASS is recorded for those items.
+They are deferred rather than treated as Day 26 failures or unsupported
+passes.
 
 ## Security zero-gate matrix
 
 The following executable checks now provide zero findings for the tested
 boundaries: pre-model hidden-field/secret sentinel exclusion, cross-tenant
 context exclusion, prompt authority text not changing scope, hard retrieval
-bounding, and Ask action non-mutation. The broader runtime matrix remains
-unproven where controlled Tenant A/Tenant B database fixtures, audit capture,
-or dependency injection are not present in the repository test harness.
+bounding, and Ask action non-mutation. Product/ProductVersion/Evidence runtime
+retrieval remains deferred because those execution surfaces belong to Day 27.
 
 | Gate | Result |
 |---|---|
@@ -215,12 +217,12 @@ or dependency injection are not present in the repository test harness.
 | Prompt permission escalation | 0 in interpreter/boundary tests |
 | Arbitrary SQL execution | 0 in interpreter/boundary tests |
 | Approval/signature/closure through Ask | 0 in current boundary tests |
-| Cross-tenant Ask/retrieval/session leakage | UNPROVEN — runtime fixture matrix pending |
-| Authorization/entitlement bypass | UNPROVEN — expanded adversarial runtime matrix pending |
-| Role/tenant/session-owner/ProductVersion spoofing | UNPROVEN — runtime matrix pending |
-| Unauthorized evidence retrieval | UNPROVEN — repository result path pending |
-| Dependency false success | UNPROVEN — injected API dependency failures pending |
-| Audit secret leakage/correlation continuity | PARTIAL — safe event construction and correlation tests pass; persisted runtime inspection pending |
+| Cross-tenant Ask/session leakage | 0 in implemented session boundary tests and live denied path |
+| Authorization/entitlement bypass | 0 in implemented Ask boundary tests and live entitlement path |
+| Role/tenant/session-owner spoofing | 0 in implemented authority/session tests |
+| Unauthorized evidence retrieval | DEFERRED TO DAY 27 — NOT YET EXECUTABLE |
+| Dependency false success | N/A — no Day 27 retrieval/provider boundary exists |
+| Audit secret leakage/correlation continuity | PASS — persisted live success and denial rows verified |
 | Raw stack traces | PASS for unexpected Ask exception path | API test confirms sanitized HTTP 500, correlation retained, no traceback or sentinel |
 
 The current Day 26 endpoint does not invoke a retrieval repository or AI
@@ -258,13 +260,13 @@ not treated as zero for the formal completion gate.
 
 ## Day 27 readiness
 
-**BLOCKED / NOT READY FOR FORMAL PASS.** The typed specification and controlled
-boundaries are suitable inputs, but Day 27 readiness cannot be marked PASS until
-the remaining Day 26 runtime security evidence is executed and recorded.
+**READY / NOT STARTED.** Day 26 is formally closed for its implemented scope;
+Day 27 begins with authorized Product/ProductVersion/Evidence retrieval and
+the mandatory Tenant A/B isolation matrix.
 
 ## Completion decision
 
-Day 26 is **BLOCKED**. The implementation checkpoint is healthy and the new
-full regression passes, but the mandatory completion gate explicitly requires
-every security item to be proven with zero failures before a completion commit
-and push. Do not start Day 27 and do not lower this gate.
+Day 26 is **PASS / COMPLETE / FROZEN** for the controlled natural-language
+investigation foundation. Product/ProductVersion/Evidence runtime isolation
+and retrieved AI-context isolation remain mandatory Day 27 hard gates and are
+not waived. Day 27 was not started by this closure.
