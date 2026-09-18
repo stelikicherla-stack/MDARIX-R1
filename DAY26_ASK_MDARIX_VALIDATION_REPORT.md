@@ -23,6 +23,39 @@ Final full regression after remediation: **283 passed, 0 failed, 0 errors,
 3 warnings**. Frontend build, Python compilation, and diff check passed.
 The three warnings remain dependency/cache warnings and are non-blocking.
 
+## Live runtime closure evidence
+
+The live R1 operator verification completed after the `ASK_MDARIX` entitlement
+was provisioned through the existing governance bootstrap path.
+
+Successful authenticated Ask:
+
+- Correlation ID: `DAY26-MANUAL-SUCCESS-002`
+- Result: `INTERPRETED`
+- Session: persisted (identifier redacted from repository documentation)
+- Server actor: authenticated actor (identifier redacted from repository documentation)
+- Server tenant: authenticated tenant (identifier redacted from repository documentation)
+- Server role: `Viewer`
+- Execution: `CONTROLLED_FOUNDATION_ONLY`
+- Persisted events: `ASK_QUERY_RECEIVED`, `ASK_QUERY_PROCESSED`
+
+Denied authenticated Ask:
+
+- Correlation ID: `DAY26-MANUAL-DENIED-002`
+- Result: controlled `ASK_SESSION_NOT_FOUND`
+- Persisted events: `ASK_QUERY_RECEIVED`, `ASK_AUTHORIZATION_DENIED`
+- Denial reason: `ASK_SESSION_NOT_FOUND`
+
+Both audit queries confirmed matching server actor, tenant, correlation ID,
+safe details, and timestamps. Persisted audit/correlation closure: **PASS**.
+
+The required Tenant A/B Product/ProductVersion/Evidence matrix remains open.
+The current Day 26 `POST /api/v1/ask/` contract accepts question and optional
+session context, but does not execute Product, ProductVersion, or Evidence
+record retrieval or expose those resource IDs as authorization inputs. The
+matrix therefore cannot be honestly marked PASS without adding retrieval
+functionality outside the Day 26 foundation scope.
+
 ## Ask entitlement provisioning remediation
 
 Live inspection found the active `R1_GOVERNANCE_DEMO` plan had only
