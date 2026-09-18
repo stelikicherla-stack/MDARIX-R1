@@ -7,8 +7,8 @@ and automated regression are healthy, but the complete security-zero matrix and
 runtime evidence required by the Day 26 completion gate have not all been
 executed in this validation run. No completion commit is created.
 
-Security-closure checkpoint: `962329f` plus the executable closure tests added
-in `tests/test_day26_security_closure.py`.
+Security-closure checkpoint: `e12b872` plus the executable closure tests and
+Ask audit-boundary changes in the current working state.
 
 ## Implementation baseline
 
@@ -32,7 +32,8 @@ Live migration evidence previously verified: `j26asksessions (head)` and
 |---|---|---|
 | Focused Day 26 suite | PASS | 22 passed, 0 failed, 0 errors |
 | Expanded focused/security suite | PASS | 27 passed, 0 failed, 0 errors, 3 warnings |
-| New full backend regression | PASS | 279 passed, 0 failed, 0 errors, 3 warnings, 87.48s |
+| Final focused/security suite | PASS | 28 passed, 0 failed, 0 errors, 3 warnings |
+| New full backend regression | PASS | 280 passed, 0 failed, 0 errors, 3 warnings, 92.43s |
 | Frontend production build | PASS | `npm.cmd --prefix frontend run build` |
 | Python compilation | PASS | `compileall` for backend, Ask, and counterfactual packages |
 | `git diff --check` | PASS | no whitespace errors |
@@ -82,7 +83,7 @@ or dependency injection are not present in the repository test harness.
 | Role/tenant/session-owner/ProductVersion spoofing | UNPROVEN — runtime matrix pending |
 | Unauthorized evidence retrieval | UNPROVEN — repository result path pending |
 | Dependency false success | UNPROVEN — injected API dependency failures pending |
-| Audit secret leakage/correlation continuity | UNPROVEN — audit runtime inspection pending |
+| Audit secret leakage/correlation continuity | PARTIAL — safe event construction and correlation tests pass; persisted runtime inspection pending |
 | Raw stack traces | UNPROVEN — controlled internal-failure API tests pending |
 
 Critical defects: 0 observed. High security defects: 0 observed. Unproven is

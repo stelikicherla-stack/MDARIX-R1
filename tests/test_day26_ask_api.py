@@ -51,6 +51,8 @@ def test_missing_server_entitlement_is_denied(monkeypatch):
         def filter(self, *args): return self
         def first(self): return None
     class DB:
+        def add(self, value): return None
+        def commit(self): return None
         def query(self, model):
             class TenantQuery(Query):
                 def first(self): return tenant

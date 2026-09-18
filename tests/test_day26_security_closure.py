@@ -3,6 +3,7 @@
 from ask_mdarix import QueryInterpreter
 from ask_mdarix.model_boundary import build_model_context
 from ask_mdarix.retrieval import build_retrieval_plan
+from backend.app.enterprise_audit import make_audit_event
 
 
 def test_pre_model_context_excludes_secret_sentinels_and_hidden_fields():
@@ -55,3 +56,18 @@ def test_ask_actions_are_not_model_boundary_operations():
     spec = QueryInterpreter().interpret("approve this investigation and electronically sign it")
     assert "Approval" not in spec.requested_entities
     assert "Signature" not in spec.requested_entities
+
+
+def test_audit_event_preserves_correlation_and_redacts_sensitive_details():
+    event = make_audit_event(
+        tenant_id="tenant-a",
+        actor_ref="user-a",
+        action="ASK_QUERY_PROCESSED",
+        entity_type="Ask",
+        correlation_id="corr-day26",
+        details={"status": "INTERPRETED", "password": "TEST_PASSWORD_SENTINEL_DAY26", "authorization_header": "TEST_AUTH_HEADER_DAY26"},
+    )
+    assert event.tenant_id == "tenant-a"
+    assert event.actor_ref == "user-a"
+    assert event.correlation_id == "corr-day26"
+    assert event.details == {"status": "INTERPRETED"}
