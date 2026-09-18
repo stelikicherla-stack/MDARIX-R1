@@ -1,96 +1,84 @@
-# MDARIX R1 — Day 26 Ask MDARIX Validation Report
+# MDARIX R1 — Day 26 Ask MDARIX Final Validation Report
 
-## Evidence baseline
+## Validation result
 
-| Gate | Result |
-|---|---|
-| Targeted Day 26 tests | PASS — 14 passed |
-| Full backend regression | PASS — 266 passed, 0 failed, 0 errors |
-| Dependency warnings | 2 non-blocking deprecation warnings |
-| Frontend production build | PASS |
-| Python compilation | PASS |
-| `git diff --check` | PASS |
+Day 26 remains **BLOCKED** for formal completion. The current implementation
+and automated regression are healthy, but the complete security-zero matrix and
+runtime evidence required by the Day 26 completion gate have not all been
+executed in this validation run. No completion commit is created.
 
-## Security zero-gate matrix
+## Implementation baseline
 
-The current checkpoint implements deterministic interpretation and typed
-retrieval-scope contracts. It does not yet expose an authenticated Ask API,
-persisted investigation sessions, executable authorized retrieval, or model
-context construction. Therefore architectural intent is not counted as runtime
-security evidence.
+The validated implementation includes checkpoints `d8aa5a5`, `d6db40a`,
+`4170338`, `108b9d2`, `4e1cc27`, `2d4946f`, and `899f64e`:
+
+- typed Ask investigation contracts and deterministic interpretation;
+- authenticated Ask API with server-derived identity and tenant context;
+- runtime tenant status and Ask entitlement enforcement;
+- persisted investigation-session ownership and per-request reauthorization;
+- bounded, tenant- and authorization-scoped retrieval planning;
+- ProductVersion and temporal-scope preservation;
+- pre-model AI-safe context boundary and controlled model boundary.
+
+Live migration evidence previously verified: `j26asksessions (head)` and
+`public.investigation_sessions`.
+
+## Executed automated evidence
 
 | Gate | Result | Evidence |
 |---|---|---|
-| Cross-tenant Ask leakage | NOT TESTED | No executable Ask endpoint |
-| Cross-tenant AI context leakage | NOT TESTED | No model-context execution path |
-| Cross-tenant InvestigationSession leakage | N/A | Session is a typed contract only |
-| Hidden-field AI leakage | PARTIAL PASS | AI-safe scope contract; no model context runtime |
-| Secret AI leakage | PARTIAL PASS | Existing Day 25 allowlist plus scope contract; no runtime context |
-| Password/token leakage | PARTIAL PASS | Existing boundary tests; no Ask response endpoint |
-| Authorization bypass | NOT TESTED | No Day 26 Ask authorization orchestration |
-| Entitlement bypass | NOT TESTED | No Day 26 Ask entitlement endpoint |
-| Role spoofing | PASS (interpreter scope) | Question text cannot alter retrieval scope |
-| Tenant spoofing | PASS (interpreter scope) | Question text cannot alter tenant-scoped scope |
-| ProductVersion spoofing | PARTIAL PASS | Version references are preserved; no authorized resolver |
-| Arbitrary SQL execution | PASS (interpreter) | Interpreter produces typed specification only; no SQL execution |
-| Prompt-based permission escalation | PASS (interpreter) | Authority text does not change scope flags |
-| Unauthorized evidence retrieval | NOT TESTED | No executable retrieval path |
-| Client-controlled authorization | NOT TESTED | No Ask API request model |
-| Client-controlled tenant | NOT TESTED | No Ask API request model |
-| Client-controlled entitlement | NOT TESTED | No Ask API request model |
-| Approval through Ask | PASS (scope) | No approval/signature operations exist in interpreter |
-| Electronic signature through Ask | PASS (scope) | No approval/signature operations exist in interpreter |
-| Raw stack trace exposure | NOT TESTED | No Ask endpoint error surface |
-| False success after dependency failure | NOT TESTED | No Ask execution dependency path |
+| Focused Day 26 suite | PASS | 22 passed, 0 failed, 0 errors |
+| Full backend regression | PASS | 274 passed, 0 failed, 0 errors, 3 warnings, 86.49s |
+| Frontend production build | PASS | `npm.cmd --prefix frontend run build` |
+| Python compilation | PASS | `compileall` for backend, Ask, and counterfactual packages |
+| `git diff --check` | PASS | no whitespace errors |
 
-## Semantic gates
+Warnings are dependency/cache warnings: Starlette/httpx deprecation, anyio
+deprecation, and a pytest cache-path warning. They are not test failures.
 
-### Product versus ProductVersion
+## Runtime security gate status
 
-PASS at interpretation level. Product-wide questions retain an empty version
-scope; versioned questions retain the explicit revision; comparisons require two
-versions and do not silently select a current version. Authorized product and
-version resolution remains unimplemented and therefore is not claimed PASS.
+The focused tests prove anonymous denial, server-context use, client-authority
+ignorance, bounded tenant-scoped retrieval planning, unresolved-query blocking,
+and prompt/SQL text remaining data rather than authority. The following items
+still require explicit runtime evidence before formal completion:
 
-### Temporal semantics
+- controlled Tenant A/Tenant B fixtures for product, ProductVersion, session,
+  evidence, retrieval, and pre-model context isolation;
+- entitlement revocation and per-request permission/user/tenant reauthorization;
+- session-owner, ProductVersion, and field-level authorization matrix;
+- instrumented pre-model payload inspection for all secret classes;
+- dependency failure injection across retrieval, database, model, timeout, and
+  malformed-response paths;
+- audit event and correlation continuity verification;
+- complete prompt-injection authority-escalation matrix;
+- explicit zero counts for every required security gate.
 
-PASS at interpretation level. `What had happened by 2026-03-31?` produces
-`EVENT_AS_OF`, while `What did we know as of 2026-03-31?` produces
-`KNOWN_AS_OF`. `CURRENT` remains the default only when no historical temporal
-anchor is stated.
+No unsupported PASS is recorded for those items.
 
-### Controlled retrieval
+## Semantic and boundary assessment
 
-PARTIAL. The chain through typed intent, temporal scope, ProductVersion
-references, and AI-safe retrieval-scope metadata exists. Authentication,
-tenant resolution, entitlement, permission checks, authorized retrieval, and
-Reality Graph execution are not yet wired into an Ask operation.
-
-### AI data boundary
-
-PARTIAL. The interpreter always emits tenant-scoped, authorized-only,
-AI-safe-field-only retrieval metadata and Day 25 provides the field allowlist.
-No Day 26 model context is constructed, so runtime pre-context leakage cannot
-yet be demonstrated.
-
-### Session and follow-up reauthorization
-
-N/A for executable behavior. `InvestigationSession` and `InvestigationQuery`
-are typed contracts only; no persistence, continuation, ownership check, or
-per-request reauthorization path is implemented.
+- Product and ProductVersion semantics: PASS in the validated specification and
+  retrieval-plan boundary; full authorized resolver matrix remains pending.
+- Temporal semantics: PASS for CURRENT, EVENT-AS-OF, and KNOWN-AS-OF handling;
+  follow-up runtime preservation remains pending explicit evidence.
+- Controlled retrieval: PASS for bounded plan construction and tenant/
+  authorization metadata; complete repository result isolation remains pending.
+- AI-safe context: PASS at the implemented boundary contract; pre-model payload
+  inspection remains pending for the full secret matrix.
+- Ask cannot approve, sign, close, or mutate governed records in the current
+  boundary.
+- Unsupported causal conclusions are not generated by the Day 26 foundation.
 
 ## Day 27 readiness
 
-PARTIAL, not PASS. The typed specification and retrieval-scope contract provide
-an extension point for Reality Graph, Evidence, Change, Component, Supplier,
-Lot, Timeline, Hypothesis, Challenger, Unknowns, Failure Chain, Counterfactual,
-and Assurance capabilities. Runtime server-side authorization and controlled
-retrieval must be implemented before Day 27 intelligence is safely enabled.
+**BLOCKED / NOT READY FOR FORMAL PASS.** The typed specification and controlled
+boundaries are suitable inputs, but Day 27 readiness cannot be marked PASS until
+the remaining Day 26 runtime security evidence is executed and recorded.
 
 ## Completion decision
 
-Day 26 is **BLOCKED** for formal closure. No critical code defect was found in
-the implemented interpreter foundation, but mandatory runtime security gates
-remain untested because the controlled Ask API/execution plane is not yet
-implemented. The completion commit is withheld.
-
+Day 26 is **BLOCKED**. The implementation checkpoint is healthy and the new
+full regression passes, but the mandatory completion gate explicitly requires
+every security item to be proven with zero failures before a completion commit
+and push. Do not start Day 27 and do not lower this gate.
