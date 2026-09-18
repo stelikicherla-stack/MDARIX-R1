@@ -7,6 +7,7 @@ from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 
 from ask_mdarix import QueryInterpreter
+from ask_mdarix.retrieval import build_retrieval_plan
 from auth.service import auth_service
 from backend.app.db.models.foundation import FeatureEntitlement, PlanDefinition, Tenant, TenantPlanAssignment
 from backend.app.db.models.ask import InvestigationSessionRecord
@@ -85,6 +86,7 @@ def ask(request: Request, data: AskRequest, db: Session = Depends(get_db)) -> di
     # The server-side session context is authoritative. Client tenant, owner,
     # role, entitlement, and session fields are deliberately ignored as authority.
     spec = QueryInterpreter().interpret(data.question)
+    plan = build_retrieval_plan(spec)
     session.updated_at = datetime.now(timezone.utc)
     db.commit()
     return {
@@ -95,6 +97,7 @@ def ask(request: Request, data: AskRequest, db: Session = Depends(get_db)) -> di
         "tenant_id": context["tenant_id"],
         "active_role": context["active_role"],
         "specification": spec.model_dump(mode="json"),
+        "retrieval_plan": plan.__dict__,
         "execution": "CONTROLLED_FOUNDATION_ONLY",
         "message": "Question interpreted. Authorized retrieval and model execution are not enabled in this Day 26 foundation.",
     }
