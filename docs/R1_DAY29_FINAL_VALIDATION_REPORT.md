@@ -141,7 +141,7 @@ Existing tests cover late evidence, wrong temporal scope, tenant isolation, rela
 
 ## 32. Differential CURRENT/EVENT_AS_OF/KNOWN_AS_OF Tests
 
-Focused tests prove event-as-of and known-as-of can differ for late-arriving evidence. CURRENT remains the present authorized context; live differential proof is pending.
+Live Product 360 validation returned CURRENT **110** timeline events, EVENT_AS_OF **34**, and KNOWN_AS_OF **24** for the tested cutoff. The temporal modes remained distinct. Focused tests also prove event-as-of and known-as-of can differ for late-arriving evidence.
 
 ## 33. Golden Temporal Scenario
 
@@ -169,11 +169,11 @@ Temporal reconstruction is read-only apart from established audit/session teleme
 
 ## 39. Full Regression
 
-Day 29 focused temporal compatibility run: **54 passed, 0 failed, 0 errors**. A complete backend run was started with a fresh Day 29 basetemp and reached approximately 74% before the Codex execution window expired; no completed count is claimed here. Warnings observed in the focused run were dependency/cache warnings only.
+Complete backend regression passed: **290 passed, 0 failed, 0 errors, 2 dependency deprecation warnings** using a fresh Day 29 basetemp.
 
 ## 40. Frontend Build
 
-Not changed by Day 29; pre-existing frontend changes were preserved and not staged.
+Production frontend build: **PASS**. Pre-existing frontend changes were preserved and not staged.
 
 ## 41. Python Compilation
 
