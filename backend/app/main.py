@@ -1,10 +1,15 @@
 from datetime import datetime
 
-from fastapi import FastAPI, HTTPException, Query, Request
+from fastapi import Depends, FastAPI, HTTPException, Query, Request
 from fastapi.responses import JSONResponse
 from sqlalchemy import text
 
 from backend.app.db.session import engine
+from backend.app.db.session import get_db
+from backend.app.enterprise_audit import make_audit_event
+from auth.service import auth_service
+from sqlalchemy.orm import Session
+from uuid import uuid4
 from backend.app.evidence.router import router as evidence_router
 from backend.app.investigations.router import router as investigations_router
 from backend.app.product360.schemas import Product360Response, ProductSummary, TemporalRealityResponse
@@ -145,17 +150,39 @@ def list_product_investigations(product_id: str) -> list[dict]:
         raise product_error(exc) from exc
 
 
+def _product360_audit(db: Session, request: Request, product: Product360Response, mode: str, as_of: datetime | None, correlation_id: str) -> None:
+    actor = "anonymous"
+    tenant_id = product.metadata.get("tenant_id")
+    token = request.cookies.get("mdarix_session", "")
+    if token:
+        try:
+            context = auth_service.context(token)
+            actor = context["user_id"]
+            tenant_id = context["tenant_id"]
+        except ValueError:
+            pass
+    details = {"temporal_mode": {"current": "CURRENT", "event": "EVENT_AS_OF", "known": "KNOWN_AS_OF"}[mode], "result_count": len(product.timeline)}
+    if as_of:
+        details["temporal_cutoff"] = as_of.isoformat()
+    db.add(make_audit_event(tenant_id=tenant_id, actor_ref=actor, action="PRODUCT360_TEMPORAL_RETRIEVAL", entity_type="Product360", correlation_id=correlation_id, details=details))
+    db.commit()
+
+
 @app.get("/api/v1/products/{product_id}/product-360", response_model=Product360Response)
-def get_product360(product_id: str, version_id: str | None = None, as_of: datetime | None = None, mode: str = Query("current", pattern="^(current|event|known)$")) -> Product360Response:
+def get_product360(request: Request, product_id: str, version_id: str | None = None, as_of: datetime | None = None, mode: str = Query("current", pattern="^(current|event|known)$"), db: Session = Depends(get_db)) -> Product360Response:
     try:
-        return product360_service.product360(product_id, version_id, as_of, mode)
+        result = product360_service.product360(product_id, version_id, as_of, mode)
+        _product360_audit(db, request, result, mode, as_of, request.headers.get("X-Correlation-ID") or str(uuid4()))
+        return result
     except Product360Error as exc:
         raise product_error(exc) from exc
 
 
 @app.get("/api/v1/products/{product_id}/timeline", response_model=TemporalRealityResponse)
-def get_timeline(product_id: str, version_id: str | None = None, as_of: datetime | None = None, mode: str = Query("event", pattern="^(event|known)$")) -> TemporalRealityResponse:
+def get_timeline(request: Request, product_id: str, version_id: str | None = None, as_of: datetime | None = None, mode: str = Query("event", pattern="^(event|known)$"), db: Session = Depends(get_db)) -> TemporalRealityResponse:
     try:
-        return product360_service.temporal_reality(product_id, version_id, as_of, mode)
+        result = product360_service.temporal_reality(product_id, version_id, as_of, mode)
+        _product360_audit(db, request, product360_service.product360(product_id, version_id, as_of, mode), mode, as_of, request.headers.get("X-Correlation-ID") or str(uuid4()))
+        return result
     except Product360Error as exc:
         raise product_error(exc) from exc

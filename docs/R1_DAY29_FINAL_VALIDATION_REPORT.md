@@ -149,7 +149,7 @@ The existing Day 9/Day 16 golden temporal scenarios preserve event-time versus k
 
 ## 34. Audit/Correlation
 
-The existing enterprise audit framework is the required integration point. Live persisted Day 29 audit inspection is pending because the R1 Docker runtime is unavailable in this execution environment.
+The existing enterprise audit framework is reused. The remediation propagates the resolved temporal specification into Ask processing audit metadata and adds the same safe temporal metadata to Product 360 temporal retrievals. No migration was required because `audit_events.details` already supports structured JSON metadata. Previous live evidence showed correct actor/tenant/correlation but missing temporal semantics; fresh live revalidation is required after restarting the API.
 
 ## 35. Dependency Failure
 
@@ -161,11 +161,11 @@ Automated recovery compatibility remains covered by the existing retrieval tests
 
 ## 37. Nonmutation
 
-Temporal reconstruction is read-only apart from established audit/session telemetry. Live protected-record before/after proof is pending.
+Temporal reconstruction is read-only apart from established audit/session telemetry. Prior live proof: **PASS | protected domain nonmutation**; protected counts and `updated_at` maxima were identical before and after temporal retrieval. Automated remediation regression must preserve this result.
 
 ## 38. Live Validation
 
-**LIVE WINDOWS/DOCKER VALIDATION: PENDING.** Docker/database execution is not available from this Codex environment. No live evidence is fabricated. The existing Day 27/28 tooling and R1 runtime instructions can be used by the user to execute the Day 29 synthetic Tenant A/B matrix.
+The initial live run exposed the audit defect. The remediation requires an API restart and fresh correlations before live persisted temporal audit can be marked PASS. No post-remediation live evidence is claimed yet.
 
 ## 39. Full Regression
 
@@ -189,7 +189,7 @@ Automated tenant and temporal security gates are covered by existing tests. Live
 
 ## 44. Known Limitations
 
-Live validation is not executable in this environment. Several entities expose current state rather than historical transitions. No temporal migration was added because existing fields support the Day 29 scope.
+Post-remediation live audit revalidation is pending. Several entities expose current state rather than historical transitions. No temporal migration was added because existing fields support the Day 29 scope.
 
 ## 45. Day 30 Handoff
 
@@ -198,5 +198,9 @@ Day 30 is not started. Day 30 may build evidence and hypothesis intelligence on 
 ## Status
 
 **DAY 29 STATUS: BLOCKED — LIVE VALIDATION PENDING**
+
+### Remediation root cause
+
+The Ask route interpreted temporal intent but did not copy the resolved specification into its audit details, while natural-language `on` phrasing was not recognized. Product 360 temporal routes returned temporal results without using the enterprise audit boundary. The remediation centralizes safe audit detail construction from the executed specification and records Product 360 temporal retrieval metadata.
 
 Completion commit was not created and no push was performed for Day 29.

@@ -77,6 +77,32 @@ def test_event_and_known_as_of_are_not_collapsed():
     assert event.temporal_mode is not known.temporal_mode
 
 
+def test_natural_language_temporal_intent_uses_by_and_on_dates():
+    interpreter = QueryInterpreter()
+    event = interpreter.interpret("What happened by 2026-03-01?")
+    known = interpreter.interpret("What did we know on 2026-03-01?")
+    evidence = interpreter.interpret("What evidence was available on 2026-03-01?")
+    assert event.temporal_mode is TemporalMode.EVENT_AS_OF
+    assert event.event_end == date(2026, 3, 1)
+    assert known.temporal_mode is TemporalMode.KNOWN_AS_OF
+    assert known.knowledge_time == date(2026, 3, 1)
+    assert evidence.temporal_mode is TemporalMode.KNOWN_AS_OF
+    assert evidence.knowledge_time == date(2026, 3, 1)
+
+
+def test_unresolved_historical_reference_does_not_fall_back_to_current():
+    spec = QueryInterpreter().interpret("What did we know then?")
+    assert spec.status is InterpretationStatus.INVALID
+    assert spec.temporal_mode is TemporalMode.KNOWN_AS_OF
+    assert "knowledge date" in spec.limitations[0]
+
+
+def test_invalid_explicit_date_fails_closed():
+    spec = QueryInterpreter().interpret("What happened by 2026-02-31?")
+    assert spec.status is InterpretationStatus.INVALID
+    assert "valid event date" in spec.limitations[0]
+
+
 def test_relative_window_uses_server_date():
     spec = QueryInterpreter(server_today=date(2026, 9, 18)).interpret("complaints in the last 30 days")
     assert spec.event_start == date(2026, 8, 19)

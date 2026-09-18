@@ -78,6 +78,17 @@ def _record_audit(db: Session, *, tenant_id: UUID | str, actor: str, action: str
     ))
 
 
+def _temporal_audit_details(spec) -> dict:
+    details = {"temporal_mode": spec.temporal_mode.value}
+    if spec.event_start:
+        details["event_start"] = spec.event_start.isoformat()
+    if spec.event_end:
+        details["event_end"] = spec.event_end.isoformat()
+    if spec.knowledge_time:
+        details["temporal_cutoff"] = spec.knowledge_time.isoformat()
+    return details
+
+
 @router.post("/")
 def ask(request: Request, data: AskRequest, db: Session = Depends(get_db)) -> dict:
     context = _authenticated_context(request)
@@ -155,7 +166,7 @@ def ask(request: Request, data: AskRequest, db: Session = Depends(get_db)) -> di
         raise HTTPException(status_code=503, detail={"code": "RETRIEVAL_UNAVAILABLE", "message": "Authorized retrieval is temporarily unavailable", "correlation_id": correlation_id}) from exc
     if retrieval_requested or lifecycle_requested:
         _record_audit(db, tenant_id=context["tenant_id"], actor=context["user_id"], action="ASK_RETRIEVAL_EXECUTED", correlation_id=correlation_id, details={"result_count": len(retrieval.ai_context)})
-    _record_audit(db, tenant_id=context["tenant_id"], actor=context["user_id"], action="ASK_QUERY_PROCESSED", correlation_id=correlation_id, details={"status": "INTERPRETED"})
+    _record_audit(db, tenant_id=context["tenant_id"], actor=context["user_id"], action="ASK_QUERY_PROCESSED", correlation_id=correlation_id, details={"status": "INTERPRETED", **_temporal_audit_details(spec)})
     session.updated_at = datetime.now(timezone.utc)
     db.commit()
     return {

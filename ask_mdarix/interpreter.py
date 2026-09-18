@@ -64,25 +64,38 @@ class QueryInterpreter:
     def _temporal(self, question: str):
         by_date = re.search(r"\bby\s+(\d{4}-\d{2}-\d{2})", question)
         if by_date:
-            parsed = date.fromisoformat(by_date.group(1))
+            parsed = self._parse_date(by_date.group(1))
+            if not parsed:
+                return TemporalMode.EVENT_AS_OF, None, None, None, "A valid event date is required"
             return TemporalMode.EVENT_AS_OF, None, parsed, None, None
-        if ("known" in question or "did we know" in question) and "as of" in question:
-            parsed = self._date_after(question, "as of")
+        if "did we know" in question or "known" in question or "available" in question:
+            parsed = self._date_after(question, "as of") or self._date_after(question, "on")
             return TemporalMode.KNOWN_AS_OF, None, None, parsed, None if parsed else "A valid knowledge date is required"
-        if "event" in question and "as of" in question:
-            parsed = self._date_after(question, "as of")
+        if "event" in question and ("as of" in question or "on" in question):
+            parsed = self._date_after(question, "as of") or self._date_after(question, "on")
             return TemporalMode.EVENT_AS_OF, None, parsed, None, None if parsed else "A valid event date is required"
         match = re.search(r"between\s+(\d{4}-\d{2}-\d{2})\s+and\s+(\d{4}-\d{2}-\d{2})", question)
         if match:
-            start, end = date.fromisoformat(match.group(1)), date.fromisoformat(match.group(2))
+            start, end = self._parse_date(match.group(1)), self._parse_date(match.group(2))
+            if not start or not end:
+                return TemporalMode.EVENT_AS_OF, None, None, None, "A valid temporal date range is required"
             if end < start:
                 return TemporalMode.EVENT_AS_OF, start, end, None, "Temporal range end precedes start"
             return TemporalMode.EVENT_AS_OF, start, end, None, None
         relative = re.search(r"last\s+(\d+)\s+days?", question)
         if relative:
             return TemporalMode.EVENT_AS_OF, self.server_today - timedelta(days=int(relative.group(1))), self.server_today, None, None
+        if re.search(r"\b(then|that time|when the investigation was opened|when this started)\b", question):
+            return TemporalMode.CURRENT, None, None, None, "A resolvable historical time reference is required"
         return TemporalMode.CURRENT, None, None, None, None
 
     def _date_after(self, question: str, marker: str):
         match = re.search(re.escape(marker) + r"\s+(\d{4}-\d{2}-\d{2})", question)
-        return date.fromisoformat(match.group(1)) if match else None
+        return self._parse_date(match.group(1)) if match else None
+
+    @staticmethod
+    def _parse_date(value: str) -> date | None:
+        try:
+            return date.fromisoformat(value)
+        except ValueError:
+            return None
