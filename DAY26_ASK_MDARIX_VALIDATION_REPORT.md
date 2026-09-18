@@ -56,6 +56,57 @@ record retrieval or expose those resource IDs as authorization inputs. The
 matrix therefore cannot be honestly marked PASS without adding retrieval
 functionality outside the Day 26 foundation scope.
 
+## Final scope reconciliation
+
+Day 26 is closed against its implemented controlled-foundation surface. It
+provides authenticated Ask, server-derived identity/tenant/role, persisted
+server-side entitlement, owned investigation sessions, interpretation,
+Investigation Specification, bounded retrieval planning, the AI/privacy
+boundary, audit/correlation, and a controlled foundation response.
+
+The following are explicitly **DEFERRED TO DAY 27 — NOT YET EXECUTABLE** and
+are not represented as tested Day 26 passes:
+
+- Product runtime isolation
+- ProductVersion runtime isolation
+- Evidence runtime isolation
+- Retrieved AI/model-context isolation
+- Cross-system lifecycle investigation retrieval
+
+When Day 27 introduces those execution surfaces, its mandatory entry tests are
+Tenant A/B symmetric Product, ProductVersion, and Evidence allow/deny cases;
+mismatched Product/ProductVersion denial; cross-tenant and same-tenant session
+denial; client tenant/role/entitlement spoofing resistance; retrieval-plan and
+result zero leakage; and AI-safe context zero leakage using synthetic canaries.
+
+## Implemented Day 26 closure gates
+
+| Gate | Result |
+|---|---|
+| Authentication restart persistence | PASS |
+| Server-derived tenant and role | PASS |
+| Persisted `ASK_MDARIX` entitlement | PASS |
+| Client tenant/role/entitlement spoofing resistance | PASS |
+| Session ownership and cross-tenant session denial | PASS |
+| Query-text authorization escalation resistance | PASS |
+| Investigation Specification authority boundary | PASS |
+| Tenant-scoped bounded retrieval plan | PASS |
+| Arbitrary SQL capability | 0 |
+| Ask mutation/approval/signature capability | 0 |
+| Successful live Ask | PASS |
+| Successful persisted audit | PASS |
+| Controlled denied Ask | PASS |
+| Denied persisted audit | PASS |
+| Correlation continuity | PASS |
+| Secret leakage | 0 |
+| Raw stack leakage | 0 |
+| Critical defects | 0 |
+| High security defects | 0 |
+
+Scope reconciliation result: **Day 26 blockers = 0**. Day 27 remains not
+started. The formal completion commit is permitted after this documentation
+update and final Git verification.
+
 ## Ask entitlement provisioning remediation
 
 Live inspection found the active `R1_GOVERNANCE_DEMO` plan had only
