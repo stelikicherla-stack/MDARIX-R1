@@ -1,5 +1,6 @@
 """Authenticated, non-chat Ask MDARIX control-plane endpoint."""
-from uuid import uuid4
+from uuid import UUID, uuid4
+from datetime import datetime, timezone
 
 from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel, Field
@@ -8,6 +9,7 @@ from sqlalchemy.orm import Session
 from ask_mdarix import QueryInterpreter
 from auth.service import auth_service
 from backend.app.db.models.foundation import FeatureEntitlement, PlanDefinition, Tenant, TenantPlanAssignment
+from backend.app.db.models.ask import InvestigationSessionRecord
 from backend.app.db.session import get_db
 
 router = APIRouter(prefix="/api/v1/ask", tags=["Ask MDARIX"])
@@ -59,13 +61,36 @@ def ask(request: Request, data: AskRequest, db: Session = Depends(get_db)) -> di
     if not _has_ask_entitlement(db, context["tenant_id"]):
         raise HTTPException(status_code=403, detail={"code": "ASK_NOT_ENTITLED", "message": "Ask MDARIX is not enabled for this tenant"})
 
-    # The server-side session context is authoritative. Client tenant, role,
-    # entitlement, and session fields are deliberately ignored as authority.
-    spec = QueryInterpreter().interpret(data.question)
     correlation_id = request.headers.get("X-Correlation-ID") or str(uuid4())
+    if data.session_id:
+        try:
+            session = db.query(InvestigationSessionRecord).filter(
+                InvestigationSessionRecord.id == UUID(data.session_id),
+                InvestigationSessionRecord.tenant_id == UUID(context["tenant_id"]),
+                InvestigationSessionRecord.owner_user_id == context["user_id"],
+                InvestigationSessionRecord.status == "ACTIVE",
+            ).first()
+        except (ValueError, TypeError):
+            session = None
+        if session is None:
+            raise HTTPException(status_code=404, detail={"code": "ASK_SESSION_NOT_FOUND", "message": "Investigation session is not available"})
+    else:
+        session = InvestigationSessionRecord(
+            tenant_id=UUID(context["tenant_id"]), owner_user_id=context["user_id"],
+            correlation_id=correlation_id, created_at=datetime.now(timezone.utc), updated_at=datetime.now(timezone.utc),
+        )
+        db.add(session)
+        db.flush()
+
+    # The server-side session context is authoritative. Client tenant, owner,
+    # role, entitlement, and session fields are deliberately ignored as authority.
+    spec = QueryInterpreter().interpret(data.question)
+    session.updated_at = datetime.now(timezone.utc)
+    db.commit()
     return {
         "status": "INTERPRETED",
         "correlation_id": correlation_id,
+        "session_id": str(session.id),
         "user_id": context["user_id"],
         "tenant_id": context["tenant_id"],
         "active_role": context["active_role"],

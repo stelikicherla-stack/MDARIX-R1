@@ -18,3 +18,4 @@ from backend.app.db.models.foundation import *  # noqa: F401,F403,E402
 from backend.app.db.models.ingestion import *  # noqa: F401,F403,E402
 from backend.app.db.models.normalization import *  # noqa: F401,F403,E402
 from backend.app.db.models.enterprise import *  # noqa: F401,F403,E402
+from backend.app.db.models.ask import *  # noqa: F401,F403,E402
