@@ -1,5 +1,6 @@
 """Authenticated, non-chat Ask MDARIX control-plane endpoint."""
 from uuid import UUID, uuid4
+import os
 from datetime import datetime, timezone
 
 from fastapi import APIRouter, Depends, HTTPException, Request
@@ -13,9 +14,11 @@ from backend.app.db.models.foundation import FeatureEntitlement, PlanDefinition,
 from backend.app.db.models.ask import InvestigationSessionRecord
 from backend.app.db.session import get_db
 from backend.app.enterprise_audit import make_audit_event
+from ask_mdarix.authorized_retrieval import AuthorizedRetrievalRequest, AuthorizedRetrievalService
 
 router = APIRouter(prefix="/api/v1/ask", tags=["Ask MDARIX"])
 ASK_FEATURE = "ASK_MDARIX"
+DAY27_FAULT_FLAG = "DAY27_LIVE_DEPENDENCY_FAILURE"
 
 
 class AskRequest(BaseModel):
@@ -25,6 +28,12 @@ class AskRequest(BaseModel):
     role: str | None = None
     entitlement: str | None = None
     session_id: str | None = None
+    product_id: str | None = None
+    product_identifier: str | None = None
+    product_version_id: str | None = None
+    product_version_identifier: str | None = None
+    evidence_id: str | None = None
+    evidence_identifier: str | None = None
 
 
 def _authenticated_context(request: Request) -> dict:
@@ -108,6 +117,31 @@ def ask(request: Request, data: AskRequest, db: Session = Depends(get_db)) -> di
     # role, entitlement, and session fields are deliberately ignored as authority.
     spec = QueryInterpreter().interpret(data.question)
     plan = build_retrieval_plan(spec)
+    retrieval_requested = any((data.product_id, data.product_identifier, data.product_version_id, data.product_version_identifier, data.evidence_id, data.evidence_identifier))
+    try:
+        # Test/development-only live validation seam. It is server-configured,
+        # disabled by default, never client-triggered, and fail-closed in
+        # production mode. It runs only after all authorization and session
+        # ownership checks have succeeded.
+        if (
+            os.environ.get(DAY27_FAULT_FLAG) == "1"
+            and os.environ.get("MDARIX_ENV", "development").lower() != "production"
+            and retrieval_requested
+        ):
+            raise RuntimeError("controlled Day 27 retrieval dependency failure")
+        retrieval = AuthorizedRetrievalService().retrieve(db, AuthorizedRetrievalRequest(
+            tenant_id=UUID(context["tenant_id"]),
+            product_id=_uuid_or_none(data.product_id), product_identifier=data.product_identifier,
+            product_version_id=_uuid_or_none(data.product_version_id), product_version_identifier=data.product_version_identifier,
+            evidence_id=_uuid_or_none(data.evidence_id), evidence_identifier=data.evidence_identifier,
+            limit=plan.limit or 25,
+        ))
+    except Exception as exc:
+        _record_audit(db, tenant_id=context["tenant_id"], actor=context["user_id"], action="ASK_RETRIEVAL_FAILED", correlation_id=correlation_id, details={"reason": "RETRIEVAL_UNAVAILABLE"})
+        db.commit()
+        raise HTTPException(status_code=503, detail={"code": "RETRIEVAL_UNAVAILABLE", "message": "Authorized retrieval is temporarily unavailable", "correlation_id": correlation_id}) from exc
+    if retrieval_requested:
+        _record_audit(db, tenant_id=context["tenant_id"], actor=context["user_id"], action="ASK_RETRIEVAL_EXECUTED", correlation_id=correlation_id, details={"result_count": len(retrieval.ai_context)})
     _record_audit(db, tenant_id=context["tenant_id"], actor=context["user_id"], action="ASK_QUERY_PROCESSED", correlation_id=correlation_id, details={"status": "INTERPRETED"})
     session.updated_at = datetime.now(timezone.utc)
     db.commit()
@@ -120,6 +154,17 @@ def ask(request: Request, data: AskRequest, db: Session = Depends(get_db)) -> di
         "active_role": context["active_role"],
         "specification": spec.model_dump(mode="json"),
         "retrieval_plan": plan.__dict__,
-        "execution": "CONTROLLED_FOUNDATION_ONLY",
-        "message": "Question interpreted. Authorized retrieval and model execution are not enabled in this Day 26 foundation.",
+        "execution": "AUTHORIZED_RETRIEVAL_FOUNDATION" if retrieval_requested else "CONTROLLED_FOUNDATION_ONLY",
+        "retrieval": {"products": retrieval.products, "product_versions": retrieval.product_versions, "evidence": retrieval.evidence, "count": len(retrieval.ai_context)},
+        "ai_safe_context": retrieval.ai_context,
+        "message": "Question interpreted and bounded authorized Product, ProductVersion, and Evidence retrieval completed. No causal or human decision conclusion is generated." if retrieval_requested else "Question interpreted. Add an authorized Product, ProductVersion, or Evidence scope to execute bounded retrieval.",
     }
+
+
+def _uuid_or_none(value: str | None) -> UUID | None:
+    if not value:
+        return None
+    try:
+        return UUID(value)
+    except (ValueError, TypeError):
+        return None
