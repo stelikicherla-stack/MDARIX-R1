@@ -2,9 +2,11 @@ from types import SimpleNamespace
 from uuid import uuid4
 
 from fastapi.testclient import TestClient
+from fastapi import Response
 
 from backend.app.main import app, ask_router
 from backend.app.db.session import get_db
+from backend.app.auth_router import signin as signin_route
 
 
 def test_anonymous_ask_is_denied():
@@ -94,3 +96,21 @@ def test_unexpected_ask_dependency_error_is_customer_safe(monkeypatch):
     assert body["detail"] == {"code": "INTERNAL_ERROR", "message": "The request could not be completed.", "correlation_id": "corr-error"}
     assert "Traceback" not in serialized
     assert "TEST_DB_PASSWORD_DAY26" not in serialized
+
+
+def test_signin_uses_persisted_auth_user_after_service_restart(monkeypatch):
+    from backend.app.auth_router import auth_service as route_auth_service
+    row=SimpleNamespace(id=uuid4(), tenant_id=uuid4(), username="persisted@example.com", display_name="Persisted", password_hash="invalid", role="Viewer", status="ACTIVE", email_verified=True)
+    seeded=route_auth_service.signup("persisted@example.com","Strong password 123","Persisted","Org")
+    row.password_hash=route_auth_service.accounts["persisted@example.com"].password_hash
+    route_auth_service.verify_email(seeded["development_token"])
+    monkeypatch.setattr("backend.app.auth_router.auth_service", type(route_auth_service)())
+    class Query:
+        def filter(self, *args): return self
+        def first(self): return row
+    class DB:
+        def query(self, model): return Query()
+    response=Response()
+    result=signin_route(type("SigninData", (), {"email":"persisted@example.com", "password":"Strong password 123"})(), response, DB())
+    assert result["tenant_id"] == str(row.tenant_id)
+    assert response.headers.get("set-cookie", "").startswith("mdarix_session=")

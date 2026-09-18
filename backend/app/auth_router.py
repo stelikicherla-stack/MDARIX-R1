@@ -34,9 +34,12 @@ def verify(data:Verify, db:Session=Depends(get_db)):
   return result
  except ValueError as e: raise fail(e)
 @router.post('/signin')
-def signin(data:Signin,response:Response):
+def signin(data:Signin,response:Response,db:Session=Depends(get_db)):
  try:
-  token=auth_service.signin(data.email,data.password); response.set_cookie('mdarix_session',token,httponly=True,samesite='lax',secure=False,max_age=3600); return auth_service.context(token)
+  row=db.query(AuthUser).filter(AuthUser.username==data.email.strip().lower()).first()
+  if not row: raise ValueError("INVALID_CREDENTIALS")
+  token=auth_service.signin_persisted(data.email,data.password,user_id=row.id,display_name=row.display_name,tenant_id=row.tenant_id,password_hash=row.password_hash,role=row.role,status=row.status,email_verified=row.email_verified)
+  response.set_cookie('mdarix_session',token,httponly=True,samesite='lax',secure=False,max_age=3600); return auth_service.context(token)
  except ValueError as e: raise HTTPException(401,detail={"code":"INVALID_CREDENTIALS","message":"Invalid credentials."}) from e
 @router.post('/signout')
 def signout(request:Request,response:Response):

@@ -7,6 +7,22 @@ and automated regression are healthy, but the complete security-zero matrix and
 runtime evidence required by the Day 26 completion gate have not all been
 executed in this validation run. No completion commit is created.
 
+## Authentication authority remediation
+
+The runtime blocker was traced to `auth_service = LocalAuthService()` keeping
+accounts in process memory while signup separately persisted `auth_users` in
+PostgreSQL. After restart, signin searched the empty in-memory account map.
+
+Signin now queries the persisted `auth_users` row, verifies the existing scrypt
+hash, validates ACTIVE/verified state, and creates the existing HttpOnly
+ephemeral `mdarix_session`. Session context remains server-derived. No schema
+change or migration was required; the live head remains `j26asksessions`.
+
+Focused remediation tests: **15 passed, 0 failed, 0 errors**.
+Final full regression after remediation: **283 passed, 0 failed, 0 errors,
+3 warnings**. Frontend build, Python compilation, and diff check passed.
+The three warnings remain dependency/cache warnings and are non-blocking.
+
 Security-closure checkpoint: `9691da2` plus the executable closure tests,
 Ask audit-boundary changes, and customer-safe error handling in the current
 working state.

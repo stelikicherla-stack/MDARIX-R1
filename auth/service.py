@@ -27,18 +27,36 @@ class LocalAuthService:
         item=self.tokens.get(hashlib.sha256(raw.encode()).hexdigest());
         if not item or item["kind"]!="verify" or item["used"] or item["expires"]<time.time(): raise ValueError("INVALID_VERIFICATION_TOKEN")
         account=next(a for a in self.accounts.values() if a.user_id==item["user_id"]); item["used"]=True; account.verified=True; account.status="ACTIVE"; return {"status":"ACTIVE","user_id":account.user_id}
+    def _create_session(self, account, password_hash=None):
+        session=secrets.token_urlsafe(32)
+        self.sessions[hashlib.sha256(session.encode()).hexdigest()]={
+            "user_id":account.user_id,
+            "password_hash":password_hash or account.password_hash,
+            "context":{"user_id":account.user_id,"display_name":account.display_name,"email":account.email,"tenant_id":account.tenant_id,"active_role":account.role},
+            "expires":time.time()+3600,
+        }
+        return session
+    def signin_persisted(self, email, password, *, user_id, display_name, tenant_id, password_hash, role, status, email_verified):
+        """Authenticate a durable AuthUser without copying it into accounts."""
+        if not email or not _verify(password, password_hash) or status != "ACTIVE" or not email_verified:
+            raise ValueError("INVALID_CREDENTIALS")
+        account=Account(str(user_id), email.strip().lower(), display_name, str(tenant_id), password_hash, status, role, email_verified)
+        return self._create_session(account, password_hash=password_hash)
     def signin(self,email,password):
         identifier=email.strip().lower(); account=self.accounts.get(identifier) or next((item for item in self.accounts.values() if item.user_id.lower()==identifier),None)
         if not account or not _verify(password,account.password_hash) or account.status!="ACTIVE": raise ValueError("INVALID_CREDENTIALS")
-        session=secrets.token_urlsafe(32); self.sessions[hashlib.sha256(session.encode()).hexdigest()]={"user_id":account.user_id,"expires":time.time()+3600}; return session
+        return self._create_session(account)
     def verify_current_password(self, session, password):
-        context=self.context(session); account=self.accounts.get(context["email"])
-        if not password or not account or not _verify(password, account.password_hash): raise ValueError("INVALID_REAUTHENTICATION")
+        context=self.context(session); item=self.sessions.get(hashlib.sha256(session.encode()).hexdigest())
+        password_hash=item.get("password_hash") if item else None
+        account=self.accounts.get(context["email"])
+        password_hash=password_hash or (account.password_hash if account else None)
+        if not password or not password_hash or not _verify(password,password_hash): raise ValueError("INVALID_REAUTHENTICATION")
         return context
     def context(self, session):
         item=self.sessions.get(hashlib.sha256(session.encode()).hexdigest());
         if not item or item["expires"]<time.time(): raise ValueError("UNAUTHENTICATED")
-        account=next(a for a in self.accounts.values() if a.user_id==item["user_id"]); return {"user_id":account.user_id,"display_name":account.display_name,"email":account.email,"tenant_id":account.tenant_id,"active_role":account.role}
+        return dict(item["context"])
     def signout(self,session): self.sessions.pop(hashlib.sha256(session.encode()).hexdigest(),None)
     def request_reset(self,email):
         account=self.accounts.get(email.strip().lower()); return {"status":"RESET_REQUEST_ACCEPTED","development_token":self._token(account.user_id,"reset") if account else None}
