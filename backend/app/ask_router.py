@@ -7,10 +7,11 @@ from sqlalchemy.orm import Session
 
 from ask_mdarix import QueryInterpreter
 from auth.service import auth_service
-from backend.app.db.models.foundation import Tenant
+from backend.app.db.models.foundation import FeatureEntitlement, PlanDefinition, Tenant, TenantPlanAssignment
 from backend.app.db.session import get_db
 
 router = APIRouter(prefix="/api/v1/ask", tags=["Ask MDARIX"])
+ASK_FEATURE = "ASK_MDARIX"
 
 
 class AskRequest(BaseModel):
@@ -30,12 +31,33 @@ def _authenticated_context(request: Request) -> dict:
         raise HTTPException(status_code=401, detail={"code": "UNAUTHENTICATED", "message": "Authentication required"}) from exc
 
 
+def _has_ask_entitlement(db: Session, tenant_id: str) -> bool:
+    """Evaluate the existing server-side plan/feature tables on every call."""
+    row = (
+        db.query(TenantPlanAssignment)
+        .join(PlanDefinition, PlanDefinition.id == TenantPlanAssignment.plan_id)
+        .join(FeatureEntitlement, FeatureEntitlement.plan_id == PlanDefinition.id)
+        .filter(
+            TenantPlanAssignment.tenant_id == tenant_id,
+            TenantPlanAssignment.status == "ACTIVE",
+            PlanDefinition.status == "ACTIVE",
+            FeatureEntitlement.feature_code == ASK_FEATURE,
+            FeatureEntitlement.enabled.is_(True),
+            FeatureEntitlement.status == "ACTIVE",
+        )
+        .first()
+    )
+    return row is not None
+
+
 @router.post("/")
 def ask(request: Request, data: AskRequest, db: Session = Depends(get_db)) -> dict:
     context = _authenticated_context(request)
     tenant = db.query(Tenant).filter(Tenant.id == context["tenant_id"]).first()
     if tenant is None or str(tenant.status).lower() not in {"active", "enabled"}:
         raise HTTPException(status_code=403, detail={"code": "TENANT_UNAVAILABLE", "message": "Tenant is not available"})
+    if not _has_ask_entitlement(db, context["tenant_id"]):
+        raise HTTPException(status_code=403, detail={"code": "ASK_NOT_ENTITLED", "message": "Ask MDARIX is not enabled for this tenant"})
 
     # The server-side session context is authoritative. Client tenant, role,
     # entitlement, and session fields are deliberately ignored as authority.
