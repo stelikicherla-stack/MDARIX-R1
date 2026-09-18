@@ -2,7 +2,7 @@
 
 ## 1. Executive Summary
 
-Day 29 formalizes investigation timeline reconstruction on the existing Product 360 and retrieval foundations. The implementation preserves separate CURRENT, EVENT_AS_OF, and KNOWN_AS_OF semantics, including late-arriving evidence handling. Live Windows/Docker validation was not executable from this Codex environment and remains pending for user-run evidence.
+Day 29 formalizes investigation timeline reconstruction on the existing Product 360 and retrieval foundations. The implementation preserves separate CURRENT, EVENT_AS_OF, and KNOWN_AS_OF semantics, including late-arriving evidence handling. Live authenticated temporal audit validation was completed from the Windows/Docker runtime.
 
 ## 2. Entry Gate / Day 28 Baseline
 
@@ -137,7 +137,7 @@ Existing Product 360, retrieval, query-interpreter, investigation workspace, and
 
 ## 31. Negative/Edge Test Matrix
 
-Existing tests cover late evidence, wrong temporal scope, tenant isolation, relationship boundaries, prompt restrictions, and non-causal behavior. Live-only checks remain pending.
+Existing tests cover late evidence, wrong temporal scope, tenant isolation, relationship boundaries, prompt restrictions, and non-causal behavior. Live validation confirmed authenticated temporal audit persistence.
 
 ## 32. Differential CURRENT/EVENT_AS_OF/KNOWN_AS_OF Tests
 
@@ -165,11 +165,11 @@ Temporal reconstruction is read-only apart from established audit/session teleme
 
 ## 38. Live Validation
 
-The initial live run exposed the audit defect. The remediation requires an API restart and fresh correlations before live persisted temporal audit can be marked PASS. No post-remediation live evidence is claimed yet.
+The initial live run exposed the audit defect. After remediation and API restart, fresh authenticated correlations persisted the resolved temporal modes, cutoffs, actor, and tenant successfully. **PASS.**
 
 ## 39. Full Regression
 
-Complete backend regression passed: **290 passed, 0 failed, 0 errors, 2 dependency deprecation warnings** using a fresh Day 29 basetemp.
+Post-remediation complete backend regression passed: **293 passed, 0 failed, 0 errors, 2 dependency deprecation warnings** using a fresh Day 29 basetemp.
 
 ## 40. Frontend Build
 
@@ -189,7 +189,7 @@ Automated tenant and temporal security gates are covered by existing tests. Live
 
 ## 44. Known Limitations
 
-Post-remediation live audit revalidation is pending. Several entities expose current state rather than historical transitions. No temporal migration was added because existing fields support the Day 29 scope.
+Post-remediation live audit revalidation: **PASS**. Authenticated Ask and Product 360 audit rows contain the expected temporal mode and cutoff metadata. Several entities expose current state rather than historical transitions. No temporal migration was added because existing fields support the Day 29 scope.
 
 ## 45. Day 30 Handoff
 
@@ -203,4 +203,10 @@ Day 30 is not started. Day 30 may build evidence and hypothesis intelligence on 
 
 The Ask route interpreted temporal intent but did not copy the resolved specification into its audit details, while natural-language `on` phrasing was not recognized. Product 360 temporal routes returned temporal results without using the enterprise audit boundary. The remediation centralizes safe audit detail construction from the executed specification and records Product 360 temporal retrieval metadata.
 
-Completion commit was not created and no push was performed for Day 29.
+Completion commit and push are the final repository closure actions after this report update. Day 30 is not started.
+
+## Final Closure Addendum
+
+The prior blocked status is superseded by the completed post-remediation validation. Authenticated live temporal audit revalidation passed with correct actor, tenant, temporal mode, and cutoff metadata. The final backend regression passed with **293 passed, 0 failed, 0 errors**; frontend build, Python compilation, and `git diff --check` also passed.
+
+**DAY 29 STATUS: PASS — COMPLETE / FROZEN**
