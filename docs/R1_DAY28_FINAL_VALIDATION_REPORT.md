@@ -6,8 +6,8 @@
 
 **DAY 28: IN PROGRESS — AUTHORIZED LIFECYCLE RETRIEVAL FOUNDATION**
 
-Day 27 is formally complete and frozen at pushed HEAD `750e282`. Day 28 has
-started; Day 29 has not started.
+Day 27 is formally complete and frozen at pushed HEAD `750e282`. Day 28 is
+complete and frozen at pushed HEAD `d3ac17c`. Day 29 has not started.
 
 ## Schema inventory
 
@@ -41,9 +41,9 @@ no relationship is fabricated.
 - Full Day 28 focused lifecycle matrix: **3 passed, 0 failed, 0 errors**.
 - Lifecycle AI-safe context coverage: PASS; tenant identity is not exposed in
   model context and relationships remain explicitly non-causal.
-- Live Tenant A/B lifecycle matrix: pending.
-- Full backend regression: pending after Day 28 focused coverage.
-- Frontend build: pending.
+- Live Tenant A/B lifecycle matrix: **PASS**.
+- Full backend regression: **290 passed, 0 failed, 0 errors, 2 warnings**.
+- Frontend build: **PASS**.
 - Migration: NONE.
 
 ## Known limitations
@@ -54,8 +54,7 @@ no relationship is fabricated.
   unavailable rather than inferred.
 - Day 28 live proof must use the established synthetic Tenant A/B fixture.
 - Live runtime, persisted audit, dependency-failure/recovery, nonmutation,
-  full regression, and frontend build gates remain pending and must be proven
-  before the Day 28 completion commit.
+  full regression, and frontend build gates: **PASS**.
 
 ## Day 29 handoff
 
@@ -102,12 +101,7 @@ The graph path is not a causal chain: **GRAPH PATH != CAUSAL CHAIN**.
 
 Live Tenant A/B lifecycle retrieval, live relationship attack, persisted audit,
 dependency failure/recovery, live nonmutation, and complete backend regression
-remain pending because the Docker/database runtime is not accessible from the
-Codex execution environment. These gates must be run from the verified Windows
-PowerShell environment before Day 28 can be marked COMPLETE or committed.
-
-**Live validation tooling prepared; execution pending in the authorized
-Windows/Docker runtime.**
+were executed in the authorized Windows/Docker environment and passed.
 
 ## Live validation results
 
