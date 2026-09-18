@@ -62,6 +62,10 @@ class QueryInterpreter:
         return [entity for token, entity in (("complaint", "Complaint"), ("evidence", "Evidence"), ("unknown", "Unknown"), ("change", "Change")) if token in question]
 
     def _temporal(self, question: str):
+        by_date = re.search(r"\bby\s+(\d{4}-\d{2}-\d{2})", question)
+        if by_date:
+            parsed = date.fromisoformat(by_date.group(1))
+            return TemporalMode.EVENT_AS_OF, None, parsed, None, None
         if ("known" in question or "did we know" in question) and "as of" in question:
             parsed = self._date_after(question, "as of")
             return TemporalMode.KNOWN_AS_OF, None, None, parsed, None if parsed else "A valid knowledge date is required"

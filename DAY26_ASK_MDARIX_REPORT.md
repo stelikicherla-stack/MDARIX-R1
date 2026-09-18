@@ -22,10 +22,14 @@ does not implement Day 27 cross-system causality or an NL engine.
 
 ## Validation
 
-`tests/test_day26_query_interpreter.py`: **4 passed**.
+`tests/test_day26_query_interpreter.py`: **14 passed**.
+
+The expanded suite covers positive intent families, product-wide versus
+ProductVersion scope, version comparisons, ambiguity, temporal distinctions,
+relative dates, invalid ranges, SQL/prompt-injection input, and preservation of
+tenant/authorization/AI-safe retrieval controls.
 
 Python compilation and `git diff --check` also pass. The implementation is a
 foundation only: authenticated API orchestration, database persistence,
 authorized product/version resolution, retrieval execution, and UI wiring remain
 subsequent Day 26 work and are not falsely represented as complete here.
-
