@@ -5,7 +5,7 @@ from typing import Any
 from sqlalchemy.orm import Session
 
 from ai.execution import record_ai_execution
-from backend.app.db.models.foundation import AIExecution
+from backend.app.db.models.foundation import AIExecution, Evidence, Hypothesis as HypothesisRow, HypothesisEvidence, Unknown
 from hypothesis_engine.engine import (
     MODEL,
     MODEL_VERSION,
@@ -114,9 +114,110 @@ class CompetingHypothesisService:
                 requestor_ref="MDARIX-HypothesisEngine",
             )
             db.commit()
+            self._materialize_domain_intelligence(db, request, hypothesis_set)
             ai_execution_id = row.id
             persisted = True
         return HypothesisSetResponse(hypothesis_set=hypothesis_set, persisted=persisted, ai_execution_id=ai_execution_id)
+
+    def _materialize_domain_intelligence(self, db: Session, request: HypothesisSetRequest, hypothesis_set: HypothesisSet) -> None:
+        """Materialize validated system-derived intelligence idempotently.
+
+        AIExecution remains the immutable execution record. These rows are the
+        controlled domain projection used for tenant-scoped investigation
+        retrieval; they are never labelled as a decision or root cause.
+        """
+        now = hypothesis_set.created_at
+        for item in hypothesis_set.hypotheses:
+            row = (
+                db.query(HypothesisRow)
+                .filter(
+                    HypothesisRow.tenant_id == request.tenant_id,
+                    HypothesisRow.investigation_id == request.investigation_id,
+                    HypothesisRow.statement == item.statement,
+                )
+                .first()
+            )
+            if row is None:
+                row = HypothesisRow(
+                    id=item.hypothesis_id,
+                    tenant_id=request.tenant_id,
+                    investigation_id=request.investigation_id,
+                    statement=item.statement,
+                    status=item.status.lower(),
+                    origin="system",
+                    reviewer_disposition=None,
+                    created_at=now,
+                    updated_at=item.updated_at,
+                )
+                db.add(row)
+                db.flush()
+
+            for unknown_text in item.unknowns + item.evidence_gaps:
+                if not unknown_text:
+                    continue
+                exists = (
+                    db.query(Unknown.id)
+                    .filter(
+                        Unknown.tenant_id == request.tenant_id,
+                        Unknown.investigation_id == request.investigation_id,
+                        Unknown.hypothesis_id == row.id,
+                        Unknown.description == unknown_text,
+                    )
+                    .first()
+                )
+                if exists is None:
+                    db.add(Unknown(
+                        id=uuid.uuid4(),
+                        tenant_id=request.tenant_id,
+                        investigation_id=request.investigation_id,
+                        hypothesis_id=row.id,
+                        category="evidence_gap",
+                        description=unknown_text,
+                        evidence_needed=unknown_text,
+                        status="open",
+                        created_at=now,
+                        updated_at=item.updated_at,
+                    ))
+
+            for relationship, relation_type in [
+                *[(rel, "support") for rel in item.supporting_evidence],
+                *[(rel, "contradict") for rel in item.contradicting_evidence],
+            ]:
+                identifiers = {
+                    ref.evidence_identifier
+                    for ref in relationship.source_references
+                    if ref.evidence_identifier
+                }
+                for identifier in identifiers:
+                    evidence = (
+                        db.query(Evidence)
+                        .filter(Evidence.tenant_id == request.tenant_id, Evidence.evidence_identifier == identifier)
+                        .first()
+                    )
+                    if evidence is None:
+                        continue
+                    exists = (
+                        db.query(HypothesisEvidence.id)
+                        .filter(
+                            HypothesisEvidence.tenant_id == request.tenant_id,
+                            HypothesisEvidence.hypothesis_id == row.id,
+                            HypothesisEvidence.evidence_id == evidence.id,
+                            HypothesisEvidence.relation_type == relation_type,
+                        )
+                        .first()
+                    )
+                    if exists is None:
+                        db.add(HypothesisEvidence(
+                            id=uuid.uuid4(),
+                            tenant_id=request.tenant_id,
+                            hypothesis_id=row.id,
+                            evidence_id=evidence.id,
+                            relation_type=relation_type,
+                            rationale=relationship.rationale,
+                            created_by_type="system",
+                            created_at=now,
+                        ))
+        db.commit()
 
     def latest(self, db: Session, tenant_id: uuid.UUID, investigation_id: uuid.UUID) -> HypothesisSetResponse | None:
         row = (

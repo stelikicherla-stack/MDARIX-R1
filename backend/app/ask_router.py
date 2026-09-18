@@ -10,7 +10,10 @@ from sqlalchemy.orm import Session
 from ask_mdarix import QueryInterpreter
 from ask_mdarix.retrieval import build_retrieval_plan
 from auth.service import auth_service
-from backend.app.db.models.foundation import FeatureEntitlement, PlanDefinition, Tenant, TenantPlanAssignment
+from backend.app.db.models.foundation import (
+    Evidence, FeatureEntitlement, Hypothesis, HypothesisEvidence, PlanDefinition,
+    Tenant, TenantPlanAssignment, Unknown,
+)
 from backend.app.db.models.ask import InvestigationSessionRecord
 from backend.app.db.session import get_db
 from backend.app.enterprise_audit import make_audit_event
@@ -20,6 +23,7 @@ from ask_mdarix.lifecycle_retrieval import LifecycleRetrievalRequest, LifecycleR
 router = APIRouter(prefix="/api/v1/ask", tags=["Ask MDARIX"])
 ASK_FEATURE = "ASK_MDARIX"
 DAY27_FAULT_FLAG = "DAY27_LIVE_DEPENDENCY_FAILURE"
+DAY30_FAULT_FLAG = "DAY30_LIVE_DEPENDENCY_FAILURE"
 
 
 class AskRequest(BaseModel):
@@ -139,7 +143,7 @@ def ask(request: Request, data: AskRequest, db: Session = Depends(get_db)) -> di
         # production mode. It runs only after all authorization and session
         # ownership checks have succeeded.
         if (
-            os.environ.get(DAY27_FAULT_FLAG) == "1"
+            (os.environ.get(DAY27_FAULT_FLAG) == "1" or os.environ.get(DAY30_FAULT_FLAG) == "1")
             and os.environ.get("MDARIX_ENV", "development").lower() != "production"
             and (retrieval_requested or lifecycle_requested)
         ):
@@ -169,6 +173,35 @@ def ask(request: Request, data: AskRequest, db: Session = Depends(get_db)) -> di
     _record_audit(db, tenant_id=context["tenant_id"], actor=context["user_id"], action="ASK_QUERY_PROCESSED", correlation_id=correlation_id, details={"status": "INTERPRETED", **_temporal_audit_details(spec)})
     session.updated_at = datetime.now(timezone.utc)
     db.commit()
+    intelligence = None
+    if data.investigation_id:
+        investigation_id = _uuid_or_none(data.investigation_id)
+        if investigation_id is not None:
+            hypotheses = db.query(Hypothesis).filter(
+                Hypothesis.tenant_id == UUID(context["tenant_id"]),
+                Hypothesis.investigation_id == investigation_id,
+            ).all()
+            hypothesis_ids = [item.id for item in hypotheses]
+            unknowns = db.query(Unknown).filter(
+                Unknown.tenant_id == UUID(context["tenant_id"]),
+                Unknown.investigation_id == investigation_id,
+            ).all()
+            links = db.query(HypothesisEvidence).filter(
+                HypothesisEvidence.tenant_id == UUID(context["tenant_id"]),
+                HypothesisEvidence.hypothesis_id.in_(hypothesis_ids) if hypothesis_ids else False,
+            ).all()
+            evidence_ids = [link.evidence_id for link in links]
+            evidence_rows = db.query(Evidence).filter(
+                Evidence.tenant_id == UUID(context["tenant_id"]),
+                Evidence.id.in_(evidence_ids) if evidence_ids else False,
+            ).all()
+            evidence_by_id = {row.id: row for row in evidence_rows}
+            intelligence = {
+                "hypotheses": [{"id": str(row.id), "statement": row.statement, "status": row.status, "origin": row.origin} for row in hypotheses],
+                "unknowns": [{"id": str(row.id), "category": row.category, "description": row.description, "status": row.status} for row in unknowns],
+                "provenance": [{"hypothesis_id": str(link.hypothesis_id), "evidence_id": str(link.evidence_id), "evidence_identifier": evidence_by_id[link.evidence_id].evidence_identifier, "relation_type": link.relation_type, "created_by_type": link.created_by_type} for link in links if link.evidence_id in evidence_by_id],
+                "counts": {"hypotheses": len(hypotheses), "unknowns": len(unknowns), "provenance": len(links)},
+            }
     return {
         "status": "INTERPRETED",
         "correlation_id": correlation_id,
@@ -182,6 +215,7 @@ def ask(request: Request, data: AskRequest, db: Session = Depends(get_db)) -> di
         "retrieval": {"products": retrieval.products, "product_versions": retrieval.product_versions, "evidence": retrieval.evidence, "count": len(retrieval.ai_context)},
         "ai_safe_context": retrieval.ai_context,
         "lifecycle": lifecycle,
+        "intelligence": intelligence,
         "message": "Question interpreted and bounded authorized lifecycle retrieval completed. Relationships are not causal and no human decision conclusion is generated." if (retrieval_requested or lifecycle_requested) else "Question interpreted. Add an authorized lifecycle scope to execute bounded retrieval.",
     }
 

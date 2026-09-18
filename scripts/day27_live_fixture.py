@@ -22,7 +22,8 @@ from auth.service import _hash
 from backend.app.db.models.foundation import (
     AuthUser, Complaint, Component, ComponentSupplier, Evidence,
     Investigation, InvestigationComplaint, InvestigationEvidence,
-    Product, ProductComponent, ProductVersion, Supplier, Tenant,
+    Product, ProductComponent, ProductVersion, Supplier, Tenant, Hypothesis,
+    Unknown, HypothesisEvidence,
 )
 from backend.app.db.session import SessionLocal
 from backend.app.governance_router import bootstrap
@@ -75,6 +76,45 @@ def ensure_fixture(db: Session, suffix: str) -> dict[str, str]:
         evidence = Evidence(id=uuid.uuid4(), tenant_id=tenant.id, investigation_id=investigation.id, evidence_identifier=evidence_identifier, evidence_type="DAY27_SYNTHETIC", title=f"Synthetic Evidence {suffix}", source_reference=f"DAY27-{suffix}", reliability_status="reviewed", fact_type="source_fact", content=f"TENANT_{suffix}_EVIDENCE_CANARY", created_at=timestamp, updated_at=timestamp)
         db.add(evidence)
         db.flush()
+
+    hypothesis = db.query(Hypothesis).filter(
+        Hypothesis.tenant_id == tenant.id,
+        Hypothesis.investigation_id == investigation.id,
+        Hypothesis.statement == f"Synthetic component signal for Tenant {suffix}",
+    ).first()
+    if hypothesis is None:
+        hypothesis = Hypothesis(
+            id=uuid.uuid4(), tenant_id=tenant.id, investigation_id=investigation.id,
+            statement=f"Synthetic component signal for Tenant {suffix}",
+            status="mixed_evidence", origin="system", created_at=timestamp, updated_at=timestamp,
+        )
+        db.add(hypothesis); db.flush()
+    unknown = db.query(Unknown).filter(
+        Unknown.tenant_id == tenant.id,
+        Unknown.investigation_id == investigation.id,
+        Unknown.hypothesis_id == hypothesis.id,
+        Unknown.description == f"Synthetic unresolved comparison for Tenant {suffix}",
+    ).first()
+    if unknown is None:
+        db.add(Unknown(
+            id=uuid.uuid4(), tenant_id=tenant.id, investigation_id=investigation.id,
+            hypothesis_id=hypothesis.id, category="evidence_gap",
+            description=f"Synthetic unresolved comparison for Tenant {suffix}",
+            evidence_needed="Synthetic comparative evidence", status="open",
+            created_at=timestamp, updated_at=timestamp,
+        ))
+    link = db.query(HypothesisEvidence).filter(
+        HypothesisEvidence.tenant_id == tenant.id,
+        HypothesisEvidence.hypothesis_id == hypothesis.id,
+        HypothesisEvidence.evidence_id == evidence.id,
+    ).first()
+    if link is None:
+        db.add(HypothesisEvidence(
+            id=uuid.uuid4(), tenant_id=tenant.id, hypothesis_id=hypothesis.id,
+            evidence_id=evidence.id, relation_type="support",
+            rationale="Synthetic fixture relationship; not causal proof",
+            created_by_type="system", created_at=timestamp,
+        ))
 
     component_identifier = f"TENANT_{suffix}_COMPONENT_CANARY"
     component = db.query(Component).filter(Component.tenant_id == tenant.id, Component.component_identifier == component_identifier).first()
