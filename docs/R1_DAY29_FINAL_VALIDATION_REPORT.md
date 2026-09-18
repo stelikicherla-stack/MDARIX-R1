@@ -153,11 +153,11 @@ The existing enterprise audit framework is reused. The remediation propagates th
 
 ## 35. Dependency Failure
 
-The existing Day 27/28 retrieval fault mechanism is the required mechanism. Live Day 29 dependency-failure proof is pending.
+The existing Day 27/28 retrieval fault mechanism was exercised live. Retrieval returned `503 RETRIEVAL_UNAVAILABLE`, and the persisted audit trail recorded `ASK_QUERY_RECEIVED` followed by `ASK_RETRIEVAL_FAILED` with the authenticated actor and tenant. **PASS.**
 
 ## 36. Recovery
 
-Automated recovery compatibility remains covered by the existing retrieval tests. Live CURRENT/EVENT_AS_OF/KNOWN_AS_OF recovery proof is pending.
+After clearing the injected dependency-failure flag and restarting the normal API process, live Tenant A/B temporal retrieval recovered successfully. **PASS.**
 
 ## 37. Nonmutation
 
@@ -185,7 +185,7 @@ Scoped compilation passed using `compileall -q ask_mdarix backend tests scripts`
 
 ## 43. Security Zero Gates
 
-Automated tenant and temporal security gates are covered by existing tests. Live cross-tenant temporal records, canary leakage, persisted audit, dependency failure, recovery, and nonmutation remain pending.
+Automated tenant and temporal security gates are covered by existing tests. Live cross-tenant temporal retrieval, canary-leakage checks, persisted audit, dependency failure, recovery, and nonmutation all passed. **Zero security gates failed.**
 
 ## 44. Known Limitations
 
@@ -194,6 +194,12 @@ Post-remediation live audit revalidation: **PASS**. Authenticated Ask and Produc
 ## 45. Day 30 Handoff
 
 Day 30 is not started. Day 30 may build evidence and hypothesis intelligence on this temporal foundation only after Day 29 live validation and formal closure are complete.
+
+## 46. Pre-Rev-B Acceptance Criterion Reconciliation
+
+The original count of three is a semantic acceptance cohort, not a count of every complaint associated with ProductVersion A. The live database contains **30** complaints linked to the ProductVersion-A lineage. That broader lineage count is retained as valid evidence and is not modified.
+
+The Golden Dataset defines the canonical pre-Rev-B cohort as shutdown complaints occurring before the Component Rev B boundary of **2026-01-18**. The live read-only verification applied the equivalent predicate: flagship product scope, `event_timestamp < 2026-01-18T00:00:00Z`, and a shutdown description. It returned exactly `CMP-0001`, `CMP-0002`, and `CMP-0003`, with event dates 2025-11-18, 2025-12-04, and 2026-01-08. Result: `canonical_count = 3`. Therefore `PRE_REV_B_ACCEPTANCE_CRITERION = CORRECTED / PASS`; the prior 30-record result is the broader ProductVersion-A lineage cohort, not a failure. No live data was changed.
 
 ## Status
 
