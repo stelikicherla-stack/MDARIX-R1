@@ -12,7 +12,7 @@ from ask_mdarix.retrieval import build_retrieval_plan
 from auth.service import auth_service
 from backend.app.db.models.foundation import (
     Evidence, FeatureEntitlement, Hypothesis, HypothesisEvidence, PlanDefinition,
-    Investigation, Tenant, TenantPlanAssignment, Unknown,
+    Investigation, Product, ProductVersion, Tenant, TenantPlanAssignment, Unknown,
 )
 from backend.app.db.models.ask import InvestigationSessionRecord
 from backend.app.db.session import get_db
@@ -101,6 +101,27 @@ def _is_external_write_request(question: str) -> bool:
     return any(term in normalized for term in _EXTERNAL_WRITE_TERMS) and any(action in normalized for action in _EXTERNAL_WRITE_ACTIONS)
 
 
+def _validate_product_version_scope(db: Session, *, tenant_id: UUID, product_version_id: UUID | None, product_id: UUID | None, investigation_id: UUID | None) -> None:
+    if product_version_id is None:
+        return
+    version = db.query(ProductVersion).filter(
+        ProductVersion.tenant_id == tenant_id,
+        ProductVersion.id == product_version_id,
+    ).first()
+    if version is None:
+        raise HTTPException(status_code=404, detail={"code": "PRODUCT_VERSION_NOT_FOUND", "message": "ProductVersion is not available for this tenant"})
+    effective_product_id = product_id
+    if effective_product_id is None and investigation_id is not None:
+        investigation = db.query(Investigation).filter(
+            Investigation.tenant_id == tenant_id,
+            Investigation.id == investigation_id,
+        ).first()
+        if investigation is not None:
+            effective_product_id = investigation.product_id
+    if effective_product_id is not None and version.product_id != effective_product_id:
+        raise HTTPException(status_code=422, detail={"code": "PRODUCT_VERSION_SCOPE_MISMATCH", "message": "ProductVersion is not compatible with the requested Product scope"})
+
+
 def _structured_intelligence(*, retrieval, lifecycle, intelligence, spec) -> dict:
     """Compose the existing bounded engines into the Ask investigation contract.
 
@@ -156,6 +177,13 @@ def ask(request: Request, data: AskRequest, db: Session = Depends(get_db)) -> di
         raise HTTPException(status_code=403, detail={"code": "EXTERNAL_WRITE_DISABLED", "message": "External system write-back is disabled in R1"})
 
     _record_audit(db, tenant_id=context["tenant_id"], actor=context["user_id"], action="ASK_QUERY_RECEIVED", correlation_id=correlation_id)
+    _validate_product_version_scope(
+        db,
+        tenant_id=UUID(context["tenant_id"]),
+        product_version_id=_uuid_or_none(data.product_version_id),
+        product_id=_uuid_or_none(data.product_id),
+        investigation_id=_uuid_or_none(data.investigation_id),
+    )
     if data.session_id:
         try:
             session = db.query(InvestigationSessionRecord).filter(
