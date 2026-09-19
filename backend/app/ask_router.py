@@ -12,7 +12,7 @@ from ask_mdarix.retrieval import build_retrieval_plan
 from auth.service import auth_service
 from backend.app.db.models.foundation import (
     Evidence, FeatureEntitlement, Hypothesis, HypothesisEvidence, PlanDefinition,
-    Tenant, TenantPlanAssignment, Unknown,
+    Investigation, Tenant, TenantPlanAssignment, Unknown,
 )
 from backend.app.db.models.ask import InvestigationSessionRecord
 from backend.app.db.session import get_db
@@ -24,6 +24,9 @@ router = APIRouter(prefix="/api/v1/ask", tags=["Ask MDARIX"])
 ASK_FEATURE = "ASK_MDARIX"
 DAY27_FAULT_FLAG = "DAY27_LIVE_DEPENDENCY_FAILURE"
 DAY30_FAULT_FLAG = "DAY30_LIVE_DEPENDENCY_FAILURE"
+DAY34_FAULT_FLAG = "DAY34_LIVE_DEPENDENCY_FAILURE"
+_EXTERNAL_WRITE_TERMS = ("trackwise", "sap", "plm", "qms", "capa")
+_EXTERNAL_WRITE_ACTIONS = ("close", "create", "update", "modify", "delete", "send", "change")
 
 
 class AskRequest(BaseModel):
@@ -93,6 +96,45 @@ def _temporal_audit_details(spec) -> dict:
     return details
 
 
+def _is_external_write_request(question: str) -> bool:
+    normalized = question.casefold()
+    return any(term in normalized for term in _EXTERNAL_WRITE_TERMS) and any(action in normalized for action in _EXTERNAL_WRITE_ACTIONS)
+
+
+def _structured_intelligence(*, retrieval, lifecycle, intelligence, spec) -> dict:
+    """Compose the existing bounded engines into the Ask investigation contract.
+
+    This is deliberately a presentation/composition boundary. It does not
+    create a second hypothesis, Challenger, Failure Chain, Scenario, or Brief
+    engine and it never upgrades correlation, unknowns, or derived analysis
+    into a source fact or human decision.
+    """
+    evidence = list(retrieval.evidence)
+    limitations = list(retrieval.limitations)
+    if lifecycle:
+        limitations.extend(lifecycle.get("limitations", []))
+    return {
+        "finding": None,
+        "supporting_evidence": [item for item in evidence if item.get("fact_type") == "supporting"],
+        "contradicting_evidence": [item for item in evidence if item.get("fact_type") == "contradicting"],
+        "unknowns": (intelligence or {}).get("unknowns", []),
+        "missing_evidence": [],
+        "hypotheses": (intelligence or {}).get("hypotheses", []),
+        "alternative_hypotheses": [],
+        "failure_chain_assessment": None,
+        "scenario_findings": [],
+        "decision_brief": None,
+        "sources_provenance": [item.get("provenance", {}) for item in evidence],
+        "temporal_scope": _temporal_audit_details(spec),
+        "product_scope": lifecycle.get("root_entity", {}).get("product_id") if lifecycle else None,
+        "product_version_scope": lifecycle.get("root_entity", {}).get("product_version_id") if lifecycle else None,
+        "limitations": sorted(set(limitations)),
+        "human_review_required": bool(evidence or intelligence),
+        "causality_state": "NOT_ESTABLISHED",
+        "status": "INSUFFICIENT_EVIDENCE" if not evidence and not intelligence else "READY_FOR_REVIEW",
+    }
+
+
 @router.post("/")
 def ask(request: Request, data: AskRequest, db: Session = Depends(get_db)) -> dict:
     context = _authenticated_context(request)
@@ -107,6 +149,11 @@ def ask(request: Request, data: AskRequest, db: Session = Depends(get_db)) -> di
         _record_audit(db, tenant_id=context["tenant_id"], actor=context["user_id"], action="ASK_AUTHORIZATION_DENIED", correlation_id=correlation_id, details={"reason": "ASK_NOT_ENTITLED"})
         db.commit()
         raise HTTPException(status_code=403, detail={"code": "ASK_NOT_ENTITLED", "message": "Ask MDARIX is not enabled for this tenant"})
+
+    if _is_external_write_request(data.question):
+        _record_audit(db, tenant_id=context["tenant_id"], actor=context["user_id"], action="ASK_AUTHORIZATION_DENIED", correlation_id=correlation_id, details={"reason": "EXTERNAL_WRITE_DISABLED"})
+        db.commit()
+        raise HTTPException(status_code=403, detail={"code": "EXTERNAL_WRITE_DISABLED", "message": "External system write-back is disabled in R1"})
 
     _record_audit(db, tenant_id=context["tenant_id"], actor=context["user_id"], action="ASK_QUERY_RECEIVED", correlation_id=correlation_id)
     if data.session_id:
@@ -131,6 +178,17 @@ def ask(request: Request, data: AskRequest, db: Session = Depends(get_db)) -> di
         db.add(session)
         db.flush()
 
+    if data.investigation_id:
+        investigation_id = _uuid_or_none(data.investigation_id)
+        investigation = db.query(Investigation).filter(
+            Investigation.id == investigation_id,
+            Investigation.tenant_id == UUID(context["tenant_id"]),
+        ).first() if investigation_id else None
+        if investigation is None:
+            _record_audit(db, tenant_id=context["tenant_id"], actor=context["user_id"], action="ASK_AUTHORIZATION_DENIED", correlation_id=correlation_id, details={"reason": "INVESTIGATION_NOT_FOUND"})
+            db.commit()
+            raise HTTPException(status_code=404, detail={"code": "INVESTIGATION_NOT_FOUND", "message": "Investigation is not available for this tenant"})
+
     # The server-side session context is authoritative. Client tenant, owner,
     # role, entitlement, and session fields are deliberately ignored as authority.
     spec = QueryInterpreter().interpret(data.question)
@@ -143,7 +201,7 @@ def ask(request: Request, data: AskRequest, db: Session = Depends(get_db)) -> di
         # production mode. It runs only after all authorization and session
         # ownership checks have succeeded.
         if (
-            (os.environ.get(DAY27_FAULT_FLAG) == "1" or os.environ.get(DAY30_FAULT_FLAG) == "1")
+            (os.environ.get(DAY27_FAULT_FLAG) == "1" or os.environ.get(DAY30_FAULT_FLAG) == "1" or os.environ.get(DAY34_FAULT_FLAG) == "1")
             and os.environ.get("MDARIX_ENV", "development").lower() != "production"
             and (retrieval_requested or lifecycle_requested)
         ):
@@ -216,6 +274,9 @@ def ask(request: Request, data: AskRequest, db: Session = Depends(get_db)) -> di
         "ai_safe_context": retrieval.ai_context,
         "lifecycle": lifecycle,
         "intelligence": intelligence,
+        "structured_intelligence": _structured_intelligence(
+            retrieval=retrieval, lifecycle=lifecycle, intelligence=intelligence, spec=spec,
+        ),
         "message": "Question interpreted and bounded authorized lifecycle retrieval completed. Relationships are not causal and no human decision conclusion is generated." if (retrieval_requested or lifecycle_requested) else "Question interpreted. Add an authorized lifecycle scope to execute bounded retrieval.",
     }
 
