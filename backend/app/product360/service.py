@@ -62,8 +62,10 @@ class Product360Service:
             for row in rows
         ]
 
-    def product360(self, product_id: str, version_id: str | None = None, as_of: datetime | None = None, mode: str = "current") -> Product360Response:
-        tenant_id = self.tenant_id()
+    def product360(self, product_id: str, version_id: str | None = None, as_of: datetime | None = None, mode: str = "current", tenant_id: str | None = None) -> Product360Response:
+        # API callers must pass the authenticated tenant.  The synthetic default
+        # remains only for existing internal/public Product 360 callers.
+        tenant_id = tenant_id or self.tenant_id()
         with engine.connect() as conn:
             product = conn.execute(text("SELECT * FROM products WHERE tenant_id=:tenant_id AND id=:id"), {"tenant_id": tenant_id, "id": product_id}).mappings().one_or_none()
             if not product:

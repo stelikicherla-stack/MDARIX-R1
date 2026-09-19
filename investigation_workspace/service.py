@@ -91,6 +91,7 @@ class InvestigationWorkspaceService:
             version_id=product_version_id,
             as_of=request.as_of,
             mode=request.temporal_mode,
+            tenant_id=str(request.tenant_id),
         )
         return {
             "product": view.product,
