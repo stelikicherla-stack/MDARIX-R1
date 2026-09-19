@@ -21,6 +21,25 @@ from evidence.services.content_reader import EvidenceContentReader
 logger = logging.getLogger(__name__)
 
 
+def build_evidence_summary(evidence: Evidence, observations: list[EvidenceObservation], tenant_id: uuid.UUID) -> Dict[str, Any]:
+    """Build a typed, non-inferential summary for frontend and brief consumers."""
+    source = {"id": str(evidence.id), "identifier": evidence.evidence_identifier, "title": evidence.title, "fact_type": evidence.fact_type}
+    return {
+        "facts": [o.statement for o in observations if o.observation_type == "EXPLICIT_SOURCE_STATEMENT"],
+        "source_evidence": [source],
+        "derived_observations": [o.statement for o in observations if o.observation_type != "EXPLICIT_SOURCE_STATEMENT"],
+        "supporting_evidence": [],
+        "contradictory_evidence": [],
+        "unresolved_evidence": [o.statement for o in observations if o.quality_status != "VALIDATED"],
+        "missing_evidence": [],
+        "unknowns": [],
+        "limitations": [limitation for o in observations for limitation in (o.limitations or [])],
+        "provenance": {"tenant_id": str(tenant_id), "evidence_id": str(evidence.id), "source_system": evidence.source_system, "source_reference": evidence.source_reference, "source_timestamp": evidence.source_timestamp.isoformat() if evidence.source_timestamp else None, "ingestion_timestamp": evidence.ingestion_timestamp.isoformat() if evidence.ingestion_timestamp else None},
+        "sufficiency": "SUFFICIENT_FOR_REVIEW" if observations and not any(o.quality_status != "VALIDATED" for o in observations) else "PARTIALLY_SUFFICIENT" if observations else "INSUFFICIENT",
+        "temporal_context": {"mode": "current", "as_of": None},
+    }
+
+
 class EvidenceIntelligenceService:
     """Core orchestrator for Evidence Intelligence processing, extraction, linking, and grounding."""
 
@@ -214,6 +233,7 @@ class EvidenceIntelligenceService:
                 "effective_timestamp": evidence.effective_timestamp.isoformat() if evidence.effective_timestamp else None,
                 "ingestion_timestamp": evidence.ingestion_timestamp.isoformat() if evidence.ingestion_timestamp else None,
             },
+            "evidence_summary": build_evidence_summary(evidence, observations, tenant_id),
             "chunks_count": len(chunks),
             "chunks": [
                 {
