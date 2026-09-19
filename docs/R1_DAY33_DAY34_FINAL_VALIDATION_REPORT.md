@@ -51,7 +51,12 @@ The following Day 34 work is not yet proven as one integrated execution path:
 - Dependency failure/recovery across the complete integrated path.
 - Combined audit/correlation proof for every integrated stage.
 
-Therefore Day 34 remains open.
+The VS001–VS012 Golden Scenario semantic gate is intentionally deferred to
+the final R1 validation day. Existing live results remain preserved as
+`REVIEW` / `BLOCKED_UNTIL_ASSERTED`; they are not converted to PASS.
+
+Day 34 implementation may proceed, but final R1 closure must re-run the 12
+scenarios and prove 12 PASS / 0 FAIL.
 
 ## 5. Required Day 34 gates
 
@@ -104,5 +109,5 @@ the integrated Ask pipeline or the 12 Golden Scenarios.
 
 **GO for Day 34 implementation work.**
 
-**NO-GO for combined Day 33 + Day 34 closure** until all Day 34 hard gates
-above pass. No combined completion commit should be created at this stage.
+**Golden Scenario closure: DEFERRED to final R1 validation day.** Final R1
+closure remains NO-GO until VS001–VS012 prove 12 PASS / 0 FAIL.
