@@ -41,6 +41,7 @@ class BriefService:
         hypotheses = db.query(Hypothesis).filter(Hypothesis.tenant_id == tenant_id, Hypothesis.investigation_id == investigation_id).all()
         unknowns = db.query(Unknown).filter(Unknown.tenant_id == tenant_id, Unknown.investigation_id == investigation_id).all()
         chains = db.query(FailureChain).filter(FailureChain.tenant_id == tenant_id, FailureChain.investigation_id == investigation_id).all()
+        scenarios = db.query(Scenario).filter(Scenario.tenant_id == tenant_id, Scenario.investigation_id == investigation_id).order_by(Scenario.created_at.desc()).limit(25).all()
         decisions = db.query(Decision).filter(Decision.tenant_id == tenant_id, Decision.investigation_id == investigation_id).order_by(Decision.decision_timestamp.desc()).all()
         decision = decisions[0] if decisions else None
         version_num = (db.query(InvestigationBrief).filter(InvestigationBrief.tenant_id == tenant_id, InvestigationBrief.investigation_id == investigation_id).count() + 1)
@@ -56,6 +57,7 @@ class BriefService:
             "hypotheses": [{"id": str(h.id), "statement": h.statement, "status": h.status, "origin": h.origin} for h in hypotheses],
             "ai_challenger_findings": [], "unknowns": [{"id": str(u.id), "description": u.description, "status": u.status, "category": u.category} for u in unknowns],
             "failure_chain": [{"id": str(c.id), "name": c.name, "status": c.status} for c in chains],
+            "scenario_findings": [s.assumptions.get("result", {}) for s in scenarios if isinstance(s.assumptions, dict) and s.assumptions.get("kind") == "SCENARIO"],
             "counterfactual_analysis": {"status": "NOT_INCLUDED", "label": "HYPOTHETICAL / NON-OBSERVED ANALYSIS", "message": "No persisted Counterfactual result was selected for this Brief."},
             "ai_advisory": {"label": "AI ADVISORY — HUMAN REVIEW REQUIRED", "status": "NOT_EMBEDDED", "message": "AI recommendation remains separate from this deterministic Brief."},
             "supported_conclusions": ["The investigation context and listed evidence are preserved for review."],
@@ -63,7 +65,7 @@ class BriefService:
             "human_decision": {"present": bool(decision), "decision_id": str(decision.id) if decision else None, "disposition": decision.disposition if decision else None, "rationale": decision.rationale if decision else None, "authorized_by_ref": decision.authorized_by_ref if decision else None, "timestamp": decision.decision_timestamp.isoformat() if decision and decision.decision_timestamp else None},
             "limitations": limitations,
         }
-        provenance = {"investigation_id": str(inv.id), "product_id": str(inv.product_id), "product_version_id": str(version.id) if version else None, "evidence_ids": [str(e.id) for e in evidence], "hypothesis_ids": [str(h.id) for h in hypotheses], "unknown_ids": [str(u.id) for u in unknowns], "failure_chain_ids": [str(c.id) for c in chains], "decision_id": str(decision.id) if decision else None, "assembler": "MDARIX-Controlled-Brief-Assembler-v1", "ground_truth_references": [], "generated_at": now.isoformat()}
+        provenance = {"investigation_id": str(inv.id), "product_id": str(inv.product_id), "product_version_id": str(version.id) if version else None, "evidence_ids": [str(e.id) for e in evidence], "hypothesis_ids": [str(h.id) for h in hypotheses], "unknown_ids": [str(u.id) for u in unknowns], "failure_chain_ids": [str(c.id) for c in chains], "scenario_ids": [str(s.id) for s in scenarios], "decision_id": str(decision.id) if decision else None, "assembler": "MDARIX-Controlled-Brief-Assembler-v1", "ground_truth_references": [], "generated_at": now.isoformat()}
         row = InvestigationBrief(id=uuid.uuid4(), tenant_id=tenant_id, investigation_id=inv.id, product_id=inv.product_id, product_version_id=version.id if version else None, brief_version=version_num, status="GENERATED", title=f"Investigation Brief — {inv.investigation_identifier}", generated_by=request.generated_by, temporal_mode=request.temporal_mode, temporal_cutoff=cutoff, human_review_state="NOT_REVIEWED", decision_id=decision.id if decision else None, limitations={"items": limitations}, content=content, provenance=provenance, created_at=now, updated_at=now)
         db.add(row); db.add(AuditEvent(tenant_id=tenant_id, actor_ref=request.generated_by, action="BRIEF_GENERATED" if version_num == 1 else "BRIEF_REGENERATED", entity_type="investigation_brief", entity_id=row.id, details={"investigation_id": str(inv.id), "brief_version": version_num}, created_at=now)); db.commit(); db.refresh(row)
         return self._payload(row)
