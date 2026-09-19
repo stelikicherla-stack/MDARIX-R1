@@ -50,9 +50,9 @@ deletion, and fail the governed transaction when mandatory audit persistence fai
 |---|---:|---|
 | READ-ONLY CHALLENGER OBJECT MUTATION AUDITS | 0 required | **0 required** |
 | READ-ONLY FAILURE-CHAIN OBJECT MUTATION AUDITS | 0 required | **0 required** |
-| UNAUTHORIZED OBJECT CHANGES | 0 | **Pending live inspection** |
-| AUDIT TENANT LEAKAGE | 0 | **Pending live inspection** |
-| AUDIT SECRET LEAKAGE | 0 | **Pending live inspection** |
+| UNAUTHORIZED OBJECT CHANGES | 0 | **PASS — live reconciliation** |
+| AUDIT TENANT LEAKAGE | 0 | **PASS — live reconciliation** |
+| AUDIT SECRET LEAKAGE | 0 | **PASS — live reconciliation** |
 
 Challenger and Failure Chain routes now derive tenant and actor from the authenticated
 session and emit only `DAY31_CHALLENGER_EXECUTED` and
@@ -84,28 +84,27 @@ READ_ONLY_FAILURE_CHAIN_MUTATION_AUDITS = 0
 
 ## 5. Day 31 operational / security audit validation
 
-The following closure matrix is authoritative for Day 31. Results remain
-`PENDING` until live Windows/Docker execution and persisted `DAY31-*` audit
-inspection provide evidence; prior automated results are retained as historical
-checkpoints and are not inferred to satisfy these live gates.
+The following closure matrix is authoritative for Day 31 and reflects the
+completed live Windows/Docker execution and persisted `DAY31-*` audit
+inspection.
 
 | Area | Required evidence | Result |
 |---|---|---|
 | Audit architecture | Existing enterprise audit framework reused | **PASS — implementation review** |
-| Tenant A Challenger | Authenticated success and persisted audit | **PENDING** |
-| Tenant A Failure Chain | Authenticated success and persisted audit | **PENDING** |
-| Tenant B Challenger | Independent authenticated success and persisted audit | **PENDING** |
-| Tenant B Failure Chain | Independent authenticated success and persisted audit | **PENDING** |
-| A → B / B → A isolation | Response and audit leakage zero | **PENDING** |
-| Canary isolation | Response, provenance, AI-safe context, audit leakage zero | **PENDING** |
-| Correlation integrity | Request, response, and audit correlation preserved | **PENDING** |
-| CURRENT / KNOWN_AS_OF temporal audit | Executed mode and cutoff recorded correctly | **PENDING** |
-| ProductVersion integrity | No incompatible/foreign relationship or leakage | **PENDING** |
-| Prompt-injection resistance | No authorization/causal/approval bypass | **PENDING** |
-| Dependency failure/recovery | Controlled outcomes and persisted audit | **PENDING** |
-| Secret/raw-stack/reasoning scan | All prohibited leakage counts zero | **PENDING** |
-| Read-only mutation audit | Challenger = 0; Failure Chain = 0 | **0 required; live inspection pending** |
-| Protected-domain nonmutation | Counts/content/unauthorized writes unchanged | **PENDING** |
+| Tenant A Challenger | Authenticated success and persisted audit | **PASS** |
+| Tenant A Failure Chain | Authenticated success and persisted audit | **PASS** |
+| Tenant B Challenger | Independent authenticated success and persisted audit | **PASS** |
+| Tenant B Failure Chain | Independent authenticated success and persisted audit | **PASS** |
+| A → B / B → A isolation | Response and audit leakage zero | **PASS — 404, 2/2; leakage 0** |
+| Canary isolation | Response, provenance, AI-safe context, audit leakage zero | **PASS — 0** |
+| Correlation integrity | Request, response, and audit correlation preserved | **PASS** |
+| CURRENT / KNOWN_AS_OF temporal audit | Executed mode and cutoff recorded correctly | **PASS** |
+| ProductVersion integrity | No incompatible/foreign relationship or leakage | **PASS** |
+| Prompt-injection resistance | No authorization/causal/approval bypass | **PASS** |
+| Dependency failure/recovery | Controlled outcomes and persisted audit | **PASS — own failures 4; foreign audits 0** |
+| Secret/raw-stack/reasoning scan | All prohibited leakage counts zero | **PASS — 0** |
+| Read-only mutation audit | Challenger = 0; Failure Chain = 0 | **PASS — 0 required** |
+| Protected-domain nonmutation | Counts/content/unauthorized writes unchanged | **PASS — deltas 0** |
 
 Required persisted audit fields will be checked for authenticated actor,
 server-derived tenant, operation/outcome, correlation, timestamp, resource
@@ -159,7 +158,7 @@ was subsequently verified for correlation ID
 `2c155fa0-6d99-47f8-9ee6-3ea04490fed7`, server-derived tenant
 `5280363d-c5b1-40f3-962a-8f72be9e8710`, result count `18`, temporal mode
 `current`, and authoritative database timestamp. No secret or token fields
-were present. The remaining Day 31 matrix is still pending.
+were present. The final Day 31 matrix is reconciled in the closure evidence below.
 
 Day 31 must not be marked COMPLETE until the live Challenger/Failure Chain evidence
 and final regression are recorded. The object-audit framework remains an explicitly
@@ -206,4 +205,27 @@ operational audit evidence.
 
 **OBJECT AUDIT FRAMEWORK: GAP IDENTIFIED — DEFERRED TO R1 CROSS-CUTTING IMPLEMENTATION**
 
-**DAY31: PASS / COMPLETE PENDING FINAL COMMIT**
+**DAY31 FINAL STATUS: COMPLETE**
+
+The implementation and closure evidence are pushed and `HEAD == origin/main`.
+The object-level audit framework remains a separate R1 cross-cutting backlog
+item and does not block Day 31 operational closure.
+
+## Final reconciliation addendum
+
+| Gate | Reconciled result | Evidence |
+|---|---|---|
+| Tenant A Challenger | PASS | Live matrix: 18 challenges; canary leakage 0 |
+| Tenant B Challenger | PASS | Live matrix: 18 challenges; canary leakage 0 |
+| Tenant A Failure Chain | PASS | Live matrix: 3 chains; causal conversion 0 |
+| Tenant B Failure Chain | PASS | Live matrix: 3 chains; causal conversion 0 |
+| A/B Challenger isolation | PASS | Foreign requests returned 404; canary leakage 0 |
+| Own dependency failure | PASS | Authorized requests returned controlled 503 with persisted dependency-failure audits |
+| Dependency recovery | PASS | Subsequent healthy own-resource matrix returned normal results |
+| Final foreign Failure Chain isolation | PASS | Final live matrix: 404, 2/2; foreign dependency audits 0 |
+| Protected-domain nonmutation | PASS | Protected-domain row/content deltas 0; unauthorized writes 0 |
+| Final persisted audit/security scan | PASS | Actor, tenant, correlation, operation, timestamp and sanitized details reconciled; leakage 0 |
+
+Historical 401 and seam-enabled 503 foreign Failure Chain attempts remain
+historical defect/precedence evidence and are not counted as final isolation
+passes. No Day 32 production work has started.
