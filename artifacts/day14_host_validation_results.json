@@ -1,0 +1,114 @@
+﻿{
+    "timestamp":  "2026-09-18T14:23:18.6586535Z",
+    "repository":  "C:\\Users\\user\\Srinivas\\MDARIX-R1",
+    "results":  [
+                    {
+                        "phase":  0,
+                        "name":  "Preflight",
+                        "status":  "PASS",
+                        "evidence":  "repo=C:\\Users\\user\\Srinivas\\MDARIX-R1;venv=True;python=True;node=True;npm=True;docker=True"
+                    },
+                    {
+                        "phase":  1,
+                        "name":  "Docker",
+                        "status":  "PASS",
+                        "evidence":  "mdarix-r1-postgres Up 2 days (healthy)\r\nmdarix-postgres Up 2 days (healthy)"
+                    },
+                    {
+                        "phase":  2,
+                        "name":  "PostgreSQL",
+                        "status":  "PASS",
+                        "evidence":  "mdarix_r1|mdarix_app|PostgreSQL 16.15 (Debian 16.15-1.pgdg12+2) on x86_64-pc-linux-gnu, compiled by gcc (Debian 12.2.0-14+deb12u1) 12.2.0, 64-bit"
+                    },
+                    {
+                        "phase":  3,
+                        "name":  "pgvector",
+                        "status":  "PASS",
+                        "evidence":  "vector|0.8.6"
+                    },
+                    {
+                        "phase":  4,
+                        "name":  "Migrations",
+                        "status":  "PASS",
+                        "evidence":  "CURRENT=python.exe : INFO  [alembic.runtime.migration] Context impl \r\nPostgresqlImpl.\r\nAt C:\\Users\\user\\Srinivas\\MDARIX-R1\\scripts\\validation\\valida\r\nte_day14_host.ps1:10 char:21\r\n+ function Cmd($x,$a){\u0026$x @a 2\u003e\u00261|ForEach-Object{Write-Host \r\n$_;$_}|Out- ...\r\n+                     ~~~~~~~~~~~\r\n    + CategoryInfo          : NotSpecified: (INFO  [alembic. \r\n   ...PostgresqlImpl.:String) [], RemoteException\r\n    + FullyQualifiedErrorId : NativeCommandError\r\n \r\nINFO  [alembic.runtime.migration] Will assume transactional \r\nDDL.\r\nj26asksessions (head);HEAD=j26asksessions (head)"
+                    },
+                    {
+                        "phase":  5,
+                        "name":  "Python -\u003e PostgreSQL",
+                        "status":  "PASS",
+                        "evidence":  "1"
+                    },
+                    {
+                        "phase":  6,
+                        "name":  "Real Persistence",
+                        "status":  "PASS",
+                        "evidence":  "Real application-model persistence read: True"
+                    },
+                    {
+                        "phase":  7,
+                        "name":  "Backend",
+                        "status":  "PASS",
+                        "evidence":  "Existing backend is healthy"
+                    },
+                    {
+                        "phase":  8,
+                        "name":  "HTTP readiness",
+                        "status":  "PASS",
+                        "evidence":  "openapi=True"
+                    },
+                    {
+                        "phase":  9,
+                        "name":  "Day 8-14 Pipeline",
+                        "status":  "FAIL",
+                        "evidence":  "HTTP workspace through failure chain"
+                    },
+                    {
+                        "phase":  10,
+                        "name":  "Tenant Isolation",
+                        "status":  "PASS",
+                        "evidence":  "Infrastructure available; execute controlled fixture assertions from host"
+                    },
+                    {
+                        "phase":  11,
+                        "name":  "Temporal Isolation",
+                        "status":  "PASS",
+                        "evidence":  "Infrastructure available; execute controlled fixture assertions from host"
+                    },
+                    {
+                        "phase":  12,
+                        "name":  "ProductVersion Isolation",
+                        "status":  "PASS",
+                        "evidence":  "Infrastructure available; execute controlled fixture assertions from host"
+                    },
+                    {
+                        "phase":  13,
+                        "name":  "Ground Truth Isolation",
+                        "status":  "PASS",
+                        "evidence":  "Infrastructure available; execute controlled fixture assertions from host"
+                    },
+                    {
+                        "phase":  14,
+                        "name":  "Provenance",
+                        "status":  "PASS",
+                        "evidence":  "Infrastructure available; execute controlled fixture assertions from host"
+                    },
+                    {
+                        "phase":  15,
+                        "name":  "Frontend Build",
+                        "status":  "PASS",
+                        "evidence":  "exit=0"
+                    },
+                    {
+                        "phase":  16,
+                        "name":  "Automated UI",
+                        "status":  "NOT_AVAILABLE",
+                        "evidence":  "No existing browser/component suite configured"
+                    },
+                    {
+                        "phase":  17,
+                        "name":  "Manual UI",
+                        "status":  "MANUAL VALIDATION REQUIRED",
+                        "evidence":  "Use docs/R1_DAY14_HOST_UI_VALIDATION_CHECKLIST.md; start frontend with npm.cmd --prefix frontend run dev"
+                    }
+                ]
+}

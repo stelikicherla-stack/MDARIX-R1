@@ -1,0 +1,685 @@
+{
+    "status":  "INTERPRETED",
+    "correlation_id":  "DAY34-VS004-416ffb16-a4ef-413f-a053-b82bab4c9cce",
+    "session_id":  "5e68e3e6-6b4f-4d7d-9f82-57122c7bd00f",
+    "user_id":  "2c155fa0-6d99-47f8-9ee6-3ea04490fed7",
+    "tenant_id":  "5280363d-c5b1-40f3-962a-8f72be9e8710",
+    "active_role":  "Viewer",
+    "specification":  {
+                          "intent":  "RETRIEVE_EVIDENCE_CONTEXT",
+                          "status":  "READY",
+                          "normalized_question":  "show supporting and contradicting evidence together",
+                          "product_query":  null,
+                          "version_queries":  [
+
+                                              ],
+                          "temporal_mode":  "CURRENT",
+                          "event_start":  null,
+                          "event_end":  null,
+                          "knowledge_time":  null,
+                          "requested_entities":  [
+                                                     "Evidence"
+                                                 ],
+                          "requested_metrics":  [
+
+                                                ],
+                          "ambiguities":  [
+
+                                          ],
+                          "unknowns":  [
+
+                                       ],
+                          "limitations":  [
+                                              "Interpretation does not establish causality or authorization"
+                                          ],
+                          "retrieval_scope":  {
+                                                  "tenant_scoped":  true,
+                                                  "authorized_only":  true,
+                                                  "ai_safe_fields_only":  true
+                                              }
+                      },
+    "retrieval_plan":  {
+                           "entities":  [
+                                            "Evidence"
+                                        ],
+                           "limit":  100,
+                           "tenant_scoped":  true,
+                           "authorized_only":  true,
+                           "temporal_mode":  "CURRENT",
+                           "product_version_scope":  [
+
+                                                     ],
+                           "status":  "READY",
+                           "limitation":  null
+                       },
+    "execution":  "AUTHORIZED_LIFECYCLE_RETRIEVAL",
+    "retrieval":  {
+                      "products":  [
+
+                                   ],
+                      "product_versions":  [
+
+                                           ],
+                      "evidence":  [
+                                       {
+                                           "id":  "b5b57e2c-8e84-4785-8c35-a2f2bd25f5d1",
+                                           "identifier":  "TENANT_A_EVIDENCE_CANARY",
+                                           "title":  "Synthetic Evidence A",
+                                           "description":  "TENANT_A_EVIDENCE_CANARY",
+                                           "status":  "reviewed",
+                                           "type":  "DAY27_SYNTHETIC",
+                                           "investigation_id":  "14c88d2d-3d72-4313-bded-bdcf06a6279c",
+                                           "source_reference":  "DAY27-A",
+                                           "provenance":  {
+                                                              "source_system":  null,
+                                                              "source_identifier":  null,
+                                                              "source_timestamp":  null,
+                                                              "ingestion_time":  null
+                                                          }
+                                       }
+                                   ],
+                      "count":  1
+                  },
+    "ai_safe_context":  [
+                            {
+                                "id":  "b5b57e2c-8e84-4785-8c35-a2f2bd25f5d1",
+                                "identifier":  "TENANT_A_EVIDENCE_CANARY",
+                                "title":  "Synthetic Evidence A",
+                                "description":  "TENANT_A_EVIDENCE_CANARY",
+                                "status":  "reviewed",
+                                "type":  "DAY27_SYNTHETIC",
+                                "investigation_id":  "14c88d2d-3d72-4313-bded-bdcf06a6279c",
+                                "source_reference":  "DAY27-A",
+                                "provenance":  {
+                                                   "source_system":  null,
+                                                   "source_identifier":  null,
+                                                   "source_timestamp":  null,
+                                                   "ingestion_time":  null
+                                               }
+                            }
+                        ],
+    "lifecycle":  {
+                      "root_entity":  {
+                                          "tenant_id":  "5280363d-c5b1-40f3-962a-8f72be9e8710",
+                                          "product_id":  null,
+                                          "product_version_id":  null
+                                      },
+                      "products":  [
+
+                                   ],
+                      "product_versions":  [
+
+                                           ],
+                      "complaints":  [
+
+                                     ],
+                      "investigations":  [
+                                             {
+                                                 "id":  "14c88d2d-3d72-4313-bded-bdcf06a6279c",
+                                                 "investigation_identifier":  "DAY27-A",
+                                                 "product_id":  "aa93040e-a642-4ce5-9a35-423aa4353537",
+                                                 "status":  "open"
+                                             }
+                                         ],
+                      "changes":  [
+
+                                  ],
+                      "components":  [
+
+                                     ],
+                      "suppliers":  [
+
+                                    ],
+                      "sites":  [
+
+                                ],
+                      "lots":  [
+
+                               ],
+                      "requirements":  [
+
+                                       ],
+                      "risks":  [
+
+                                ],
+                      "failure_modes":  [
+
+                                        ],
+                      "controls":  [
+
+                                   ],
+                      "evidence":  [
+                                       {
+                                           "id":  "b5b57e2c-8e84-4785-8c35-a2f2bd25f5d1",
+                                           "evidence_identifier":  "TENANT_A_EVIDENCE_CANARY",
+                                           "investigation_id":  "14c88d2d-3d72-4313-bded-bdcf06a6279c",
+                                           "evidence_type":  "DAY27_SYNTHETIC",
+                                           "title":  "Synthetic Evidence A",
+                                           "reliability_status":  "reviewed",
+                                           "source_reference":  "DAY27-A"
+                                       }
+                                   ],
+                      "relationships":  [
+
+                                        ],
+                      "ai_safe_context":  [
+                                              {
+                                                  "entity_type":  "investigations",
+                                                  "record":  {
+                                                                 "id":  "14c88d2d-3d72-4313-bded-bdcf06a6279c",
+                                                                 "product_id":  "aa93040e-a642-4ce5-9a35-423aa4353537",
+                                                                 "status":  "open"
+                                                             }
+                                              },
+                                              {
+                                                  "entity_type":  "evidence",
+                                                  "record":  {
+                                                                 "id":  "b5b57e2c-8e84-4785-8c35-a2f2bd25f5d1",
+                                                                 "investigation_id":  "14c88d2d-3d72-4313-bded-bdcf06a6279c",
+                                                                 "title":  "Synthetic Evidence A",
+                                                                 "source_reference":  "DAY27-A"
+                                                             }
+                                              }
+                                          ],
+                      "limitations":  [
+                                          "RELATIONSHIPS_ARE_NOT_CAUSAL",
+                                          "UNREPRESENTED_RELATIONSHIPS_OMITTED"
+                                      ],
+                      "retrieval_metadata":  {
+                                                 "tenant_scoped":  true,
+                                                 "bounded_limit":  100,
+                                                 "authorized_only":  true
+                                             }
+                  },
+    "intelligence":  {
+                         "hypotheses":  [
+                                            {
+                                                "id":  "2a5e413e-1769-49bf-baef-872529bcb120",
+                                                "statement":  "Component or supplier-process change contributed to the observed shutdown increase.",
+                                                "status":  "mixed_evidence",
+                                                "origin":  "system"
+                                            },
+                                            {
+                                                "id":  "faf1550c-6d6d-4439-9d66-76286dade7da",
+                                                "statement":  "Manufacturing or lot variation contributed to the shutdown pattern independently or jointly.",
+                                                "status":  "mixed_evidence",
+                                                "origin":  "system"
+                                            },
+                                            {
+                                                "id":  "a23e9ad0-db6f-40d0-b806-445ab7f4d751",
+                                                "statement":  "Multiple factors jointly contributed to the observed increase, with current evidence insufficient to isolate one cause.",
+                                                "status":  "mixed_evidence",
+                                                "origin":  "system"
+                                            },
+                                            {
+                                                "id":  "04e8d541-8051-4493-bec4-0d9d91d65c8e",
+                                                "statement":  "Synthetic component signal for Tenant A",
+                                                "status":  "mixed_evidence",
+                                                "origin":  "system"
+                                            }
+                                        ],
+                         "unknowns":  [
+                                          {
+                                              "id":  "6d7814ab-833f-4574-90fa-13108264f165",
+                                              "category":  "evidence_gap",
+                                              "description":  "Synthetic unresolved comparison for Tenant A",
+                                              "status":  "open"
+                                          },
+                                          {
+                                              "id":  "00c2ff52-7889-49cb-9e86-508c4dfbb954",
+                                              "category":  "evidence_gap",
+                                              "description":  "1 complaints lack resolved lot context.",
+                                              "status":  "open"
+                                          },
+                                          {
+                                              "id":  "788b9b36-380c-4478-9a78-91ffa0791c3d",
+                                              "category":  "evidence_gap",
+                                              "description":  "Product 360 shows lifecycle context only; no root-cause conclusion is generated.",
+                                              "status":  "open"
+                                          },
+                                          {
+                                              "id":  "394785f6-4511-40dd-9b48-185caa32f7fc",
+                                              "category":  "evidence_gap",
+                                              "description":  "1 evidence records are shown with workspace fallback source anchors.",
+                                              "status":  "open"
+                                          },
+                                          {
+                                              "id":  "6ac5e0b2-482c-4a55-b408-e91f25f04995",
+                                              "category":  "evidence_gap",
+                                              "description":  "Workspace presents context only; regulated conclusions remain human decisions.",
+                                              "status":  "open"
+                                          },
+                                          {
+                                              "id":  "cd1fa67a-f92f-474c-b608-6a5bb0d418d4",
+                                              "category":  "evidence_gap",
+                                              "description":  "1 complaints lack resolved lot context.",
+                                              "status":  "open"
+                                          },
+                                          {
+                                              "id":  "8105d16a-481a-4676-bdb9-f97159eaee4b",
+                                              "category":  "evidence_gap",
+                                              "description":  "Product 360 shows lifecycle context only; no root-cause conclusion is generated.",
+                                              "status":  "open"
+                                          },
+                                          {
+                                              "id":  "89d98666-d45f-4347-9bd2-307c796b0166",
+                                              "category":  "evidence_gap",
+                                              "description":  "1 evidence records are shown with workspace fallback source anchors.",
+                                              "status":  "open"
+                                          },
+                                          {
+                                              "id":  "f26f8703-344f-4371-a154-cc33aeee1083",
+                                              "category":  "evidence_gap",
+                                              "description":  "Workspace presents context only; regulated conclusions remain human decisions.",
+                                              "status":  "open"
+                                          },
+                                          {
+                                              "id":  "c59fc6e0-4cbd-4c10-ba20-810ab9c2722c",
+                                              "category":  "evidence_gap",
+                                              "description":  "Trusted retrieval did not return complete contextual evidence.",
+                                              "status":  "open"
+                                          },
+                                          {
+                                              "id":  "1f652ef7-58b5-4a18-81b7-d0f0dbcefc4a",
+                                              "category":  "evidence_gap",
+                                              "description":  "1 complaints lack resolved lot context.",
+                                              "status":  "open"
+                                          },
+                                          {
+                                              "id":  "01427b95-5f04-4e1d-a0a3-ed9c5a0a8167",
+                                              "category":  "evidence_gap",
+                                              "description":  "Product 360 shows lifecycle context only; no root-cause conclusion is generated.",
+                                              "status":  "open"
+                                          },
+                                          {
+                                              "id":  "17f84db2-82cc-4027-9b9c-8b3e56970b67",
+                                              "category":  "evidence_gap",
+                                              "description":  "1 evidence records are shown with workspace fallback source anchors.",
+                                              "status":  "open"
+                                          },
+                                          {
+                                              "id":  "fbd480b6-ad6b-4221-bef4-f81ec254e355",
+                                              "category":  "evidence_gap",
+                                              "description":  "Workspace presents context only; regulated conclusions remain human decisions.",
+                                              "status":  "open"
+                                          },
+                                          {
+                                              "id":  "aca78753-83a6-4e52-9c68-d9ee6364c3d9",
+                                              "category":  "evidence_gap",
+                                              "description":  "1 complaints lack resolved lot context.",
+                                              "status":  "open"
+                                          },
+                                          {
+                                              "id":  "e0d7dbba-c2f8-4a1d-9e5e-599886fce4cf",
+                                              "category":  "evidence_gap",
+                                              "description":  "Product 360 shows lifecycle context only; no root-cause conclusion is generated.",
+                                              "status":  "open"
+                                          },
+                                          {
+                                              "id":  "7b85d7bf-48da-4ab1-b526-95f00bf80f31",
+                                              "category":  "evidence_gap",
+                                              "description":  "1 evidence records are shown with workspace fallback source anchors.",
+                                              "status":  "open"
+                                          },
+                                          {
+                                              "id":  "59d17370-2d59-436c-8828-af20da315f4b",
+                                              "category":  "evidence_gap",
+                                              "description":  "Workspace presents context only; regulated conclusions remain human decisions.",
+                                              "status":  "open"
+                                          },
+                                          {
+                                              "id":  "d319bb34-1c4f-4626-8d1a-7c13553e2f95",
+                                              "category":  "evidence_gap",
+                                              "description":  "Trusted retrieval did not return complete contextual evidence.",
+                                              "status":  "open"
+                                          },
+                                          {
+                                              "id":  "47ba2f5b-14c5-439a-8e2b-11dd44ea5442",
+                                              "category":  "evidence_gap",
+                                              "description":  "1 complaints lack resolved lot context.",
+                                              "status":  "open"
+                                          },
+                                          {
+                                              "id":  "b3077174-c914-46bc-b883-276e325ac57f",
+                                              "category":  "evidence_gap",
+                                              "description":  "Product 360 shows lifecycle context only; no root-cause conclusion is generated.",
+                                              "status":  "open"
+                                          },
+                                          {
+                                              "id":  "781fab04-c61e-40ef-a4cd-5c8005b416ce",
+                                              "category":  "evidence_gap",
+                                              "description":  "1 evidence records are shown with workspace fallback source anchors.",
+                                              "status":  "open"
+                                          },
+                                          {
+                                              "id":  "b629309b-95fd-4fec-afe4-80ed75a1b56a",
+                                              "category":  "evidence_gap",
+                                              "description":  "Workspace presents context only; regulated conclusions remain human decisions.",
+                                              "status":  "open"
+                                          },
+                                          {
+                                              "id":  "ace38675-2e06-4afc-88e3-c384697d4dc5",
+                                              "category":  "evidence_gap",
+                                              "description":  "1 complaints lack resolved lot context.",
+                                              "status":  "open"
+                                          },
+                                          {
+                                              "id":  "f399de4d-7c23-4d9b-ae77-ef06dfe68920",
+                                              "category":  "evidence_gap",
+                                              "description":  "Product 360 shows lifecycle context only; no root-cause conclusion is generated.",
+                                              "status":  "open"
+                                          },
+                                          {
+                                              "id":  "cbf05947-fe4a-4721-944b-57556642bd73",
+                                              "category":  "evidence_gap",
+                                              "description":  "1 evidence records are shown with workspace fallback source anchors.",
+                                              "status":  "open"
+                                          },
+                                          {
+                                              "id":  "71d05df7-f1c0-4282-a2f1-d97c4639da1c",
+                                              "category":  "evidence_gap",
+                                              "description":  "Workspace presents context only; regulated conclusions remain human decisions.",
+                                              "status":  "open"
+                                          },
+                                          {
+                                              "id":  "69b9fcd5-c04e-4350-8b4c-dd07d03cbc5e",
+                                              "category":  "evidence_gap",
+                                              "description":  "Trusted retrieval did not return complete contextual evidence.",
+                                              "status":  "open"
+                                          }
+                                      ],
+                         "provenance":  [
+                                            {
+                                                "hypothesis_id":  "04e8d541-8051-4493-bec4-0d9d91d65c8e",
+                                                "evidence_id":  "b5b57e2c-8e84-4785-8c35-a2f2bd25f5d1",
+                                                "evidence_identifier":  "TENANT_A_EVIDENCE_CANARY",
+                                                "relation_type":  "support",
+                                                "created_by_type":  "system"
+                                            },
+                                            {
+                                                "hypothesis_id":  "2a5e413e-1769-49bf-baef-872529bcb120",
+                                                "evidence_id":  "b5b57e2c-8e84-4785-8c35-a2f2bd25f5d1",
+                                                "evidence_identifier":  "TENANT_A_EVIDENCE_CANARY",
+                                                "relation_type":  "support",
+                                                "created_by_type":  "system"
+                                            },
+                                            {
+                                                "hypothesis_id":  "2a5e413e-1769-49bf-baef-872529bcb120",
+                                                "evidence_id":  "b5b57e2c-8e84-4785-8c35-a2f2bd25f5d1",
+                                                "evidence_identifier":  "TENANT_A_EVIDENCE_CANARY",
+                                                "relation_type":  "contradict",
+                                                "created_by_type":  "system"
+                                            },
+                                            {
+                                                "hypothesis_id":  "faf1550c-6d6d-4439-9d66-76286dade7da",
+                                                "evidence_id":  "b5b57e2c-8e84-4785-8c35-a2f2bd25f5d1",
+                                                "evidence_identifier":  "TENANT_A_EVIDENCE_CANARY",
+                                                "relation_type":  "support",
+                                                "created_by_type":  "system"
+                                            },
+                                            {
+                                                "hypothesis_id":  "faf1550c-6d6d-4439-9d66-76286dade7da",
+                                                "evidence_id":  "b5b57e2c-8e84-4785-8c35-a2f2bd25f5d1",
+                                                "evidence_identifier":  "TENANT_A_EVIDENCE_CANARY",
+                                                "relation_type":  "contradict",
+                                                "created_by_type":  "system"
+                                            },
+                                            {
+                                                "hypothesis_id":  "a23e9ad0-db6f-40d0-b806-445ab7f4d751",
+                                                "evidence_id":  "b5b57e2c-8e84-4785-8c35-a2f2bd25f5d1",
+                                                "evidence_identifier":  "TENANT_A_EVIDENCE_CANARY",
+                                                "relation_type":  "support",
+                                                "created_by_type":  "system"
+                                            },
+                                            {
+                                                "hypothesis_id":  "a23e9ad0-db6f-40d0-b806-445ab7f4d751",
+                                                "evidence_id":  "b5b57e2c-8e84-4785-8c35-a2f2bd25f5d1",
+                                                "evidence_identifier":  "TENANT_A_EVIDENCE_CANARY",
+                                                "relation_type":  "contradict",
+                                                "created_by_type":  "system"
+                                            }
+                                        ],
+                         "counts":  {
+                                        "hypotheses":  4,
+                                        "unknowns":  28,
+                                        "provenance":  7
+                                    }
+                     },
+    "structured_intelligence":  {
+                                    "finding":  null,
+                                    "supporting_evidence":  [
+
+                                                            ],
+                                    "contradicting_evidence":  [
+
+                                                               ],
+                                    "unknowns":  [
+                                                     {
+                                                         "id":  "6d7814ab-833f-4574-90fa-13108264f165",
+                                                         "category":  "evidence_gap",
+                                                         "description":  "Synthetic unresolved comparison for Tenant A",
+                                                         "status":  "open"
+                                                     },
+                                                     {
+                                                         "id":  "00c2ff52-7889-49cb-9e86-508c4dfbb954",
+                                                         "category":  "evidence_gap",
+                                                         "description":  "1 complaints lack resolved lot context.",
+                                                         "status":  "open"
+                                                     },
+                                                     {
+                                                         "id":  "788b9b36-380c-4478-9a78-91ffa0791c3d",
+                                                         "category":  "evidence_gap",
+                                                         "description":  "Product 360 shows lifecycle context only; no root-cause conclusion is generated.",
+                                                         "status":  "open"
+                                                     },
+                                                     {
+                                                         "id":  "394785f6-4511-40dd-9b48-185caa32f7fc",
+                                                         "category":  "evidence_gap",
+                                                         "description":  "1 evidence records are shown with workspace fallback source anchors.",
+                                                         "status":  "open"
+                                                     },
+                                                     {
+                                                         "id":  "6ac5e0b2-482c-4a55-b408-e91f25f04995",
+                                                         "category":  "evidence_gap",
+                                                         "description":  "Workspace presents context only; regulated conclusions remain human decisions.",
+                                                         "status":  "open"
+                                                     },
+                                                     {
+                                                         "id":  "cd1fa67a-f92f-474c-b608-6a5bb0d418d4",
+                                                         "category":  "evidence_gap",
+                                                         "description":  "1 complaints lack resolved lot context.",
+                                                         "status":  "open"
+                                                     },
+                                                     {
+                                                         "id":  "8105d16a-481a-4676-bdb9-f97159eaee4b",
+                                                         "category":  "evidence_gap",
+                                                         "description":  "Product 360 shows lifecycle context only; no root-cause conclusion is generated.",
+                                                         "status":  "open"
+                                                     },
+                                                     {
+                                                         "id":  "89d98666-d45f-4347-9bd2-307c796b0166",
+                                                         "category":  "evidence_gap",
+                                                         "description":  "1 evidence records are shown with workspace fallback source anchors.",
+                                                         "status":  "open"
+                                                     },
+                                                     {
+                                                         "id":  "f26f8703-344f-4371-a154-cc33aeee1083",
+                                                         "category":  "evidence_gap",
+                                                         "description":  "Workspace presents context only; regulated conclusions remain human decisions.",
+                                                         "status":  "open"
+                                                     },
+                                                     {
+                                                         "id":  "c59fc6e0-4cbd-4c10-ba20-810ab9c2722c",
+                                                         "category":  "evidence_gap",
+                                                         "description":  "Trusted retrieval did not return complete contextual evidence.",
+                                                         "status":  "open"
+                                                     },
+                                                     {
+                                                         "id":  "1f652ef7-58b5-4a18-81b7-d0f0dbcefc4a",
+                                                         "category":  "evidence_gap",
+                                                         "description":  "1 complaints lack resolved lot context.",
+                                                         "status":  "open"
+                                                     },
+                                                     {
+                                                         "id":  "01427b95-5f04-4e1d-a0a3-ed9c5a0a8167",
+                                                         "category":  "evidence_gap",
+                                                         "description":  "Product 360 shows lifecycle context only; no root-cause conclusion is generated.",
+                                                         "status":  "open"
+                                                     },
+                                                     {
+                                                         "id":  "17f84db2-82cc-4027-9b9c-8b3e56970b67",
+                                                         "category":  "evidence_gap",
+                                                         "description":  "1 evidence records are shown with workspace fallback source anchors.",
+                                                         "status":  "open"
+                                                     },
+                                                     {
+                                                         "id":  "fbd480b6-ad6b-4221-bef4-f81ec254e355",
+                                                         "category":  "evidence_gap",
+                                                         "description":  "Workspace presents context only; regulated conclusions remain human decisions.",
+                                                         "status":  "open"
+                                                     },
+                                                     {
+                                                         "id":  "aca78753-83a6-4e52-9c68-d9ee6364c3d9",
+                                                         "category":  "evidence_gap",
+                                                         "description":  "1 complaints lack resolved lot context.",
+                                                         "status":  "open"
+                                                     },
+                                                     {
+                                                         "id":  "e0d7dbba-c2f8-4a1d-9e5e-599886fce4cf",
+                                                         "category":  "evidence_gap",
+                                                         "description":  "Product 360 shows lifecycle context only; no root-cause conclusion is generated.",
+                                                         "status":  "open"
+                                                     },
+                                                     {
+                                                         "id":  "7b85d7bf-48da-4ab1-b526-95f00bf80f31",
+                                                         "category":  "evidence_gap",
+                                                         "description":  "1 evidence records are shown with workspace fallback source anchors.",
+                                                         "status":  "open"
+                                                     },
+                                                     {
+                                                         "id":  "59d17370-2d59-436c-8828-af20da315f4b",
+                                                         "category":  "evidence_gap",
+                                                         "description":  "Workspace presents context only; regulated conclusions remain human decisions.",
+                                                         "status":  "open"
+                                                     },
+                                                     {
+                                                         "id":  "d319bb34-1c4f-4626-8d1a-7c13553e2f95",
+                                                         "category":  "evidence_gap",
+                                                         "description":  "Trusted retrieval did not return complete contextual evidence.",
+                                                         "status":  "open"
+                                                     },
+                                                     {
+                                                         "id":  "47ba2f5b-14c5-439a-8e2b-11dd44ea5442",
+                                                         "category":  "evidence_gap",
+                                                         "description":  "1 complaints lack resolved lot context.",
+                                                         "status":  "open"
+                                                     },
+                                                     {
+                                                         "id":  "b3077174-c914-46bc-b883-276e325ac57f",
+                                                         "category":  "evidence_gap",
+                                                         "description":  "Product 360 shows lifecycle context only; no root-cause conclusion is generated.",
+                                                         "status":  "open"
+                                                     },
+                                                     {
+                                                         "id":  "781fab04-c61e-40ef-a4cd-5c8005b416ce",
+                                                         "category":  "evidence_gap",
+                                                         "description":  "1 evidence records are shown with workspace fallback source anchors.",
+                                                         "status":  "open"
+                                                     },
+                                                     {
+                                                         "id":  "b629309b-95fd-4fec-afe4-80ed75a1b56a",
+                                                         "category":  "evidence_gap",
+                                                         "description":  "Workspace presents context only; regulated conclusions remain human decisions.",
+                                                         "status":  "open"
+                                                     },
+                                                     {
+                                                         "id":  "ace38675-2e06-4afc-88e3-c384697d4dc5",
+                                                         "category":  "evidence_gap",
+                                                         "description":  "1 complaints lack resolved lot context.",
+                                                         "status":  "open"
+                                                     },
+                                                     {
+                                                         "id":  "f399de4d-7c23-4d9b-ae77-ef06dfe68920",
+                                                         "category":  "evidence_gap",
+                                                         "description":  "Product 360 shows lifecycle context only; no root-cause conclusion is generated.",
+                                                         "status":  "open"
+                                                     },
+                                                     {
+                                                         "id":  "cbf05947-fe4a-4721-944b-57556642bd73",
+                                                         "category":  "evidence_gap",
+                                                         "description":  "1 evidence records are shown with workspace fallback source anchors.",
+                                                         "status":  "open"
+                                                     },
+                                                     {
+                                                         "id":  "71d05df7-f1c0-4282-a2f1-d97c4639da1c",
+                                                         "category":  "evidence_gap",
+                                                         "description":  "Workspace presents context only; regulated conclusions remain human decisions.",
+                                                         "status":  "open"
+                                                     },
+                                                     {
+                                                         "id":  "69b9fcd5-c04e-4350-8b4c-dd07d03cbc5e",
+                                                         "category":  "evidence_gap",
+                                                         "description":  "Trusted retrieval did not return complete contextual evidence.",
+                                                         "status":  "open"
+                                                     }
+                                                 ],
+                                    "missing_evidence":  [
+
+                                                         ],
+                                    "hypotheses":  [
+                                                       {
+                                                           "id":  "2a5e413e-1769-49bf-baef-872529bcb120",
+                                                           "statement":  "Component or supplier-process change contributed to the observed shutdown increase.",
+                                                           "status":  "mixed_evidence",
+                                                           "origin":  "system"
+                                                       },
+                                                       {
+                                                           "id":  "faf1550c-6d6d-4439-9d66-76286dade7da",
+                                                           "statement":  "Manufacturing or lot variation contributed to the shutdown pattern independently or jointly.",
+                                                           "status":  "mixed_evidence",
+                                                           "origin":  "system"
+                                                       },
+                                                       {
+                                                           "id":  "a23e9ad0-db6f-40d0-b806-445ab7f4d751",
+                                                           "statement":  "Multiple factors jointly contributed to the observed increase, with current evidence insufficient to isolate one cause.",
+                                                           "status":  "mixed_evidence",
+                                                           "origin":  "system"
+                                                       },
+                                                       {
+                                                           "id":  "04e8d541-8051-4493-bec4-0d9d91d65c8e",
+                                                           "statement":  "Synthetic component signal for Tenant A",
+                                                           "status":  "mixed_evidence",
+                                                           "origin":  "system"
+                                                       }
+                                                   ],
+                                    "alternative_hypotheses":  [
+
+                                                               ],
+                                    "failure_chain_assessment":  null,
+                                    "scenario_findings":  [
+
+                                                          ],
+                                    "decision_brief":  null,
+                                    "sources_provenance":  [
+                                                               {
+                                                                   "source_system":  null,
+                                                                   "source_identifier":  null,
+                                                                   "source_timestamp":  null,
+                                                                   "ingestion_time":  null
+                                                               }
+                                                           ],
+                                    "temporal_scope":  {
+                                                           "temporal_mode":  "CURRENT"
+                                                       },
+                                    "product_scope":  null,
+                                    "product_version_scope":  null,
+                                    "limitations":  [
+                                                        "RELATIONSHIPS_ARE_NOT_CAUSAL",
+                                                        "UNREPRESENTED_RELATIONSHIPS_OMITTED"
+                                                    ],
+                                    "human_review_required":  true,
+                                    "causality_state":  "NOT_ESTABLISHED",
+                                    "status":  "READY_FOR_REVIEW"
+                                },
+    "message":  "Question interpreted and bounded authorized lifecycle retrieval completed. Relationships are not causal and no human decision conclusion is generated."
+}

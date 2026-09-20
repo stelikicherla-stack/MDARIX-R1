@@ -1,0 +1,248 @@
+{
+  "tenants": [
+    {
+      "key": "R1_TENANT_1",
+      "name": "Northstar Quality"
+    },
+    {
+      "key": "R1_TENANT_2",
+      "name": "Aster Medical"
+    },
+    {
+      "key": "R1_TENANT_3",
+      "name": "Nimbus Health"
+    },
+    {
+      "key": "R1_TENANT_4",
+      "name": "Orbit Devices"
+    }
+  ],
+  "users": [
+    {
+      "key": "R1_USER_01",
+      "email": "r1-user-01@synthetic.invalid",
+      "tenant_key": "R1_TENANT_1",
+      "role": "Administrator",
+      "personas": [
+        "ADMINISTRATOR"
+      ]
+    },
+    {
+      "key": "R1_USER_02",
+      "email": "r1-user-02@synthetic.invalid",
+      "tenant_key": "R1_TENANT_2",
+      "role": "Investigator",
+      "personas": [
+        "INVESTIGATOR"
+      ]
+    },
+    {
+      "key": "R1_USER_03",
+      "email": "r1-user-03@synthetic.invalid",
+      "tenant_key": "R1_TENANT_3",
+      "role": "Reviewer",
+      "personas": [
+        "REVIEWER"
+      ]
+    },
+    {
+      "key": "R1_USER_04",
+      "email": "r1-user-04@synthetic.invalid",
+      "tenant_key": "R1_TENANT_4",
+      "role": "Approver",
+      "personas": [
+        "APPROVER"
+      ]
+    },
+    {
+      "key": "R1_USER_05",
+      "email": "r1-user-05@synthetic.invalid",
+      "tenant_key": "R1_TENANT_1",
+      "role": "Leader",
+      "personas": [
+        "LEADER"
+      ]
+    },
+    {
+      "key": "R1_USER_06",
+      "email": "r1-user-06@synthetic.invalid",
+      "tenant_key": "R1_TENANT_2",
+      "role": "Administrator",
+      "personas": [
+        "ADMINISTRATOR"
+      ]
+    },
+    {
+      "key": "R1_USER_07",
+      "email": "r1-user-07@synthetic.invalid",
+      "tenant_key": "R1_TENANT_3",
+      "role": "Investigator",
+      "personas": [
+        "INVESTIGATOR"
+      ]
+    },
+    {
+      "key": "R1_USER_08",
+      "email": "r1-user-08@synthetic.invalid",
+      "tenant_key": "R1_TENANT_4",
+      "role": "Reviewer",
+      "personas": [
+        "REVIEWER"
+      ]
+    },
+    {
+      "key": "R1_USER_09",
+      "email": "r1-user-09@synthetic.invalid",
+      "tenant_key": "R1_TENANT_1",
+      "role": "Approver",
+      "personas": [
+        "APPROVER"
+      ]
+    },
+    {
+      "key": "R1_USER_10",
+      "email": "r1-user-10@synthetic.invalid",
+      "tenant_key": "R1_TENANT_2",
+      "role": "Leader",
+      "personas": [
+        "LEADER"
+      ]
+    },
+    {
+      "key": "R1_USER_11",
+      "email": "r1-user-11@synthetic.invalid",
+      "tenant_key": "R1_TENANT_3",
+      "role": "Administrator",
+      "personas": [
+        "ADMINISTRATOR"
+      ]
+    },
+    {
+      "key": "R1_USER_12",
+      "email": "r1-user-12@synthetic.invalid",
+      "tenant_key": "R1_TENANT_4",
+      "role": "Investigator",
+      "personas": [
+        "INVESTIGATOR"
+      ]
+    },
+    {
+      "key": "R1_USER_13",
+      "email": "r1-user-13@synthetic.invalid",
+      "tenant_key": "R1_TENANT_1",
+      "role": "Reviewer",
+      "personas": [
+        "REVIEWER"
+      ]
+    },
+    {
+      "key": "R1_USER_14",
+      "email": "r1-user-14@synthetic.invalid",
+      "tenant_key": "R1_TENANT_2",
+      "role": "Approver",
+      "personas": [
+        "APPROVER"
+      ]
+    },
+    {
+      "key": "R1_USER_15",
+      "email": "r1-user-15@synthetic.invalid",
+      "tenant_key": "R1_TENANT_3",
+      "role": "Leader",
+      "personas": [
+        "LEADER"
+      ]
+    },
+    {
+      "key": "R1_USER_16",
+      "email": "r1-user-16@synthetic.invalid",
+      "tenant_key": "R1_TENANT_4",
+      "role": "Administrator",
+      "personas": [
+        "ADMINISTRATOR"
+      ]
+    },
+    {
+      "key": "R1_USER_17",
+      "email": "r1-user-17@synthetic.invalid",
+      "tenant_key": "R1_TENANT_1",
+      "role": "Investigator",
+      "personas": [
+        "INVESTIGATOR"
+      ]
+    },
+    {
+      "key": "R1_USER_18",
+      "email": "r1-user-18@synthetic.invalid",
+      "tenant_key": "R1_TENANT_2",
+      "role": "Reviewer",
+      "personas": [
+        "REVIEWER"
+      ]
+    },
+    {
+      "key": "R1_USER_19",
+      "email": "r1-user-19@synthetic.invalid",
+      "tenant_key": "R1_TENANT_3",
+      "role": "Approver",
+      "personas": [
+        "APPROVER"
+      ]
+    },
+    {
+      "key": "R1_USER_20",
+      "email": "r1-user-20@synthetic.invalid",
+      "tenant_key": "R1_TENANT_4",
+      "role": "Leader",
+      "personas": [
+        "LEADER"
+      ]
+    },
+    {
+      "key": "R1_USER_21",
+      "email": "r1-user-21@synthetic.invalid",
+      "tenant_key": "R1_TENANT_1",
+      "role": "Administrator",
+      "personas": [
+        "ADMINISTRATOR"
+      ]
+    },
+    {
+      "key": "R1_USER_22",
+      "email": "r1-user-22@synthetic.invalid",
+      "tenant_key": "R1_TENANT_2",
+      "role": "Investigator",
+      "personas": [
+        "INVESTIGATOR"
+      ]
+    },
+    {
+      "key": "R1_USER_23",
+      "email": "r1-user-23@synthetic.invalid",
+      "tenant_key": "R1_TENANT_3",
+      "role": "Reviewer",
+      "personas": [
+        "REVIEWER"
+      ]
+    },
+    {
+      "key": "R1_USER_24",
+      "email": "r1-user-24@synthetic.invalid",
+      "tenant_key": "R1_TENANT_4",
+      "role": "Approver",
+      "personas": [
+        "APPROVER"
+      ]
+    },
+    {
+      "key": "R1_USER_25",
+      "email": "r1-user-25@synthetic.invalid",
+      "tenant_key": "R1_TENANT_1",
+      "role": "Leader",
+      "personas": [
+        "LEADER"
+      ]
+    }
+  ],
+  "database_apply_enabled": false
+}
