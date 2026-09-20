@@ -182,7 +182,7 @@ function PrivateApplicationGate() {
 }
 
 function PrivateApplication() {
-  const [securityContext, setSecurityContext] = useState<{display_name:string; active_role:string|null} | null>(null);
+  const [securityContext, setSecurityContext] = useState<{display_name:string; active_role:string|null; tenant_id?:string; personas?:Array<{code:string;label:string}>} | null>(null);
   const [products, setProducts] = useState<Product[]>([]);
   const [selectedProduct, setSelectedProduct] = useState<string>("");
   const [version, setVersion] = useState<string>("D");
@@ -190,7 +190,7 @@ function PrivateApplication() {
   const [mode, setMode] = useState<TemporalMode>("event");
   const [view, setView] = useState<Product360 | null>(null);
   const [error, setError] = useState("");
-  const [activeView, setActiveView] = useState<"home" | "products" | "investigations" | "evidence" | "decision" | "assurance" | "audit">("home");
+  const [activeView, setActiveView] = useState<"home" | "products" | "investigations" | "evidence" | "decision" | "assurance" | "audit" | "admin">("home");
   const [selectedInvestigationId, setSelectedInvestigationId] = useState("");
   const [investigations, setInvestigations] = useState<InvestigationSummary[]>([]);
   const [investigationsLoading, setInvestigationsLoading] = useState(false);
@@ -243,6 +243,7 @@ function PrivateApplication() {
           <button className={`nav-link ${activeView === "decision" ? "active" : ""}`} onClick={() => setActiveView("decision")}>Decision Center</button>
           <button className={`nav-link ${activeView === "assurance" ? "active" : ""}`} onClick={() => setActiveView("assurance")}>AI Assurance <small>Inspect AI trust controls</small></button>
           <button className={`nav-link ${activeView === "audit" ? "active" : ""}`} onClick={() => setActiveView("audit")}>Audit Trail <small>Review recorded activity</small></button>
+          {securityContext?.active_role && ["Administrator", "ADMIN", "ADMINISTRATOR", "MDARIX Administrator"].includes(securityContext.active_role) && <button className={`nav-link ${activeView === "admin" ? "active" : ""}`} onClick={() => setActiveView("admin")}>Administration <small>Identity, policy &amp; configuration</small></button>}
         </nav>
         <div className="side-nav-footer"><p>Evidence before inference.<br/>Authorized humans decide.</p></div>
       </aside>
@@ -281,9 +282,55 @@ function PrivateApplication() {
         {view && activeView === "decision" && !selectedInvestigationId && <div className="content"><section className="panel empty-state"><h2>Select an investigation first</h2><p>Open Investigations and select a live investigation before entering Decision Center.</p></section></div>}
         {view && activeView === "assurance" && <AssuranceView view={view} />}
         {view && activeView === "audit" && <AuditTrailView view={view} />}
+        {activeView === "admin" && <AdministratorControlPlane />}
       </main>
     </div>
   );
+}
+
+type AdminData = { users: any[]; roles: any[]; permissions: any[]; memberships: any[]; personas: any[]; entitlements: any[]; connectors: any[]; mappings: any[]; authorities: any[]; sod: any[]; audit: any[] };
+
+function AdministratorControlPlane() {
+  const [data, setData] = useState<AdminData | null>(null);
+  const [message, setMessage] = useState("");
+  const [busy, setBusy] = useState(true);
+  useEffect(() => {
+    const paths = ["users", "roles", "permission-sets", "memberships", "persona-assignments"];
+    Promise.all([
+      api<any[]>("/api/v1/admin/identity/users"), api<any[]>("/api/v1/admin/identity/roles"), api<any[]>("/api/v1/admin/identity/permission-sets"),
+      api<any[]>("/api/v1/admin/identity/memberships"), api<any[]>("/api/v1/admin/identity/persona-assignments"), api<any[]>("/api/v1/admin/governance/entitlements"),
+      api<any[]>("/api/v1/admin/configuration/connectors"), api<any[]>("/api/v1/admin/configuration/mappings"), api<any>("/api/v1/admin/governance/policies"), api<any[]>("/api/v1/admin/audit-history"),
+    ]).then(([users, roles, permissions, memberships, personas, entitlements, connectors, mappings, policies, audit]) => setData({ users, roles, permissions, memberships, personas, entitlements, connectors, mappings, authorities: policies.approval_authorities ?? [], sod: policies.sod_policies ?? [], audit })).catch((error) => setMessage(error.message)).finally(() => setBusy(false));
+  }, []);
+  if (busy) return <div className="content"><section className="panel"><span className="eyebrow">Administrator control plane</span><h2>Loading tenant administration…</h2></section></div>;
+  if (!data) return <div className="content"><section className="panel"><h2>Administration unavailable</h2><p>{message}</p></section></div>;
+  const cards = [["Users", data.users.length], ["Roles", data.roles.length], ["Permission sets", data.permissions.length], ["Memberships", data.memberships.length], ["Personas", data.personas.length], ["Entitlements", data.entitlements.length], ["Connectors", data.connectors.length], ["Mappings", data.mappings.length], ["Audit events", data.audit.length]];
+  return <div className="content governance-view"><section className="governance-hero"><div><span className="eyebrow">Administrator control plane</span><h2>Identity, access &amp; configuration</h2><p>Tenant-scoped administration with versioned roles, personas, entitlements, connectors, mappings, governance policies, and audit evidence.</p></div><div className="governance-status"><ShieldCheck size={22}/><strong>Controlled administration</strong><span>All records are scoped to the authenticated tenant.</span></div></section><section className="admin-stat-grid">{cards.map(([label, count]) => <article className="panel admin-stat" key={String(label)}><small>{label}</small><strong>{count}</strong></article>)}</section><AdminCreateForms onSaved={() => setMessage("Created. Refresh the administration view to confirm the new record.")} /><AdminEditForm data={data} onSaved={() => setMessage("Updated. The change was recorded in audit history.")} />{message && <p className="review-success" role="status">{message}</p>}<section className="panel"><div className="section-title"><ShieldCheck size={18}/> Recent audit activity</div>{data.audit.slice(0, 8).map((row) => <div className="audit-row" key={String(row.id)}><strong>{row.action}</strong><span>{row.entity_type ?? "Configuration"}</span><small>{row.created_at ? String(row.created_at).slice(0, 19).replace("T", " ") : "Server recorded"}</small></div>)}{!data.audit.length && <p>No audit events recorded for this tenant.</p>}</section></div>;
+}
+
+function AdminCreateForms({ onSaved }: { onSaved: () => void }) {
+  const [kind, setKind] = useState("user"); const [form, setForm] = useState<Record<string, string>>({}); const [message, setMessage] = useState("");
+  const fields: Record<string, Array<[string, string, string]>> = {
+    user: [["email", "Email", "email"], ["display_name", "Display name", "text"], ["company", "Company", "text"], ["password", "Temporary password", "password"], ["role", "Role", "text"]],
+    role: [["code", "Role code", "text"], ["name", "Role name", "text"], ["version", "Version", "text"]],
+    persona: [["user_id", "User ID", "text"], ["persona_code", "Persona code", "text"]],
+    permission: [["code", "Permission-set code", "text"], ["version", "Version", "text"], ["action_permissions", "Action permissions JSON", "text"]],
+    connector: [["code", "Connector code", "text"], ["connector_type", "Connector type", "text"], ["version", "Version", "text"], ["configuration", "Safe metadata JSON", "text"]],
+    mapping: [["code", "Mapping code", "text"], ["source_system", "Source system", "text"], ["target_entity", "Target entity", "text"], ["version", "Version", "text"], ["mapping_rules", "Mapping rules JSON", "text"]],
+    authority: [["role_name", "Role name", "text"], ["object_type", "Object type", "text"], ["decision_type", "Decision type", "text"]],
+    sod: [["name", "Policy name", "text"], ["object_type", "Object type", "text"], ["decision_type", "Decision type", "text"]],
+  };
+  const endpoints: Record<string, string> = { user: "/api/v1/admin/identity/users", role: "/api/v1/admin/identity/roles", persona: "/api/v1/admin/identity/persona-assignments", permission: "/api/v1/admin/identity/permission-sets", connector: "/api/v1/admin/configuration/connectors", mapping: "/api/v1/admin/configuration/mappings", authority: "/api/v1/admin/governance/approval-authorities", sod: "/api/v1/admin/governance/sod-policies" };
+  const submit = async (event: React.FormEvent) => { event.preventDefault(); setMessage(""); try { const body: Record<string, unknown> = { ...form }; for (const key of ["action_permissions", "configuration", "mapping_rules"]) if (body[key]) body[key] = JSON.parse(String(body[key])); const response = await fetch(endpoints[kind], { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) }); const result = await response.json(); if (!response.ok) throw new Error(result.detail?.message ?? "Request failed"); setForm({}); onSaved(); } catch (error) { setMessage(error instanceof Error ? error.message : "Request failed"); } };
+  return <section className="panel admin-forms"><div className="section-title"><ShieldCheck size={18}/> Create administrator record</div><div className="admin-form-toolbar">{Object.keys(fields).map((key) => <button key={key} className={kind === key ? "selected" : "secondary-link"} onClick={() => { setKind(key); setMessage(""); }}>{key === "permission" ? "Permission set" : key === "sod" ? "SoD policy" : key === "authority" ? "Approval authority" : humanize(key)}</button>)}</div><form onSubmit={submit} className="admin-form-grid">{fields[kind].map(([name, label, type]) => <label key={name}>{label}<input required={name !== "version" && name !== "role"} type={type} value={form[name] ?? ""} onChange={(event) => setForm({ ...form, [name]: event.target.value })} placeholder={name.endsWith("_rules") || name === "configuration" || name === "action_permissions" ? "{}" : label} /></label>)}<button className="primary-action" type="submit">Create {humanize(kind)}</button>{message && <p className="field-error" role="alert">{message}</p>}</form></section>;
+}
+
+function AdminEditForm({ data, onSaved }: { data: AdminData; onSaved: () => void }) {
+  const [resource, setResource] = useState("users"); const [id, setId] = useState(""); const [field, setField] = useState("status"); const [value, setValue] = useState(""); const [message, setMessage] = useState("");
+  const lists: Record<string, any[]> = { users: data.users, roles: data.roles, "permission-sets": data.permissions, "persona-assignments": data.personas, connectors: data.connectors, mappings: data.mappings, "approval-authorities": data.authorities, "sod-policies": data.sod };
+  const fields: Record<string, string[]> = { users: ["display_name", "company", "role", "status"], roles: ["name", "code", "version", "status"], "permission-sets": ["code", "version", "status", "action_permissions"], "persona-assignments": ["persona_code", "status"], connectors: ["code", "connector_type", "version", "status", "configuration"], mappings: ["code", "source_system", "target_entity", "version", "status", "mapping_rules"], "approval-authorities": ["role_name", "object_type", "decision_type", "authority", "version", "status"], "sod-policies": ["name", "object_type", "decision_type", "version", "status"] };
+  const submit = async (event: React.FormEvent) => { event.preventDefault(); setMessage(""); try { let parsed: unknown = value; if (["action_permissions", "configuration", "mapping_rules"].includes(field)) parsed = JSON.parse(value || "{}"); const response = await fetch(`/api/v1/admin/control-plane/${resource}/${id}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ values: { [field]: parsed } }) }); const result = await response.json(); if (!response.ok) throw new Error(result.detail?.message ?? "Update failed"); onSaved(); setValue(""); } catch (error) { setMessage(error instanceof Error ? error.message : "Update failed"); } };
+  return <section className="panel admin-forms"><div className="section-title"><ShieldCheck size={18}/> Edit administrator record</div><form onSubmit={submit} className="admin-form-grid"><label>Resource<select value={resource} onChange={e=>{setResource(e.target.value);setId("");setField(fields[e.target.value][0]);}}>{Object.keys(lists).map(item=><option key={item} value={item}>{humanize(item)}</option>)}</select></label><label>Record<select required value={id} onChange={e=>setId(e.target.value)}><option value="">Select record</option>{lists[resource].map(item=><option key={String(item.id)} value={String(item.id)}>{String(item.email ?? item.code ?? item.name ?? item.persona_code ?? item.id)}</option>)}</select></label><label>Field<select value={field} onChange={e=>setField(e.target.value)}>{fields[resource].map(item=><option key={item}>{item}</option>)}</select></label><label>New value<input required value={value} onChange={e=>setValue(e.target.value)} placeholder={field.includes("permissions") || field.includes("configuration") || field.includes("rules") ? "{}" : "New value"}/></label><button className="primary-action" type="submit" disabled={!id}>Save update</button>{message&&<p className="field-error" role="alert">{message}</p>}</form></section>;
 }
 
 function PublicSite({ path }: { path: string }) {

@@ -505,6 +505,36 @@ class AuthUser(Base):
     id = uuid_pk(); tenant_id = tenant_fk(); username: Mapped[str] = mapped_column(String(254), nullable=False); display_name: Mapped[str] = mapped_column(String(120), nullable=False); company: Mapped[str] = mapped_column(String(160), nullable=False); password_hash: Mapped[str] = mapped_column(Text, nullable=False); role: Mapped[str] = mapped_column(String(120), nullable=False, server_default="Viewer"); status: Mapped[str] = mapped_column(String(40), nullable=False, server_default="PENDING_VERIFICATION"); email_verified: Mapped[bool] = mapped_column(nullable=False, server_default="false"); created_at = tz(False); updated_at = tz(False)
     __table_args__ = (UniqueConstraint("tenant_id", "username", name="uq_auth_users_tenant_username"), UniqueConstraint("tenant_id", "id", name="uq_auth_users_tenant_id_id"),)
 
+class TenantMembership(Base):
+    __tablename__ = "tenant_memberships"
+    id = uuid_pk(); tenant_id = tenant_fk(); user_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), nullable=False); status: Mapped[str] = mapped_column(String(30), nullable=False, server_default="ACTIVE"); is_default: Mapped[bool] = mapped_column(nullable=False, server_default="false"); created_at = tz(False); updated_at = tz(False)
+    __table_args__ = (ForeignKeyConstraint(["tenant_id", "user_id"], ["auth_users.tenant_id", "auth_users.id"]), UniqueConstraint("tenant_id", "user_id", name="uq_tenant_membership"), UniqueConstraint("tenant_id", "id", name="uq_tenant_membership_tenant_id"))
+
+class PersonaAssignment(Base):
+    __tablename__ = "persona_assignments"
+    id = uuid_pk(); tenant_id = tenant_fk(); user_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), nullable=False); persona_code: Mapped[str] = mapped_column(String(80), nullable=False); status: Mapped[str] = mapped_column(String(30), nullable=False, server_default="ACTIVE"); created_at = tz(False); updated_at = tz(False)
+    __table_args__ = (ForeignKeyConstraint(["tenant_id", "user_id"], ["auth_users.tenant_id", "auth_users.id"]), UniqueConstraint("tenant_id", "user_id", "persona_code", name="uq_persona_assignment"), UniqueConstraint("tenant_id", "id", name="uq_persona_assignment_tenant_id"))
+
+class PermissionSetDefinition(Base):
+    __tablename__ = "permission_set_definitions"
+    id = uuid_pk(); tenant_id = tenant_fk(); code: Mapped[str] = mapped_column(String(100), nullable=False); object_permissions: Mapped[dict] = mapped_column(JSONB, nullable=False, server_default="{}"); field_permissions: Mapped[dict] = mapped_column(JSONB, nullable=False, server_default="{}"); action_permissions: Mapped[dict] = mapped_column(JSONB, nullable=False, server_default="{}"); version: Mapped[str] = mapped_column(String(40), nullable=False, server_default="v1"); status: Mapped[str] = mapped_column(String(30), nullable=False, server_default="DRAFT"); created_at = tz(False); updated_at = tz(False)
+    __table_args__ = (UniqueConstraint("tenant_id", "code", "version", name="uq_permission_set_definition"), UniqueConstraint("tenant_id", "id", name="uq_permission_set_definition_tenant_id"))
+
+class RoleDefinition(Base):
+    __tablename__ = "role_definitions"
+    id = uuid_pk(); tenant_id = tenant_fk(); code: Mapped[str] = mapped_column(String(100), nullable=False); name: Mapped[str] = mapped_column(String(120), nullable=False); version: Mapped[str] = mapped_column(String(40), nullable=False, server_default="v1"); status: Mapped[str] = mapped_column(String(30), nullable=False, server_default="DRAFT"); created_at = tz(False); updated_at = tz(False)
+    __table_args__ = (UniqueConstraint("tenant_id", "code", "version", name="uq_role_definition"), UniqueConstraint("tenant_id", "id", name="uq_role_definition_tenant_id"))
+
+class RolePermissionSet(Base):
+    __tablename__ = "role_permission_sets"
+    id = uuid_pk(); tenant_id = tenant_fk(); role_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), nullable=False); permission_set_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), nullable=False); created_at = tz(False)
+    __table_args__ = (ForeignKeyConstraint(["tenant_id", "role_id"], ["role_definitions.tenant_id", "role_definitions.id"]), ForeignKeyConstraint(["tenant_id", "permission_set_id"], ["permission_set_definitions.tenant_id", "permission_set_definitions.id"]), UniqueConstraint("tenant_id", "role_id", "permission_set_id", name="uq_role_permission_set"))
+
+class RoleAssignment(Base):
+    __tablename__ = "role_assignments"
+    id = uuid_pk(); tenant_id = tenant_fk(); user_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), nullable=False); role_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), nullable=False); status: Mapped[str] = mapped_column(String(30), nullable=False, server_default="ACTIVE"); created_at = tz(False); updated_at = tz(False)
+    __table_args__ = (ForeignKeyConstraint(["tenant_id", "user_id"], ["auth_users.tenant_id", "auth_users.id"]), ForeignKeyConstraint(["tenant_id", "role_id"], ["role_definitions.tenant_id", "role_definitions.id"]), UniqueConstraint("tenant_id", "user_id", "role_id", name="uq_role_assignment"), UniqueConstraint("tenant_id", "id", name="uq_role_assignment_tenant_id"))
+
 
 class PlanDefinition(Base):
     __tablename__ = "plan_definitions"
@@ -720,6 +750,55 @@ class EvidenceEmbedding(Base):
     __table_args__ = (
         ForeignKeyConstraint(["tenant_id", "evidence_id"], ["evidence.tenant_id", "evidence.id"]),
     )
+
+
+class ConnectorConfiguration(Base):
+    __tablename__ = "connector_configurations"
+    id = uuid_pk(); tenant_id = tenant_fk()
+    code: Mapped[str] = mapped_column(String(100), nullable=False)
+    connector_type: Mapped[str] = mapped_column(String(80), nullable=False)
+    configuration: Mapped[dict] = mapped_column(JSONB, nullable=False, server_default="{}")
+    version: Mapped[str] = mapped_column(String(40), nullable=False, server_default="v1")
+    status: Mapped[str] = mapped_column(String(30), nullable=False, server_default="DRAFT")
+    created_at = tz(False); updated_at = tz(False)
+    __table_args__ = (UniqueConstraint("tenant_id", "code", "version", name="uq_connector_configuration"),)
+
+
+class MappingConfiguration(Base):
+    __tablename__ = "mapping_configurations"
+    id = uuid_pk(); tenant_id = tenant_fk()
+    code: Mapped[str] = mapped_column(String(100), nullable=False)
+    source_system: Mapped[str] = mapped_column(String(120), nullable=False)
+    target_entity: Mapped[str] = mapped_column(String(120), nullable=False)
+    mapping_rules: Mapped[dict] = mapped_column(JSONB, nullable=False, server_default="{}")
+    version: Mapped[str] = mapped_column(String(40), nullable=False, server_default="v1")
+    status: Mapped[str] = mapped_column(String(30), nullable=False, server_default="DRAFT")
+    created_at = tz(False); updated_at = tz(False)
+    __table_args__ = (UniqueConstraint("tenant_id", "code", "version", name="uq_mapping_configuration"),)
+
+
+class MasterMapping(Base):
+    __tablename__ = "master_mappings"
+    id = uuid_pk(); code: Mapped[str] = mapped_column(String(100), nullable=False, unique=True)
+    source_system: Mapped[str] = mapped_column(String(120), nullable=False); target_entity: Mapped[str] = mapped_column(String(120), nullable=False)
+    definition: Mapped[dict] = mapped_column(JSONB, nullable=False, server_default="{}"); status: Mapped[str] = mapped_column(String(30), nullable=False, server_default="ACTIVE")
+    created_at = tz(False); updated_at = tz(False)
+
+
+class TenantMappingVersion(Base):
+    __tablename__ = "tenant_mapping_versions"
+    id = uuid_pk(); tenant_id = tenant_fk(); master_mapping_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), nullable=False)
+    version: Mapped[str] = mapped_column(String(40), nullable=False); rules: Mapped[dict] = mapped_column(JSONB, nullable=False, server_default="{}"); status: Mapped[str] = mapped_column(String(30), nullable=False, server_default="DRAFT")
+    effective_from = tz(); effective_to = tz(); created_at = tz(False); updated_at = tz(False)
+    __table_args__ = (ForeignKeyConstraint(["tenant_id"], ["tenants.id"]), ForeignKeyConstraint(["master_mapping_id"], ["master_mappings.id"]), UniqueConstraint("tenant_id", "master_mapping_id", "version", name="uq_tenant_mapping_version"), UniqueConstraint("tenant_id", "id", name="uq_tenant_mapping_version_tenant_id"))
+
+
+class TenantMappingOverride(Base):
+    __tablename__ = "tenant_mapping_overrides"
+    id = uuid_pk(); tenant_id = tenant_fk(); mapping_version_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), nullable=False)
+    field_name: Mapped[str] = mapped_column(String(160), nullable=False); override_rule: Mapped[dict] = mapped_column(JSONB, nullable=False, server_default="{}"); status: Mapped[str] = mapped_column(String(30), nullable=False, server_default="ACTIVE")
+    created_at = tz(False); updated_at = tz(False)
+    __table_args__ = (ForeignKeyConstraint(["tenant_id", "mapping_version_id"], ["tenant_mapping_versions.tenant_id", "tenant_mapping_versions.id"]), UniqueConstraint("tenant_id", "mapping_version_id", "field_name", name="uq_tenant_mapping_override"))
 
 
 Index("ix_products_tenant_product_identifier", Product.tenant_id, Product.product_identifier)

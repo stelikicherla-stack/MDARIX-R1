@@ -57,6 +57,11 @@ class LocalAuthService:
         item=self.sessions.get(hashlib.sha256(session.encode()).hexdigest());
         if not item or item["expires"]<time.time(): raise ValueError("UNAUTHENTICATED")
         return dict(item["context"])
+    def switch_tenant(self, session, tenant_id):
+        key=hashlib.sha256(session.encode()).hexdigest(); item=self.sessions.get(key)
+        if not item or item["expires"]<time.time(): raise ValueError("UNAUTHENTICATED")
+        item["context"]["tenant_id"] = str(tenant_id)
+        return dict(item["context"])
     def signout(self,session): self.sessions.pop(hashlib.sha256(session.encode()).hexdigest(),None)
     def request_reset(self,email):
         account=self.accounts.get(email.strip().lower()); return {"status":"RESET_REQUEST_ACCEPTED","development_token":self._token(account.user_id,"reset") if account else None}
