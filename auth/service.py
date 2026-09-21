@@ -23,6 +23,13 @@ class LocalAuthService:
         account=Account(email,email,display_name[:120],"sandbox-"+secrets.token_hex(6),_hash(password)); self.accounts[email]=account; token=self._token(account.user_id,"verify"); return {"user_id":account.user_id,"status":account.status,"verification_required":True,"development_token":token}
     def _token(self, user_id, kind):
         raw=secrets.token_urlsafe(32); self.tokens[hashlib.sha256(raw.encode()).hexdigest()]={"user_id":user_id,"kind":kind,"expires":time.time()+3600,"used":False}; return raw
+    def issue_token(self, user_id, kind, ttl_seconds=3600):
+        raw=secrets.token_urlsafe(32); self.tokens[hashlib.sha256(raw.encode()).hexdigest()]={"user_id":str(user_id),"kind":kind,"expires":time.time()+ttl_seconds,"used":False}; return raw
+    def consume_token(self, raw, kind):
+        item=self.tokens.get(hashlib.sha256(raw.encode()).hexdigest())
+        if not item or item["kind"]!=kind or item["used"] or item["expires"]<time.time(): raise ValueError(f"INVALID_{kind.upper()}_TOKEN")
+        item["used"]=True
+        return item["user_id"]
     def verify_email(self, raw):
         item=self.tokens.get(hashlib.sha256(raw.encode()).hexdigest());
         if not item or item["kind"]!="verify" or item["used"] or item["expires"]<time.time(): raise ValueError("INVALID_VERIFICATION_TOKEN")

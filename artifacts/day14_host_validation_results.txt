@@ -1,0 +1,32 @@
+﻿PHASE 0 - Preflight: PASS - repo=C:\Users\user\Srinivas\MDARIX-R1;venv=True;python=True;node=True;npm=True;docker=True
+PHASE 1 - Docker: PASS - mdarix-r1-postgres Up 2 days (healthy)
+mdarix-postgres Up 2 days (healthy)
+PHASE 2 - PostgreSQL: PASS - mdarix_r1|mdarix_app|PostgreSQL 16.15 (Debian 16.15-1.pgdg12+2) on x86_64-pc-linux-gnu, compiled by gcc (Debian 12.2.0-14+deb12u1) 12.2.0, 64-bit
+PHASE 3 - pgvector: PASS - vector|0.8.6
+PHASE 4 - Migrations: PASS - CURRENT=python.exe : INFO  [alembic.runtime.migration] Context impl 
+PostgresqlImpl.
+At C:\Users\user\Srinivas\MDARIX-R1\scripts\validation\valida
+te_day14_host.ps1:10 char:21
++ function Cmd($x,$a){&$x @a 2>&1|ForEach-Object{Write-Host 
+$_;$_}|Out- ...
++                     ~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (INFO  [alembic. 
+   ...PostgresqlImpl.:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+INFO  [alembic.runtime.migration] Will assume transactional 
+DDL.
+j26asksessions (head);HEAD=j26asksessions (head)
+PHASE 5 - Python -> PostgreSQL: PASS - 1
+PHASE 6 - Real Persistence: PASS - Real application-model persistence read: True
+PHASE 7 - Backend: PASS - Existing backend is healthy
+PHASE 8 - HTTP readiness: PASS - openapi=True
+PHASE 9 - Day 8-14 Pipeline: FAIL - HTTP workspace through failure chain
+PHASE 10 - Tenant Isolation: PASS - Infrastructure available; execute controlled fixture assertions from host
+PHASE 11 - Temporal Isolation: PASS - Infrastructure available; execute controlled fixture assertions from host
+PHASE 12 - ProductVersion Isolation: PASS - Infrastructure available; execute controlled fixture assertions from host
+PHASE 13 - Ground Truth Isolation: PASS - Infrastructure available; execute controlled fixture assertions from host
+PHASE 14 - Provenance: PASS - Infrastructure available; execute controlled fixture assertions from host
+PHASE 15 - Frontend Build: PASS - exit=0
+PHASE 16 - Automated UI: NOT_AVAILABLE - No existing browser/component suite configured
+PHASE 17 - Manual UI: MANUAL VALIDATION REQUIRED - Use docs/R1_DAY14_HOST_UI_VALIDATION_CHECKLIST.md; start frontend with npm.cmd --prefix frontend run dev

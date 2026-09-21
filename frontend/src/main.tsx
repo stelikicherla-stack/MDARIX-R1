@@ -169,7 +169,7 @@ function humanize(value?: string | null) {
 function App() {
   const publicPath = window.location.pathname;
   if (publicPath === "/" || ["/platform", "/product-lifecycle", "/why-mdarix", "/resources", "/plans", "/roadmap", "/capabilities", "/solutions", "/ai-trust", "/integrations", "/security", "/request-demo"].some((route) => publicPath.startsWith(route))) return <PublicMegaSite path={publicPath} />;
-  if (["/signin", "/signup", "/forgot-password", "/verify-email"].includes(publicPath)) return <AuthPage mode={publicPath.slice(1)} />;
+  if (["/signin", "/signup", "/forgot-password", "/verify-email", "/activate-account", "/reset-password"].includes(publicPath)) return <AuthPage mode={publicPath.slice(1)} />;
   return <PrivateApplicationGate />;
 }
 
@@ -190,7 +190,7 @@ function PrivateApplication() {
   const [mode, setMode] = useState<TemporalMode>("event");
   const [view, setView] = useState<Product360 | null>(null);
   const [error, setError] = useState("");
-  const [activeView, setActiveView] = useState<"home" | "products" | "investigations" | "evidence" | "decision" | "assurance" | "audit" | "admin">("home");
+  const [activeView, setActiveView] = useState<"home" | "products" | "investigations" | "evidence" | "decision" | "assurance" | "audit" | "admin" | "admin-manage" | "admin-audit">("home");
   const [selectedInvestigationId, setSelectedInvestigationId] = useState("");
   const [investigations, setInvestigations] = useState<InvestigationSummary[]>([]);
   const [investigationsLoading, setInvestigationsLoading] = useState(false);
@@ -227,28 +227,40 @@ function PrivateApplication() {
   }, [selectedProduct]);
 
   const selected = useMemo(() => products.find((p) => p.id === selectedProduct), [products, selectedProduct]);
+  const activeRole = securityContext?.active_role?.trim().toUpperCase();
+  const isAdminRole = Boolean(activeRole && ["ADMIN", "ADMINISTRATOR", "MDARIX ADMINISTRATOR", "PLATFORM ADMIN", "PLATFORM_ADMIN", "CUSTOMER ADMIN", "CUSTOMER_ADMIN"].includes(activeRole));
+
+  useEffect(() => {
+    if (isAdminRole && !["admin", "admin-manage", "admin-audit"].includes(activeView)) setActiveView("admin");
+  }, [isAdminRole]);
 
   return (
     <div className="app-shell">
       <aside className="side-nav">
         <div className="brand-block"><div className="brand">MDARIX</div><span>Product Lifecycle Intelligence</span></div>
         <nav>
-          <p className="nav-section-label">Workspace</p>
-          <button className={`nav-link ${activeView === "home" ? "active" : ""}`} onClick={() => setActiveView("home")}>Home</button>
-          <button className={`nav-link ${activeView === "products" ? "active" : ""}`} onClick={() => setActiveView("products")}>Products</button>
-          <p className="nav-section-label">Investigation</p>
-          <button className={`nav-link ${activeView === "investigations" ? "active" : ""}`} onClick={() => setActiveView("investigations")}>Investigations</button>
-          <button className={`nav-link ${activeView === "evidence" ? "active" : ""}`} onClick={() => setActiveView("evidence")}>Evidence</button>
-          <p className="nav-section-label">Decision & Trust</p>
-          <button className={`nav-link ${activeView === "decision" ? "active" : ""}`} onClick={() => setActiveView("decision")}>Decision Center</button>
-          <button className={`nav-link ${activeView === "assurance" ? "active" : ""}`} onClick={() => setActiveView("assurance")}>AI Assurance <small>Inspect AI trust controls</small></button>
-          <button className={`nav-link ${activeView === "audit" ? "active" : ""}`} onClick={() => setActiveView("audit")}>Audit Trail <small>Review recorded activity</small></button>
-          {securityContext?.active_role && ["Administrator", "ADMIN", "ADMINISTRATOR", "MDARIX Administrator"].includes(securityContext.active_role) && <button className={`nav-link ${activeView === "admin" ? "active" : ""}`} onClick={() => setActiveView("admin")}>Administration <small>Identity, policy &amp; configuration</small></button>}
+          {isAdminRole ? <>
+            <p className="nav-section-label">Administrator control plane</p>
+            <button className={`nav-link ${activeView === "admin" ? "active" : ""}`} onClick={() => setActiveView("admin")}>Administration <small>Identity, access &amp; configuration</small></button>
+            <button className={`nav-link ${activeView === "admin-manage" ? "active" : ""}`} onClick={() => setActiveView("admin-manage")}>Manage Customer Administrators <small>Search, update or retire accounts</small></button>
+            <button className="nav-link" onClick={() => setActiveView("admin-audit")}>Recent platform administration activity <small>Review user changes and audit evidence</small></button>
+          </> : <>
+            <p className="nav-section-label">Workspace</p>
+            <button className={`nav-link ${activeView === "home" ? "active" : ""}`} onClick={() => setActiveView("home")}>Home</button>
+            <button className={`nav-link ${activeView === "products" ? "active" : ""}`} onClick={() => setActiveView("products")}>Products</button>
+            <p className="nav-section-label">Investigation</p>
+            <button className={`nav-link ${activeView === "investigations" ? "active" : ""}`} onClick={() => setActiveView("investigations")}>Investigations</button>
+            <button className={`nav-link ${activeView === "evidence" ? "active" : ""}`} onClick={() => setActiveView("evidence")}>Evidence</button>
+            <p className="nav-section-label">Decision & Trust</p>
+            <button className={`nav-link ${activeView === "decision" ? "active" : ""}`} onClick={() => setActiveView("decision")}>Decision Center</button>
+            <button className={`nav-link ${activeView === "assurance" ? "active" : ""}`} onClick={() => setActiveView("assurance")}>AI Assurance <small>Inspect AI trust controls</small></button>
+            <button className={`nav-link ${activeView === "audit" ? "active" : ""}`} onClick={() => setActiveView("audit")}>Audit Trail <small>Review recorded activity</small></button>
+          </>}
         </nav>
         <div className="side-nav-footer"><p>Evidence before inference.<br/>Authorized humans decide.</p></div>
       </aside>
       <main>
-        <header className={`topbar ${activeView === "home" ? "home-topbar" : ""}`}>
+        {!['admin', 'admin-manage', 'admin-audit'].includes(activeView) && <header className={`topbar ${activeView === "home" ? "home-topbar" : ""}`}>
           <div>
             <p className="eyebrow">{activeView === "home" ? "Intelligence workspace" : "Persistent workflow context"}</p>
             <h1>{activeView === "home" ? "Good decisions start with product reality" : view?.product.name ?? "MDARIX"}</h1><div className="workflow-storyline" aria-label="End-to-end investigation workflow"><span className={activeView === "products" ? "active" : ""}>Product reality</span><i>›</i><span className={activeView === "investigations" ? "active" : ""}>Investigate</span><i>›</i><span className={activeView === "evidence" ? "active" : ""}>Evidence</span><i>›</i><span className={activeView === "decision" ? "active" : ""}>Decide</span><i>›</i><span className={activeView === "assurance" ? "active" : ""}>Assurance</span><i>›</i><span className={activeView === "audit" ? "active" : ""}>Audit</span></div>
@@ -272,7 +284,7 @@ function PrivateApplication() {
               <button className={mode === "known" ? "selected" : ""} onClick={() => setMode("known")}>Known</button>
             </div>
           </div>
-        </header>
+        </header>}
         {error && <div className="error">{error}</div>}
         {view && activeView === "home" && <ApplicationHome view={view} investigations={investigations} onNavigate={setActiveView} />}
         {view && activeView === "products" && <Product360View view={view} />}
@@ -282,7 +294,9 @@ function PrivateApplication() {
         {view && activeView === "decision" && !selectedInvestigationId && <div className="content"><section className="panel empty-state"><h2>Select an investigation first</h2><p>Open Investigations and select a live investigation before entering Decision Center.</p></section></div>}
         {view && activeView === "assurance" && <AssuranceView view={view} />}
         {view && activeView === "audit" && <AuditTrailView view={view} />}
-        {activeView === "admin" && <AdministratorControlPlane />}
+        {activeView === "admin" && <AdministratorControlPlane securityContext={securityContext} />}
+        {activeView === "admin-manage" && <CustomerAdminManagement />}
+        {activeView === "admin-audit" && <PlatformAdministrationAudit />}
       </main>
     </div>
   );
@@ -290,7 +304,7 @@ function PrivateApplication() {
 
 type AdminData = { users: any[]; roles: any[]; permissions: any[]; memberships: any[]; personas: any[]; entitlements: any[]; connectors: any[]; mappings: any[]; authorities: any[]; sod: any[]; audit: any[] };
 
-function AdministratorControlPlane() {
+function AdministratorControlPlane({ securityContext }: { securityContext: {display_name:string; active_role:string|null; tenant_id?:string} | null }) {
   const [data, setData] = useState<AdminData | null>(null);
   const [message, setMessage] = useState("");
   const [busy, setBusy] = useState(true);
@@ -304,14 +318,65 @@ function AdministratorControlPlane() {
   }, []);
   if (busy) return <div className="content"><section className="panel"><span className="eyebrow">Administrator control plane</span><h2>Loading tenant administration…</h2></section></div>;
   if (!data) return <div className="content"><section className="panel"><h2>Administration unavailable</h2><p>{message}</p></section></div>;
-  const cards = [["Users", data.users.length], ["Roles", data.roles.length], ["Permission sets", data.permissions.length], ["Memberships", data.memberships.length], ["Personas", data.personas.length], ["Entitlements", data.entitlements.length], ["Connectors", data.connectors.length], ["Mappings", data.mappings.length], ["Audit events", data.audit.length]];
-  return <div className="content governance-view"><section className="governance-hero"><div><span className="eyebrow">Administrator control plane</span><h2>Identity, access &amp; configuration</h2><p>Tenant-scoped administration with versioned roles, personas, entitlements, connectors, mappings, governance policies, and audit evidence.</p></div><div className="governance-status"><ShieldCheck size={22}/><strong>Controlled administration</strong><span>All records are scoped to the authenticated tenant.</span></div></section><section className="admin-stat-grid">{cards.map(([label, count]) => <article className="panel admin-stat" key={String(label)}><small>{label}</small><strong>{count}</strong></article>)}</section><AdminCreateForms onSaved={() => setMessage("Created. Refresh the administration view to confirm the new record.")} /><AdminEditForm data={data} onSaved={() => setMessage("Updated. The change was recorded in audit history.")} />{message && <p className="review-success" role="status">{message}</p>}<section className="panel"><div className="section-title"><ShieldCheck size={18}/> Recent audit activity</div>{data.audit.slice(0, 8).map((row) => <div className="audit-row" key={String(row.id)}><strong>{row.action}</strong><span>{row.entity_type ?? "Configuration"}</span><small>{row.created_at ? String(row.created_at).slice(0, 19).replace("T", " ") : "Server recorded"}</small></div>)}{!data.audit.length && <p>No audit events recorded for this tenant.</p>}</section></div>;
+  return <div className="content governance-view"><section className="governance-hero"><div><span className="eyebrow">Administrator control plane</span><h2>Identity, access &amp; configuration</h2><p>Tenant-scoped administration with versioned roles, personas, entitlements, connectors, mappings, governance policies, and audit evidence.</p><p className="context-summary" aria-label="Authenticated administrator">{securityContext?.display_name ?? "Authenticated user"} | {securityContext?.active_role ?? "No active role"}</p></div><div className="governance-status"><ShieldCheck size={22}/><strong>Controlled administration</strong><span>All records are scoped to the authenticated tenant.</span></div></section><CustomerAdminInviteForm onSaved={() => setMessage("Customer administrator invitation created. The user creates their own password from the activation link.")} />{message && <p className="review-success" role="status">{message}</p>}</div>;
+}
+
+function CustomerAdminManagement() {
+  // The change was recorded in audit history.
+  const [users, setUsers] = useState<any[]>([]); const [query, setQuery] = useState(""); const [selected, setSelected] = useState<any | null>(null); const [email, setEmail] = useState(""); const [message, setMessage] = useState("");
+  const load = () => api<any[]>("/api/v1/admin/identity/users").then(setUsers).catch((error) => setMessage(error.message));
+  useEffect(() => { load(); }, []);
+  const visible = users.filter((user) => String(user.role).toUpperCase() === "CUSTOMER_ADMIN" && [user.email, user.display_name, user.company].some((value) => String(value ?? "").toLowerCase().includes(query.toLowerCase())));
+  const updateEmail = async () => { if (!selected) return; const response = await fetch(`/api/v1/admin/control-plane/users/${selected.id}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ values: { email } }) }); const result = await response.json(); if (!response.ok) throw new Error(result.detail?.message ?? "Email update failed"); setMessage("Customer administrator email updated."); setSelected(null); load(); };
+  const retire = async () => { if (!selected || !confirm("Retire this customer administrator account?")) return; const response = await fetch(`/api/v1/admin/identity/users/${selected.id}/status`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ status: "OFFBOARDED" }) }); const result = await response.json(); if (!response.ok) throw new Error(result.detail?.message ?? "Account retirement failed"); setMessage("Customer administrator account retired; audit history was preserved."); setSelected(null); load(); };
+  const reactivate = async () => { if (!selected || !confirm("Reactivate this account and send a new activation email?")) return; const response = await fetch(`/api/v1/admin/identity/users/${selected.id}/reactivate`, { method: "POST" }); const result = await response.json(); if (!response.ok) throw new Error(result.detail?.message ?? "Account reactivation failed"); setMessage(result.email_delivery === "SENT" ? "Account reactivated and a new activation email was sent." : `Account reactivated. SMTP is not configured; development token: ${result.development_token ?? "not returned"}`); setSelected(null); load(); };
+  return <div className="content governance-view"><section className="panel"><div className="section-title"><ShieldCheck size={18}/> Manage Customer Administrators</div><p>Search by customer name, administrator name, or email address. Email changes and account retirement are tenant-scoped and audited.</p><input aria-label="Search customer administrators" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search by customer name or email" />{message && <p className="review-success" role="status">{message}</p>}<div className="audit-row"><strong>Customer / Administrator</strong><span>Email</span><small>Status</small></div>{visible.map((user) => <div className="audit-row" key={user.id}><strong>{user.company ?? "Customer"} — {user.display_name}</strong><span>{user.email}</span><small>{user.status} <button className="secondary-link" onClick={() => { setSelected(user); setEmail(user.email); }}>Manage</button></small></div>)}{!visible.length && <p>No customer administrators match the search.</p>}</section>{selected && <section className="panel admin-forms"><div className="section-title">Manage {selected.display_name}</div><label>Account email<input type="email" value={email} onChange={(event) => setEmail(event.target.value)} /></label><button className="primary-action" onClick={() => updateEmail().catch((error) => setMessage(error.message))}>Update email</button>{String(selected.status).toUpperCase() === "OFFBOARDED" ? <button className="primary-action" onClick={() => reactivate().catch((error) => setMessage(error.message))}>Activate account and send email</button> : <button className="secondary-link" onClick={() => retire().catch((error) => setMessage(error.message))}>Retire account</button>}</section>}</div>;
+}
+
+function PlatformAdministrationAudit() {
+  const [rows, setRows] = useState<any[]>([]); const [message, setMessage] = useState("");
+  useEffect(() => { api<any[]>("/api/v1/admin/audit-history").then(setRows).catch((error) => setMessage(error.message)); }, []);
+  return <div className="content governance-view"><section className="panel"><div className="section-title"><ShieldCheck size={18}/> Recent platform administration activity</div><p>Server-recorded changes to customer administrator accounts and platform configuration.</p>{message && <p className="field-error">{message}</p>}{rows.map((row) => <div className="audit-row" key={String(row.id)}><strong>{row.action}</strong><span>{row.entity_type ?? "Configuration"}</span><small>{row.created_at ? String(row.created_at).slice(0, 19).replace("T", " ") : "Server recorded"}</small></div>)}{!rows.length && !message && <p>No platform administration activity recorded.</p>}</section></div>;
+}
+
+function CustomerAdminInviteForm({ onSaved }: { onSaved: () => void }) {
+  const [form, setForm] = useState<Record<string, string>>({ role: "CUSTOMER_ADMIN", status: "INVITED" });
+  const [message, setMessage] = useState("");
+  const displayName = form.display_name || [form.first_name, form.last_name].filter(Boolean).join(" ");
+  const submit = async (event: React.FormEvent) => {
+    event.preventDefault();
+    setMessage("");
+    try {
+      const response = await fetch("/api/v1/admin/identity/users", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email: form.email,
+          display_name: displayName,
+          company: form.company,
+          role: "CUSTOMER_ADMIN",
+        }),
+      });
+      const result = await response.json();
+      if (!response.ok) {
+        const detail = result.detail;
+        const message = Array.isArray(detail) ? detail.map((item: any) => item.msg ?? item.message).join("; ") : detail?.message;
+        throw new Error(message ?? "Customer administrator invitation failed");
+      }
+      setForm({ role: "CUSTOMER_ADMIN", status: "INVITED" });
+      setMessage(result.email_delivery === "SENT" ? "Invitation sent. The customer administrator will create their own password from email." : `Invitation created. SMTP is not configured; development token: ${result.development_token ?? "not returned"}`);
+      onSaved();
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "Customer administrator invitation failed");
+    }
+  };
+  return <section className="panel admin-forms"><div className="section-title"><ShieldCheck size={18}/> Create customer administrator record</div><p>MDARIX Admin creates the customer administrator identity, tenant membership, and activation invitation. Passwords are never entered, shown, emailed, or stored in this screen.</p><form onSubmit={submit} className="admin-form-grid"><label>First name<input required value={form.first_name ?? ""} onChange={(event) => setForm({ ...form, first_name: event.target.value })} placeholder="First name" /></label><label>Last name<input required value={form.last_name ?? ""} onChange={(event) => setForm({ ...form, last_name: event.target.value })} placeholder="Last name" /></label><label>Display name<input readOnly value={displayName} placeholder="Generated from first and last name" /></label><label>Email<input required type="email" value={form.email ?? ""} onChange={(event) => setForm({ ...form, email: event.target.value })} placeholder="customer.admin@example.com" /></label><label>Administrative role<input readOnly value="CUSTOMER_ADMIN" /></label><label>Status<input readOnly value="INVITED" /></label><label>Company<input required value={form.company ?? ""} onChange={(event) => setForm({ ...form, company: event.target.value })} placeholder="Customer company" /></label><button className="primary-action" type="submit">Send Invitation</button>{message && <p className="field-error" role="status">{message}</p>}</form></section>;
 }
 
 function AdminCreateForms({ onSaved }: { onSaved: () => void }) {
   const [kind, setKind] = useState("user"); const [form, setForm] = useState<Record<string, string>>({}); const [message, setMessage] = useState("");
   const fields: Record<string, Array<[string, string, string]>> = {
-    user: [["email", "Email", "email"], ["display_name", "Display name", "text"], ["company", "Company", "text"], ["password", "Temporary password", "password"], ["role", "Role", "text"]],
+    user: [["email", "Email", "email"], ["display_name", "Display name", "text"], ["company", "Company", "text"], ["role", "Role", "text"], ["target_tenant_id", "Target tenant ID (Platform Admin only)", "text"]],
     role: [["code", "Role code", "text"], ["name", "Role name", "text"], ["version", "Version", "text"]],
     persona: [["user_id", "User ID", "text"], ["persona_code", "Persona code", "text"]],
     permission: [["code", "Permission-set code", "text"], ["version", "Version", "text"], ["action_permissions", "Action permissions JSON", "text"]],
@@ -321,7 +386,7 @@ function AdminCreateForms({ onSaved }: { onSaved: () => void }) {
     sod: [["name", "Policy name", "text"], ["object_type", "Object type", "text"], ["decision_type", "Decision type", "text"]],
   };
   const endpoints: Record<string, string> = { user: "/api/v1/admin/identity/users", role: "/api/v1/admin/identity/roles", persona: "/api/v1/admin/identity/persona-assignments", permission: "/api/v1/admin/identity/permission-sets", connector: "/api/v1/admin/configuration/connectors", mapping: "/api/v1/admin/configuration/mappings", authority: "/api/v1/admin/governance/approval-authorities", sod: "/api/v1/admin/governance/sod-policies" };
-  const submit = async (event: React.FormEvent) => { event.preventDefault(); setMessage(""); try { const body: Record<string, unknown> = { ...form }; for (const key of ["action_permissions", "configuration", "mapping_rules"]) if (body[key]) body[key] = JSON.parse(String(body[key])); const response = await fetch(endpoints[kind], { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) }); const result = await response.json(); if (!response.ok) throw new Error(result.detail?.message ?? "Request failed"); setForm({}); onSaved(); } catch (error) { setMessage(error instanceof Error ? error.message : "Request failed"); } };
+  const submit = async (event: React.FormEvent) => { event.preventDefault(); setMessage(""); try { const body: Record<string, unknown> = { ...form }; if (!body.target_tenant_id) delete body.target_tenant_id; for (const key of ["action_permissions", "configuration", "mapping_rules"]) if (body[key]) body[key] = JSON.parse(String(body[key])); const response = await fetch(endpoints[kind], { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) }); const result = await response.json(); if (!response.ok) throw new Error(result.detail?.message ?? "Request failed"); setForm({}); if (kind === "user") setMessage(result.email_delivery === "SENT" ? "Invitation sent. The user will create their own password from email." : `Invitation created. SMTP is not configured; development token: ${result.development_token ?? "not returned"}`); onSaved(); } catch (error) { setMessage(error instanceof Error ? error.message : "Request failed"); } };
   return <section className="panel admin-forms"><div className="section-title"><ShieldCheck size={18}/> Create administrator record</div><div className="admin-form-toolbar">{Object.keys(fields).map((key) => <button key={key} className={kind === key ? "selected" : "secondary-link"} onClick={() => { setKind(key); setMessage(""); }}>{key === "permission" ? "Permission set" : key === "sod" ? "SoD policy" : key === "authority" ? "Approval authority" : humanize(key)}</button>)}</div><form onSubmit={submit} className="admin-form-grid">{fields[kind].map(([name, label, type]) => <label key={name}>{label}<input required={name !== "version" && name !== "role"} type={type} value={form[name] ?? ""} onChange={(event) => setForm({ ...form, [name]: event.target.value })} placeholder={name.endsWith("_rules") || name === "configuration" || name === "action_permissions" ? "{}" : label} /></label>)}<button className="primary-action" type="submit">Create {humanize(kind)}</button>{message && <p className="field-error" role="alert">{message}</p>}</form></section>;
 }
 
@@ -350,8 +415,9 @@ function PublicSite({ path }: { path: string }) {
 
 function AuthPage({ mode }: { mode: string }) {
   const [message,setMessage]=useState(""); const [email,setEmail]=useState(""); const [password,setPassword]=useState(""); const [name,setName]=useState(""); const [company,setCompany]=useState(""); const [token,setToken]=useState(new URLSearchParams(window.location.search).get("token")??""); const [userId,setUserId]=useState("");
-  const submit=async(e:React.FormEvent)=>{e.preventDefault(); const endpoint=mode==="signin"?"signin":mode==="signup"?"signup":mode==="verify-email"?"verify-email":"forgot-password"; const body=mode==="signup"?{email,password,display_name:name,organization:company}:mode==="verify-email"?{token}:{email,password}; const response=await fetch(`/api/v1/auth/${endpoint}`,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)}); const data=await response.json(); if(response.ok){if(mode==="signup"){setUserId(data.user_id); setToken(data.development_token??""); setMessage(data.email_delivery==="SENT"?`Account created. Your User ID is ${data.user_id}. A verification email was sent.`:`Account created. Your User ID is ${data.user_id}. Email delivery is not configured on this host; use the controlled verification link below.`);}else if(mode==="verify-email"){setMessage("Email verified. You can now sign in with your User ID and password.");}else if(mode==="signin"){setMessage("Signed in. Loading MDARIX…"); window.location.href="/app";}else setMessage("If the account exists, reset instructions are available.");}else {setMessage(data.detail?.code==="PASSWORD_POLICY"?"Password must be at least 12 characters.":data.detail?.code==="ACCOUNT_EXISTS"?"An account with this email already exists. Use Sign in or verify the existing account.":(data.detail?.message??"Request could not be completed."));}};
-  return <div className="auth-shell"><a className="brand" href="/">MDARIX</a><form className="auth-card" onSubmit={submit}><span className="eyebrow">{mode==="signin"?"Welcome back":"MDARIX access"}</span><h1>{mode==="signin"?"Sign in to MDARIX":mode==="signup"?"Create your MDARIX account":mode==="verify-email"?"Verify your email":"Reset your password"}</h1>{mode==="signup"&&<><input aria-label="Display name" required placeholder="Full name" value={name} onChange={e=>setName(e.target.value)}/><input aria-label="Company" required placeholder="Company / organization" value={company} onChange={e=>setCompany(e.target.value)}/></>}{mode==="verify-email"?<input aria-label="Verification token" required placeholder="Verification token" value={token} onChange={e=>setToken(e.target.value)}/>:<input aria-label="User ID or work email" required type={mode==="forgot-password"?"email":"text"} placeholder={mode==="signin"?"User ID or work email":"Work email"} value={email} onChange={e=>setEmail(e.target.value)}/>} {mode!=="forgot-password"&&mode!=="verify-email"&&<><input aria-label="Password" required minLength={12} type="password" placeholder="Password (minimum 12 characters)" value={password} onChange={e=>setPassword(e.target.value)}/>{mode==="signup"&&<small>Password is stored securely and never as plain text.</small>}</>}<button className="primary-action" type="submit">{mode==="signin"?"Sign in":mode==="signup"?"Create account":mode==="verify-email"?"Verify email":"Send reset instructions"}</button>{message&&<p role="status">{message}{userId&&token&&<> <br/><a href={`/verify-email?token=${encodeURIComponent(token)}`}>Continue to email verification</a></>}</p>}<p className="auth-links"><a href="/signup">Create account</a> · <a href="/signin">Sign in</a> · <a href="/verify-email">Verify email</a> · <a href="/forgot-password">Forgot password?</a></p></form></div>;
+  const isTokenPassword = mode === "activate-account" || mode === "reset-password";
+  const submit=async(e:React.FormEvent)=>{e.preventDefault(); const endpoint=mode==="signin"?"signin":mode==="signup"?"signup":mode==="verify-email"?"verify-email":mode==="activate-account"?"activate-account":mode==="reset-password"?"reset-password":"forgot-password"; const body=mode==="signup"?{email,password,display_name:name,organization:company}:mode==="signin"?{email,password}:mode==="verify-email"?{token}:isTokenPassword?{token,password}:{email}; const response=await fetch(`/api/v1/auth/${endpoint}`,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)}); const data=await response.json(); if(response.ok){if(mode==="signup"){setUserId(data.user_id); setToken(data.development_token??""); setMessage(data.email_delivery==="SENT"?`Account created. Your User ID is ${data.user_id}. A verification email was sent.`:`Account created. Your User ID is ${data.user_id}. Email delivery is not configured on this host; use the controlled verification link below.`);}else if(mode==="verify-email"){setMessage("Email verified. You can now sign in with your User ID and password.");}else if(mode==="activate-account"){setMessage("Account activated. You can now sign in with your email and new password.");}else if(mode==="reset-password"){setMessage("Password reset complete. You can now sign in with your new password.");}else if(mode==="signin"){setMessage("Signed in. Loading MDARIX..."); window.location.href="/app";}else setMessage(data.email_delivery==="SENT"?"If the account exists, reset instructions were emailed.":`If the account exists, reset instructions are available.${data.development_token?` Development token: ${data.development_token}`:""}`);}else {setMessage(data.detail?.code==="PASSWORD_POLICY"?"Password must be at least 12 characters.":data.detail?.code==="ACCOUNT_EXISTS"?"An account with this email already exists. Use Sign in or verify the existing account.":(data.detail?.message??"Request could not be completed."));}};
+  return <div className="auth-shell"><a className="brand" href="/">MDARIX</a><form className="auth-card" onSubmit={submit}><span className="eyebrow">{mode==="signin"?"Welcome back":"MDARIX access"}</span><h1>{mode==="signin"?"Sign in to MDARIX":mode==="signup"?"Create your MDARIX account":mode==="verify-email"?"Verify your email":mode==="activate-account"?"Activate your MDARIX account":mode==="reset-password"?"Create a new password":"Reset your password"}</h1>{mode==="signup"&&<><input aria-label="Display name" required placeholder="Full name" value={name} onChange={e=>setName(e.target.value)}/><input aria-label="Company" required placeholder="Company / organization" value={company} onChange={e=>setCompany(e.target.value)}/></>}{mode==="verify-email"||isTokenPassword?<input aria-label="Token" required placeholder="Secure token" value={token} onChange={e=>setToken(e.target.value)}/>:<input aria-label="User ID or work email" required type={mode==="forgot-password"?"email":"text"} placeholder={mode==="signin"?"User ID or work email":"Work email"} value={email} onChange={e=>setEmail(e.target.value)}/>} {mode!=="forgot-password"&&mode!=="verify-email"&&<><input aria-label="Password" required minLength={12} type="password" placeholder={isTokenPassword?"Create password (minimum 12 characters)":"Password (minimum 12 characters)"} value={password} onChange={e=>setPassword(e.target.value)}/>{(mode==="signup"||isTokenPassword)&&<small>Password is created by the user and never shown to administrators.</small>}</>}<button className="primary-action" type="submit">{mode==="signin"?"Sign in":mode==="signup"?"Create account":mode==="verify-email"?"Verify email":mode==="activate-account"?"Activate account":mode==="reset-password"?"Reset password":"Send reset instructions"}</button>{message&&<p role="status">{message}{userId&&token&&<> <br/><a href={`/verify-email?token=${encodeURIComponent(token)}`}>Continue to email verification</a></>}</p>}<p className="auth-links"><a href="/signup">Create account</a> · <a href="/signin">Sign in</a> · <a href="/verify-email">Verify email</a> · <a href="/forgot-password">Forgot password?</a></p></form></div>;
 }
 
 function AssuranceView({ view }: { view: Product360 }) {

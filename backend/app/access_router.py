@@ -1,15 +1,17 @@
 import uuid
+import secrets
 from datetime import datetime, timezone
 from fastapi import APIRouter, HTTPException, Request, Depends
 from pydantic import BaseModel, Field
 from access_control.policy import PermissionSet, Role, User, effective_permissions
 from auth.service import auth_service
 from auth.service import _hash
+from auth.emailer import EmailDeliveryError, send_activation_email, send_password_reset_email, smtp_configuration_status
 from backend.app.db.session import get_db
 from backend.app.db.models.foundation import (
     AuthUser, PersonaAssignment, RoleAssignment, RoleDefinition,
     RolePermissionSet, PermissionSetDefinition, TenantMembership,
-    FeatureEntitlement, PlanDefinition, TenantPlanAssignment, Product, ProductVersion,
+    FeatureEntitlement, PlanDefinition, Tenant, TenantPlanAssignment, Product, ProductVersion,
     ApprovalAuthority, SegregationOfDutiesPolicy, ConnectorConfiguration, MappingConfiguration, AuditEvent,
     MasterMapping, TenantMappingVersion, TenantMappingOverride,
 )
@@ -17,6 +19,7 @@ from access_control.personas import R1_PERSONAS as PERSONAS, get_persona
 from access_control.configuration_safety import safe_configuration
 from integration.gateway import ConnectionConfig, Connector, MappingDefinition, preview
 from sqlalchemy.orm import Session
+from sqlalchemy import func
 
 router=APIRouter(prefix="/api/v1",tags=["Access Control"])
 class RoleSwitch(BaseModel): role: str
@@ -32,7 +35,9 @@ class AuthorityRequest(BaseModel): role_name: str; object_type: str; decision_ty
 class SodRequest(BaseModel): name: str; object_type: str; decision_type: str; creator_cannot_approve: bool = True; last_material_editor_cannot_approve: bool = True; version: str = "v1"
 class ConnectorRequest(BaseModel): code: str; connector_type: str; configuration: dict = {}; version: str = "v1"
 class MappingRequest(BaseModel): code: str; source_system: str; target_entity: str; mapping_rules: dict = {}; version: str = "v1"
-class UserCreateRequest(BaseModel): email: str = Field(min_length=3, max_length=254); display_name: str = Field(min_length=1, max_length=120); company: str = Field(min_length=1, max_length=160); password: str = Field(min_length=12, max_length=128); role: str = "Viewer"
+class UserCreateRequest(BaseModel): email: str = Field(min_length=3, max_length=254); display_name: str = Field(min_length=1, max_length=120); company: str = Field(min_length=1, max_length=160); role: str = "Viewer"; target_tenant_id: uuid.UUID | None = None
+class CustomerCreateRequest(BaseModel): company_name: str = Field(min_length=1, max_length=255); tenant_code: str = Field(min_length=1, max_length=80); plan_code: str = "ENTERPRISE_TEST"; licensed_users_limit: int = Field(default=25, ge=1); customer_admin_limit: int = Field(default=2, ge=1); connector_limit: int = Field(default=5, ge=0); status: str = "active"; notes: str | None = None
+class PasswordActionRequest(BaseModel): email: str = Field(min_length=3, max_length=254)
 class AdminUpdateRequest(BaseModel): values: dict
 class ProductRequest(BaseModel): product_identifier: str; name: str; description: str | None = None; product_family: str | None = None; manufacturer_context: str | None = None
 class ProductVersionRequest(BaseModel): product_id: uuid.UUID; version_identifier: str; description: str | None = None; release_timestamp: str | None = None
@@ -45,10 +50,31 @@ class MappingPreviewRequest(BaseModel): records: list[dict]; rules: dict; source
 class StatusRequest(BaseModel): status: str = Field(pattern="^(DRAFT|ACTIVE|RETIRED)$")
 
 
+@router.get("/admin/smtp-status")
+def admin_smtp_status(request: Request, db: Session = Depends(get_db)):
+    _require_platform_admin(request, db)
+    return smtp_configuration_status()
+
+
 def _require_administrator(request: Request, db: Session) -> AuthUser:
     user = _authenticated_user(request, db)
-    if (user.role or "").upper() not in {"ADMINISTRATOR", "ADMIN", "MDARIX ADMINISTRATOR"}:
+    if (user.role or "").upper() not in {"ADMINISTRATOR", "ADMIN", "MDARIX ADMINISTRATOR", "PLATFORM_ADMIN", "CUSTOMER_ADMIN"}:
         raise HTTPException(403, detail={"code": "ADMINISTRATOR_REQUIRED", "message": "Administrator role required"})
+    return user
+
+def _role_code(user: AuthUser) -> str:
+    return (user.role or "").strip().upper().replace(" ", "_")
+
+def _is_platform_admin(user: AuthUser) -> bool:
+    return _role_code(user) in {"PLATFORM_ADMIN", "MDARIX_ADMINISTRATOR", "ADMINISTRATOR", "ADMIN"}
+
+def _is_customer_admin(user: AuthUser) -> bool:
+    return _role_code(user) == "CUSTOMER_ADMIN"
+
+def _require_platform_admin(request: Request, db: Session) -> AuthUser:
+    user = _authenticated_user(request, db)
+    if not _is_platform_admin(user):
+        raise HTTPException(403, detail={"code": "PLATFORM_ADMIN_REQUIRED", "message": "Platform administrator role required"})
     return user
 
 def _authenticated_user(request: Request, db: Session) -> AuthUser:
@@ -151,6 +177,53 @@ def _admin_tenant(request: Request, db: Session) -> AuthUser:
 def _audit_configuration(db, admin, action, entity_type, entity_id, version):
     db.add(AuditEvent(id=uuid.uuid4(), tenant_id=admin.tenant_id, actor_ref=str(admin.id), action=action, entity_type=entity_type, entity_id=entity_id, details={"version": version, "source": "ADMIN_CONTROL_PLANE"}, created_at=datetime.now(timezone.utc)))
 
+def _active_plan_limits(db: Session, tenant_id: uuid.UUID) -> dict:
+    row = db.query(TenantPlanAssignment).join(PlanDefinition, PlanDefinition.id == TenantPlanAssignment.plan_id).filter(
+        TenantPlanAssignment.tenant_id == tenant_id,
+        TenantPlanAssignment.status == "ACTIVE",
+        PlanDefinition.status == "ACTIVE",
+    ).first()
+    limits = dict(getattr(row, "limits", None) or {})
+    entitlements = db.query(FeatureEntitlement).join(PlanDefinition, PlanDefinition.id == FeatureEntitlement.plan_id).join(TenantPlanAssignment, TenantPlanAssignment.plan_id == PlanDefinition.id).filter(
+        TenantPlanAssignment.tenant_id == tenant_id,
+        TenantPlanAssignment.status == "ACTIVE",
+        FeatureEntitlement.status == "ACTIVE",
+        FeatureEntitlement.enabled == True,
+    ).all()
+    for entitlement in entitlements:
+        if entitlement.limits:
+            limits.update(entitlement.limits)
+    return limits
+
+def _seat_counts(db: Session, tenant_id: uuid.UUID) -> dict:
+    users = db.query(AuthUser).filter(AuthUser.tenant_id == tenant_id, AuthUser.status.in_(["INVITED", "ACTIVE", "PENDING_VERIFICATION"])).all()
+    admins = [user for user in users if (user.role or "").upper() == "CUSTOMER_ADMIN"]
+    return {"allocated_users": len(users), "allocated_customer_admins": len(admins)}
+
+def _enforce_invite_limits(db: Session, tenant_id: uuid.UUID, role: str):
+    limits = _active_plan_limits(db, tenant_id)
+    counts = _seat_counts(db, tenant_id)
+    licensed_limit = int(limits.get("licensed_users_limit") or limits.get("licensed_users") or 100000)
+    admin_limit = int(limits.get("customer_admin_limit") or limits.get("customer_admins") or 100000)
+    if counts["allocated_users"] >= licensed_limit:
+        raise HTTPException(409, detail={"code": "LICENSED_USER_LIMIT_REACHED", "message": "Licensed user limit reached", "licensed_users": licensed_limit, "allocated": counts["allocated_users"], "available": 0})
+    if role.strip().upper() == "CUSTOMER_ADMIN" and counts["allocated_customer_admins"] >= admin_limit:
+        raise HTTPException(409, detail={"code": "CUSTOMER_ADMIN_LIMIT_REACHED", "message": "Customer Administrator limit reached", "allowed": admin_limit, "allocated": counts["allocated_customer_admins"], "available": 0})
+
+def _admin_target_tenant(admin: AuthUser, payload_tenant_id: uuid.UUID | None, company: str | None = None, db: Session | None = None) -> uuid.UUID:
+    if payload_tenant_id and payload_tenant_id != admin.tenant_id and not _is_platform_admin(admin):
+        raise HTTPException(403, detail={"code": "FOREIGN_TENANT_ACCESS_DENIED", "message": "Customer administrators can only administer their own tenant"})
+    if payload_tenant_id:
+        return payload_tenant_id
+    if _is_platform_admin(admin) and company and db is not None:
+        matches = db.query(Tenant).filter(func.lower(Tenant.name) == company.strip().lower(), Tenant.status == "active").all()
+        if len(matches) == 1:
+            return matches[0].id
+        if not matches:
+            raise HTTPException(404, detail={"code": "TENANT_NOT_FOUND", "message": "No active customer matches the Company name"})
+        raise HTTPException(409, detail={"code": "TENANT_NAME_AMBIGUOUS", "message": "Company name matches more than one active tenant"})
+    return payload_tenant_id or admin.tenant_id
+
 
 @router.get("/admin/identity/users/{user_id}")
 def admin_user(user_id: uuid.UUID, request: Request, db: Session = Depends(get_db)):
@@ -247,6 +320,28 @@ def update_user_status(user_id: uuid.UUID, payload: UserStatusRequest, request: 
     user.status = payload.status; user.updated_at = datetime.now(timezone.utc); db.commit()
     return {"user_id": str(user.id), "tenant_id": str(user.tenant_id), "status": user.status}
 
+@router.post("/admin/identity/users/{user_id}/reactivate")
+def reactivate_user(user_id: uuid.UUID, request: Request, db: Session = Depends(get_db)):
+    admin = _admin_tenant(request, db)
+    user = db.query(AuthUser).filter(AuthUser.id == user_id, AuthUser.tenant_id == admin.tenant_id).first()
+    if user is None:
+        raise HTTPException(404, detail={"code": "USER_NOT_FOUND", "message": "User is not available for this tenant"})
+    if (user.status or "").upper() != "OFFBOARDED":
+        raise HTTPException(409, detail={"code": "USER_NOT_OFFBOARDED", "message": "Only an offboarded user can be reactivated"})
+    now = datetime.now(timezone.utc)
+    user.status = "INVITED"; user.email_verified = False; user.password_hash = _hash(secrets.token_urlsafe(48)); user.updated_at = now
+    membership = db.query(TenantMembership).filter(TenantMembership.tenant_id == user.tenant_id, TenantMembership.user_id == user.id).first()
+    if membership is not None: membership.status = "INVITED"; membership.updated_at = now
+    token = auth_service.issue_token(str(user.id), "activation")
+    try:
+        delivery = send_activation_email(user.username, token, user.company)
+    except EmailDeliveryError as exc:
+        db.rollback()
+        raise HTTPException(502, detail={"code": "SMTP_DELIVERY_FAILED", "message": str(exc)}) from exc
+    db.add(AuditEvent(id=uuid.uuid4(), tenant_id=user.tenant_id, actor_ref=str(admin.id), action="USER_REACTIVATED", entity_type="AuthUser", entity_id=user.id, details={"email_delivery": delivery, "source": "ADMIN_CONTROL_PLANE"}, created_at=now))
+    db.commit()
+    return {"user_id": str(user.id), "email": user.username, "status": user.status, "invitation_status": "RESENT", "email_delivery": delivery, "development_token": token if delivery == "NOT_CONFIGURED" else None}
+
 
 @router.post("/me/tenant-context")
 def switch_tenant(payload: TenantSwitchRequest, request: Request, db: Session = Depends(get_db)):
@@ -341,21 +436,94 @@ def audit_history(request: Request, action: str | None = None, entity_type: str 
 def list_users(request: Request, db: Session = Depends(get_db)):
     admin = _admin_tenant(request, db)
     rows = db.query(AuthUser).filter(AuthUser.tenant_id == admin.tenant_id).order_by(AuthUser.username).all()
-    return [{"id": str(row.id), "email": row.username, "display_name": row.display_name, "role": row.role, "status": row.status, "tenant_id": str(row.tenant_id)} for row in rows]
+    return [{"id": str(row.id), "email": row.username, "display_name": row.display_name, "company": row.company, "role": row.role, "status": row.status, "tenant_id": str(row.tenant_id)} for row in rows]
 
 
 @router.post("/admin/identity/users")
 def create_user(payload: UserCreateRequest, request: Request, db: Session = Depends(get_db)):
     admin = _admin_tenant(request, db)
+    target_tenant_id = _admin_target_tenant(admin, payload.target_tenant_id, payload.company, db)
+    if db.query(Tenant).filter(Tenant.id == target_tenant_id, Tenant.status == "active").first() is None:
+        raise HTTPException(404, detail={"code": "TENANT_NOT_FOUND", "message": "Customer / Tenant ID is not an active tenant UUID"})
+    role = payload.role.strip().upper()
+    if role == "PLATFORM_ADMIN" and not _is_platform_admin(admin):
+        raise HTTPException(403, detail={"code": "PLATFORM_ROLE_NOT_ALLOWED", "message": "Customer administrators cannot assign platform roles"})
+    if role == "PLATFORM_ADMIN" and target_tenant_id != admin.tenant_id:
+        raise HTTPException(403, detail={"code": "PLATFORM_ROLE_NOT_ALLOWED", "message": "Platform roles are not assigned inside customer tenants"})
+    _enforce_invite_limits(db, target_tenant_id, role)
     email = payload.email.strip().lower()
-    if db.query(AuthUser).filter(AuthUser.tenant_id == admin.tenant_id, AuthUser.username == email).first():
+    if db.query(AuthUser).filter(
+        AuthUser.tenant_id == target_tenant_id,
+        AuthUser.username == email,
+        func.upper(AuthUser.status) != "OFFBOARDED",
+    ).first():
         raise HTTPException(409, detail={"code": "ACCOUNT_EXISTS", "message": "A user with this email already exists in this tenant"})
     now = datetime.now(timezone.utc)
-    row = AuthUser(id=uuid.uuid4(), tenant_id=admin.tenant_id, username=email, display_name=payload.display_name.strip(), company=payload.company.strip(), password_hash=_hash(payload.password), role=payload.role.strip(), status="ACTIVE", email_verified=True, created_at=now, updated_at=now)
-    db.add(row); db.flush()
-    db.add(TenantMembership(id=uuid.uuid4(), tenant_id=admin.tenant_id, user_id=row.id, status="ACTIVE", is_default=True, created_at=now, updated_at=now))
-    _audit_configuration(db, admin, "USER_CREATED", "AuthUser", row.id, "v1"); db.commit()
-    return {"id": str(row.id), "email": row.username, "display_name": row.display_name, "tenant_id": str(row.tenant_id), "role": row.role, "status": row.status}
+    row = db.query(AuthUser).filter(
+        AuthUser.tenant_id == target_tenant_id,
+        AuthUser.username == email,
+        func.upper(AuthUser.status) == "OFFBOARDED",
+    ).first()
+    if row is None:
+        row = AuthUser(id=uuid.uuid4(), tenant_id=target_tenant_id, username=email, display_name=payload.display_name.strip(), company=payload.company.strip(), password_hash=_hash(secrets.token_urlsafe(48)), role=role, status="INVITED", email_verified=False, created_at=now, updated_at=now)
+        db.add(row); db.flush()
+        db.add(TenantMembership(id=uuid.uuid4(), tenant_id=target_tenant_id, user_id=row.id, status="INVITED", is_default=True, created_at=now, updated_at=now))
+    else:
+        row.display_name = payload.display_name.strip(); row.company = payload.company.strip(); row.role = role
+        row.password_hash = _hash(secrets.token_urlsafe(48)); row.status = "INVITED"; row.email_verified = False; row.updated_at = now
+        membership = db.query(TenantMembership).filter(TenantMembership.tenant_id == target_tenant_id, TenantMembership.user_id == row.id).first()
+        if membership is not None:
+            membership.status = "INVITED"; membership.updated_at = now
+    token = auth_service.issue_token(str(row.id), "activation")
+    try:
+        delivery = send_activation_email(row.username, token, payload.company.strip())
+    except EmailDeliveryError as exc:
+        db.rollback()
+        raise HTTPException(502, detail={"code": "SMTP_DELIVERY_FAILED", "message": str(exc)}) from exc
+    db.add(AuditEvent(id=uuid.uuid4(), tenant_id=target_tenant_id, actor_ref=str(admin.id), action="USER_INVITATION_SENT", entity_type="AuthUser", entity_id=row.id, details={"role": role, "email_delivery": delivery, "source": "ADMIN_CONTROL_PLANE"}, created_at=now))
+    db.commit()
+    return {"id": str(row.id), "email": row.username, "display_name": row.display_name, "tenant_id": str(row.tenant_id), "role": row.role, "status": row.status, "invitation_status": "SENT", "email_delivery": delivery, "development_token": token if delivery == "NOT_CONFIGURED" else None}
+
+
+@router.post("/admin/identity/users/password-reset")
+def admin_password_reset(payload: PasswordActionRequest, request: Request, db: Session = Depends(get_db)):
+    admin = _admin_tenant(request, db)
+    row = db.query(AuthUser).filter(AuthUser.tenant_id == admin.tenant_id, AuthUser.username == payload.email.strip().lower()).first()
+    if row is None:
+        return {"status": "RESET_REQUEST_ACCEPTED", "email_delivery": "NOT_SENT"}
+    token = auth_service.issue_token(str(row.id), "reset")
+    delivery = send_password_reset_email(row.username, token)
+    db.add(AuditEvent(id=uuid.uuid4(), tenant_id=admin.tenant_id, actor_ref=str(admin.id), action="PASSWORD_RESET_REQUESTED", entity_type="AuthUser", entity_id=row.id, details={"email_delivery": delivery, "source": "ADMIN_CONTROL_PLANE"}, created_at=datetime.now(timezone.utc)))
+    db.commit()
+    return {"status": "RESET_REQUEST_ACCEPTED", "email_delivery": delivery, "development_token": token if delivery == "NOT_CONFIGURED" else None}
+
+
+@router.post("/platform-admin/customers")
+def create_customer(payload: CustomerCreateRequest, request: Request, db: Session = Depends(get_db)):
+    admin = _require_platform_admin(request, db)
+    key = payload.tenant_code.strip().upper()
+    if db.query(Tenant).filter(Tenant.tenant_key == key).first():
+        raise HTTPException(409, detail={"code": "TENANT_EXISTS", "message": "Tenant code already exists"})
+    now = datetime.now(timezone.utc)
+    tenant = Tenant(id=uuid.uuid4(), tenant_key=key, name=payload.company_name.strip(), status=payload.status, created_at=now, updated_at=now)
+    db.add(tenant); db.flush()
+    plan = db.query(PlanDefinition).filter(PlanDefinition.code == payload.plan_code, PlanDefinition.status == "ACTIVE").first()
+    if plan is None:
+        plan = PlanDefinition(id=uuid.uuid4(), code=payload.plan_code, name=payload.plan_code.replace("_", " ").title(), description="Day 35 platform-created test plan", version="v1", status="ACTIVE", effective_from=now, effective_to=None, created_at=now, updated_at=now)
+        db.add(plan); db.flush()
+    db.add(TenantPlanAssignment(id=uuid.uuid4(), tenant_id=tenant.id, plan_id=plan.id, status="ACTIVE", effective_from=now, effective_to=None, reason=payload.notes or "Platform Admin customer provisioning", created_at=now, updated_at=now))
+    for feature_code, limits in {
+        "ADMIN_CONTROL_PLANE": {"licensed_users_limit": payload.licensed_users_limit, "customer_admin_limit": payload.customer_admin_limit, "connector_limit": payload.connector_limit},
+        "CONNECTOR_CONFIGURATION": {"connector_limit": payload.connector_limit},
+    }.items():
+        existing = db.query(FeatureEntitlement).filter(FeatureEntitlement.plan_id == plan.id, FeatureEntitlement.feature_code == feature_code).first()
+        if existing is None:
+            db.add(FeatureEntitlement(id=uuid.uuid4(), plan_id=plan.id, feature_code=feature_code, enabled=True, limits=limits, status="ACTIVE", created_at=now, updated_at=now))
+        else:
+            existing.enabled = True; existing.limits = limits; existing.updated_at = now
+    db.add(AuditEvent(id=uuid.uuid4(), tenant_id=admin.tenant_id, actor_ref=str(admin.id), action="CUSTOMER_CREATED", entity_type="Tenant", entity_id=tenant.id, details={"tenant_key": key, "plan_code": payload.plan_code, "licensed_users_limit": payload.licensed_users_limit, "customer_admin_limit": payload.customer_admin_limit}, created_at=now))
+    db.commit()
+    return {"id": str(tenant.id), "tenant_key": tenant.tenant_key, "name": tenant.name, "status": tenant.status, "plan_code": payload.plan_code, "limits": {"licensed_users_limit": payload.licensed_users_limit, "customer_admin_limit": payload.customer_admin_limit, "connector_limit": payload.connector_limit}}
 
 
 @router.get("/admin/identity/persona-assignments")
@@ -466,7 +634,7 @@ def mapping_versions(code: str, request: Request, db: Session = Depends(get_db))
 def update_control_plane_resource(resource: str, resource_id: uuid.UUID, payload: AdminUpdateRequest, request: Request, db: Session = Depends(get_db)):
     admin = _admin_tenant(request, db)
     resources = {
-        "users": (AuthUser, {"display_name", "company", "role", "status"}, "USER_UPDATED"),
+        "users": (AuthUser, {"display_name", "company", "email", "role", "status"}, "USER_UPDATED"),
         "roles": (RoleDefinition, {"code", "name", "version", "status"}, "ROLE_UPDATED"),
         "permission-sets": (PermissionSetDefinition, {"code", "version", "status", "object_permissions", "field_permissions", "action_permissions"}, "PERMISSION_SET_UPDATED"),
         "connectors": (ConnectorConfiguration, {"code", "connector_type", "version", "status", "configuration"}, "CONNECTOR_UPDATED"),
@@ -482,13 +650,18 @@ def update_control_plane_resource(resource: str, resource_id: uuid.UUID, payload
     if unknown: raise HTTPException(422, detail={"code": "FIELD_NOT_ALLOWED", "message": "One or more fields cannot be edited"})
     row = db.query(model).filter(model.id == resource_id, model.tenant_id == admin.tenant_id).first()
     if row is None: raise HTTPException(404, detail={"code": "RESOURCE_NOT_FOUND", "message": "Resource is not available for this tenant"})
+    if resource == "users" and "email" in payload.values:
+        new_email = str(payload.values["email"]).strip().lower()
+        if db.query(AuthUser).filter(AuthUser.tenant_id == admin.tenant_id, AuthUser.username == new_email, AuthUser.id != row.id).first():
+            raise HTTPException(409, detail={"code": "ACCOUNT_EXISTS", "message": "That email already exists in this tenant"})
+        payload.values["email"] = new_email
     if resource == "connectors" and "configuration" in payload.values:
         try: payload.values["configuration"] = safe_configuration(payload.values["configuration"])
         except ValueError as exc: raise HTTPException(422, detail={"code": "SENSITIVE_CONFIGURATION_REJECTED", "message": "Secrets must use a managed secret provider"}) from exc
     if resource == "persona-assignments" and "persona_code" in payload.values:
         try: payload.values["persona_code"] = get_persona(payload.values["persona_code"]).code
         except ValueError as exc: raise HTTPException(422, detail={"code": "UNKNOWN_PERSONA", "message": "Persona is not in the R1 catalog"}) from exc
-    for field, value in payload.values.items(): setattr(row, field, value)
+    for field, value in payload.values.items(): setattr(row, "username" if resource == "users" and field == "email" else field, value)
     if hasattr(row, "updated_at"): row.updated_at = datetime.now(timezone.utc)
     version = getattr(row, "version", "v1"); _audit_configuration(db, admin, action, model.__name__, row.id, version); db.commit()
     return {"id": str(row.id), "resource": resource, "status": getattr(row, "status", "ACTIVE"), "version": version}

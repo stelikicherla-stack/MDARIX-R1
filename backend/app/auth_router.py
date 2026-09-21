@@ -1,9 +1,9 @@
 from fastapi import APIRouter, HTTPException, Response, Request, Depends
 from pydantic import BaseModel, Field
-from auth.service import auth_service
-from auth.emailer import send_verification_email
+from auth.service import auth_service, _hash
+from auth.emailer import send_password_reset_email, send_verification_email
 from backend.app.db.session import get_db
-from backend.app.db.models.foundation import AuthUser, Tenant
+from backend.app.db.models.foundation import AuthUser, Tenant, TenantMembership
 from sqlalchemy.orm import Session
 from datetime import datetime, timezone
 router=APIRouter(prefix="/api/v1/auth",tags=["Authentication"])
@@ -51,8 +51,35 @@ def session(request:Request):
  try:return auth_service.context(request.cookies.get('mdarix_session',''))
  except ValueError as e: raise HTTPException(401,detail={"code":"UNAUTHENTICATED","message":"Authentication required"}) from e
 @router.post('/forgot-password')
-def forgot(data:ResetRequest): return auth_service.request_reset(data.email)
+def forgot(data:ResetRequest, db:Session=Depends(get_db)):
+ row=db.query(AuthUser).filter(AuthUser.username==data.email.strip().lower()).first()
+ if not row:
+  return {"status":"RESET_REQUEST_ACCEPTED","email_delivery":"NOT_SENT"}
+ token=auth_service.issue_token(str(row.id),"reset")
+ delivery=send_password_reset_email(row.username,token)
+ return {"status":"RESET_REQUEST_ACCEPTED","email_delivery":delivery,"development_token": token if delivery=="NOT_CONFIGURED" else None}
 @router.post('/reset-password')
-def reset(data:Reset):
- try:return auth_service.reset(data.token,data.password)
+def reset(data:Reset, db:Session=Depends(get_db)):
+ try:
+  user_id=auth_service.consume_token(data.token,"reset")
+  row=db.query(AuthUser).filter(AuthUser.id==user_id).first()
+  if row is None: raise ValueError("INVALID_RESET")
+  row.password_hash=_hash(data.password); row.status="ACTIVE"; row.email_verified=True; row.updated_at=datetime.now(timezone.utc)
+  db.query(TenantMembership).filter(TenantMembership.tenant_id==row.tenant_id,TenantMembership.user_id==row.id).update({"status":"ACTIVE","updated_at":datetime.now(timezone.utc)})
+  db.commit()
+  return {"status":"PASSWORD_RESET"}
+ except ValueError:
+  try:return auth_service.reset(data.token,data.password)
+  except ValueError as e: raise fail(e)
+
+@router.post('/activate-account')
+def activate(data:Reset, db:Session=Depends(get_db)):
+ try:
+  user_id=auth_service.consume_token(data.token,"activation")
+  row=db.query(AuthUser).filter(AuthUser.id==user_id).first()
+  if row is None: raise ValueError("INVALID_ACTIVATION")
+  row.password_hash=_hash(data.password); row.status="ACTIVE"; row.email_verified=True; row.updated_at=datetime.now(timezone.utc); db.commit()
+  db.query(TenantMembership).filter(TenantMembership.tenant_id==row.tenant_id,TenantMembership.user_id==row.id).update({"status":"ACTIVE","updated_at":datetime.now(timezone.utc)})
+  db.commit()
+  return {"status":"ACTIVE","user_id":str(row.id),"email":row.username}
  except ValueError as e: raise fail(e)
