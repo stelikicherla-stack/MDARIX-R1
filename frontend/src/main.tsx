@@ -3,6 +3,8 @@ import { createRoot } from "react-dom/client";
 import { AlertTriangle, Boxes, CalendarClock, ChevronRight, CircleDot, ClipboardList, Factory, FileText, GitBranch, History, Layers, Network, ShieldCheck } from "lucide-react";
 import "./styles.css";
 import { PublicMegaSite } from "./PublicMegaSite";
+import { AppView, navigateTo, viewFromPath } from "./app/router";
+import { Stage3CommandCenter } from "./features/command-center/Stage3CommandCenter";
 
 type Product = {
   id: string;
@@ -190,12 +192,14 @@ function PrivateApplication() {
   const [mode, setMode] = useState<TemporalMode>("event");
   const [view, setView] = useState<Product360 | null>(null);
   const [error, setError] = useState("");
-  const [activeView, setActiveView] = useState<"home" | "products" | "investigations" | "evidence" | "decision" | "assurance" | "audit" | "admin" | "admin-manage" | "admin-audit">("home");
+  const [activeView, setActiveView] = useState<AppView>(() => viewFromPath(window.location.pathname));
   const [selectedInvestigationId, setSelectedInvestigationId] = useState("");
   const [investigations, setInvestigations] = useState<InvestigationSummary[]>([]);
   const [investigationsLoading, setInvestigationsLoading] = useState(false);
 
   useEffect(() => { api<{display_name:string; active_role:string|null}>("/api/v1/me/context").then(setSecurityContext).catch(() => setSecurityContext(null)); }, []);
+  useEffect(() => { const onPopState = () => setActiveView(viewFromPath(window.location.pathname)); window.addEventListener("popstate", onPopState); return () => window.removeEventListener("popstate", onPopState); }, []);
+  const changeView = (view: AppView) => { setActiveView(view); navigateTo(view); };
 
   useEffect(() => {
     api<Product[]>("/api/v1/products").then((items) => {
@@ -231,7 +235,7 @@ function PrivateApplication() {
   const isAdminRole = Boolean(activeRole && ["ADMIN", "ADMINISTRATOR", "MDARIX ADMINISTRATOR", "PLATFORM ADMIN", "PLATFORM_ADMIN", "CUSTOMER ADMIN", "CUSTOMER_ADMIN"].includes(activeRole));
 
   useEffect(() => {
-    if (isAdminRole && !["admin", "admin-manage", "admin-audit"].includes(activeView)) setActiveView("admin");
+    if (isAdminRole && !["admin", "admin-manage", "admin-audit"].includes(activeView)) changeView("admin");
   }, [isAdminRole]);
 
   return (
@@ -241,20 +245,20 @@ function PrivateApplication() {
         <nav>
           {isAdminRole ? <>
             <p className="nav-section-label">Administrator control plane</p>
-            <button className={`nav-link ${activeView === "admin" ? "active" : ""}`} onClick={() => setActiveView("admin")}>Administration <small>Identity, access &amp; configuration</small></button>
-            <button className={`nav-link ${activeView === "admin-manage" ? "active" : ""}`} onClick={() => setActiveView("admin-manage")}>Manage Customer Administrators <small>Search, update or retire accounts</small></button>
+            <button className={`nav-link ${activeView === "admin" ? "active" : ""}`} onClick={() => changeView("admin")}>Administration <small>Identity, access &amp; configuration</small></button>
+            <button className={`nav-link ${activeView === "admin-manage" ? "active" : ""}`} onClick={() => changeView("admin-manage")}>Manage Customer Administrators <small>Search, update or retire accounts</small></button>
             <button className="nav-link" onClick={() => setActiveView("admin-audit")}>Recent platform administration activity <small>Review user changes and audit evidence</small></button>
           </> : <>
             <p className="nav-section-label">Workspace</p>
-            <button className={`nav-link ${activeView === "home" ? "active" : ""}`} onClick={() => setActiveView("home")}>Home</button>
-            <button className={`nav-link ${activeView === "products" ? "active" : ""}`} onClick={() => setActiveView("products")}>Products</button>
+            <button className={`nav-link ${activeView === "home" ? "active" : ""}`} onClick={() => changeView("home")}>Home</button>
+            <button className={`nav-link ${activeView === "products" ? "active" : ""}`} onClick={() => changeView("products")}>Products</button>
             <p className="nav-section-label">Investigation</p>
-            <button className={`nav-link ${activeView === "investigations" ? "active" : ""}`} onClick={() => setActiveView("investigations")}>Investigations</button>
-            <button className={`nav-link ${activeView === "evidence" ? "active" : ""}`} onClick={() => setActiveView("evidence")}>Evidence</button>
+            <button className={`nav-link ${activeView === "investigations" ? "active" : ""}`} onClick={() => changeView("investigations")}>Investigations</button>
+            <button className={`nav-link ${activeView === "evidence" ? "active" : ""}`} onClick={() => changeView("evidence")}>Evidence</button>
             <p className="nav-section-label">Decision & Trust</p>
-            <button className={`nav-link ${activeView === "decision" ? "active" : ""}`} onClick={() => setActiveView("decision")}>Decision Center</button>
-            <button className={`nav-link ${activeView === "assurance" ? "active" : ""}`} onClick={() => setActiveView("assurance")}>AI Assurance <small>Inspect AI trust controls</small></button>
-            <button className={`nav-link ${activeView === "audit" ? "active" : ""}`} onClick={() => setActiveView("audit")}>Audit Trail <small>Review recorded activity</small></button>
+            <button className={`nav-link ${activeView === "decision" ? "active" : ""}`} onClick={() => changeView("decision")}>Decision Center</button>
+            <button className={`nav-link ${activeView === "assurance" ? "active" : ""}`} onClick={() => changeView("assurance")}>AI Assurance <small>Inspect AI trust controls</small></button>
+            <button className={`nav-link ${activeView === "audit" ? "active" : ""}`} onClick={() => changeView("audit")}>Audit Trail <small>Review recorded activity</small></button>
           </>}
         </nav>
         <div className="side-nav-footer"><p>Evidence before inference.<br/>Authorized humans decide.</p></div>
@@ -286,7 +290,7 @@ function PrivateApplication() {
           </div>
         </header>}
         {error && <div className="error">{error}</div>}
-        {view && activeView === "home" && <><ApplicationHome view={view} investigations={investigations} onNavigate={setActiveView} /><Stage3CommandCenter /></>}
+        {view && activeView === "home" && <><ApplicationHome view={view} investigations={investigations} onNavigate={changeView} /><Stage3CommandCenter /></>}
         {view && activeView === "products" && <Product360View view={view} />}
         {view && activeView === "investigations" && <InvestigationAccessView view={view} selectedInvestigationId={selectedInvestigationId} onSelect={setSelectedInvestigationId} temporalMode={mode} asOf={asOf} onOpenDecision={() => setActiveView("decision")} />}
         {view && activeView === "evidence" && <EvidenceAccessView productEvidenceCount={view.evidence.length} />}
@@ -300,21 +304,6 @@ function PrivateApplication() {
       </main>
     </div>
   );
-}
-
-function Stage3CommandCenter() {
-  const [summary, setSummary] = useState<any | null>(null);
-  useEffect(() => { api<any>("/api/v1/analytics/command-center").then(setSummary).catch(() => setSummary(null)); }, []);
-  if (!summary) return null;
-  const counts = summary.counts ?? {};
-  return <section className="content stage3-command-center" aria-label="Command center summary">
-    <div className="section-title"><ClipboardList size={18} /> What needs attention</div>
-    <div className="home-insight-grid">
-      <article><span className="eyebrow">Open investigations</span><strong>{counts.investigations ?? 0}</strong><p>Tenant-scoped investigations available for authorized review.</p></article>
-      <article><span className="eyebrow">Evidence</span><strong>{counts.evidence ?? 0}</strong><p>Evidence records in the active tenant context.</p></article>
-      <article><span className="eyebrow">Review posture</span><strong>Human review required</strong><p>AI assists analysis; authorized humans decide.</p></article>
-    </div>
-  </section>;
 }
 
 type AdminData = { users: any[]; roles: any[]; permissions: any[]; memberships: any[]; personas: any[]; entitlements: any[]; connectors: any[]; mappings: any[]; authorities: any[]; sod: any[]; audit: any[] };
