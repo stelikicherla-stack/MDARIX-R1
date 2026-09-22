@@ -1,0 +1,90 @@
+main
+8a5f212754fa1ede9db8fdaf32fd4de12e4d25e4
+D .pytest-tmp-day29-final/test_schema_drift_failure_is_e0/bad_complaints.csv
+ D .pytest-tmp-day30-final-20260918-215501/test_schema_drift_failure_is_e0/bad_complaints.csv
+ D .pytest-tmp-day30-final-20260918-222829/test_schema_drift_failure_is_e0/bad_complaints.csv
+ D .pytest-tmp-day30-final-20260918-223718/test_schema_drift_failure_is_e0/bad_complaints.csv
+ D .pytest-tmp-day30-full/test_schema_drift_failure_is_e0/bad_complaints.csv
+ D .pytest-tmp-day31-final-20260919-111527/test_schema_drift_failure_is_e0/bad_complaints.csv
+ D .pytest-tmp-day31-full-20260918-235141/test_schema_drift_failure_is_e0/bad_complaints.csv
+ D .pytest-tmp-host/test_schema_drift_failure_is_e0/bad_complaints.csv
+ M backend/app/access_router.py
+ M backend/app/auth_router.py
+ M backend/app/db/base.py
+ M backend/app/decision_router.py
+ M backend/app/evaluation_router.py
+ M backend/app/evidence/router.py
+ M backend/app/integration_router.py
+ M backend/app/investigations/brief_router.py
+ M backend/app/investigations/router.py
+ M backend/app/main.py
+ M backend/app/product360/service.py
+ M backend/app/retrieval/router.py
+ M backend/app/trust_router.py
+ M counterfactual/router.py
+ M frontend/src/main.tsx
+ M graph/service.py
+ M tests/test_day17_briefs.py
+ M tests/test_day18_trust_assurance.py
+?? .github/workflows/ci.yml
+?? .pytest-tmp-auth-final/
+?? .pytest-tmp-day15-actions-full/
+?? .pytest-tmp-day15-full/
+?? .pytest-tmp-day155-full/
+?? .pytest-tmp-day16-final-full4/
+?? .pytest-tmp-day16-final-full5/
+?? .pytest-tmp-day16-final-regression/
+?? .pytest-tmp-day16-full/
+?? .pytest-tmp-day16-isolation-full/
+?? .pytest-tmp-day16-remediation-full/
+?? .pytest-tmp-day16-remediation-full2/
+?? .pytest-tmp-day16-remediation-full3/
+?? .pytest-tmp-day16-warning-audit/
+?? .pytest-tmp-day17-full/
+?? .pytest-tmp-day18-full/
+?? .pytest-tmp-day19-full/
+?? .pytest-tmp-day19-full2/
+?? .pytest-tmp-day20-full/
+?? .pytest-tmp-day21-full/
+?? .pytest-tmp-day22-fix-full/
+?? .pytest-tmp-day22-full/
+?? .pytest-tmp-day23-final/
+?? .pytest-tmp-day23-full/
+?? .pytest-tmp-day23-release/
+?? .pytest-tmp-day25-full/
+?? .pytest-tmp-day29-full/
+?? .pytest-tmp-day29-remediation-full-20260918-190620/
+?? .pytest-tmp-round3-final/
+?? auth/durable.py
+?? backend/app/db/models/stage2.py
+?? backend/app/request_context.py
+?? backend/app/stage3_router.py
+?? backend/app/workspace_context.py
+?? docs/FUTURE_AGENTIC_AI_ARCHITECTURE.md
+?? docs/FUTURE_ARCHITECTURE_CASE_CONTEXT.md
+?? docs/FUTURE_ARCHITECTURE_DATA_PLATFORM.md
+?? docs/FUTURE_ARCHITECTURE_IDENTITY.md
+?? docs/FUTURE_ARCHITECTURE_MAPPING_2_0.md
+?? docs/FUTURE_ARCHITECTURE_RESEND_EMAIL.md
+?? docs/FUTURE_ARCHITECTURE_STAGE2_REPORT.md
+?? docs/FUTURE_ARCHITECTURE_TENANCY.md
+?? docs/FUTURE_CASE_STORY_FLOW.md
+?? docs/FUTURE_DASHBOARD_SPECIFICATION.md
+?? docs/FUTURE_GENAI_ARCHITECTURE.md
+?? docs/FUTURE_REPORTING_ARCHITECTURE.md
+?? docs/FUTURE_STAGE3_IMPLEMENTATION_REPORT.md
+?? docs/FUTURE_STAGE4_QUALIFICATION_PLAN.md
+?? docs/FUTURE_STORY_VIEW_SPECIFICATION.md
+?? docs/FUTURE_UX_INFORMATION_ARCHITECTURE.md
+?? docs/MDARIX_FUTURE_ARCHITECTURE_FINAL_REPORT.md
+?? evidence/future-architecture/
+?? infrastructure/database/migrations/versions/q33_stage2_platform_foundation.py
+?? infrastructure/database/migrations/versions/r34_durable_auth_tokens.py
+?? infrastructure/database/migrations/versions/s35_outbox_reliability.py
+?? outbox/
+?? scripts/run_outbox_worker.py
+?? scripts/stage4_qualification.py
+?? tests/conftest.py
+?? tests/test_auth_durable_smtp.py
+?? tests/test_stage2_operations.py
+?? tests/test_stage3_experience.py

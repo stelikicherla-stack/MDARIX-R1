@@ -1,11 +1,12 @@
 from fastapi.testclient import TestClient
 
 from backend.app.main import app
+from tests.conftest import authenticated_client
 
 INVESTIGATION_ID = "5a541092-f384-44eb-a832-3137749e7393"
 
 def test_brief_generation_is_versioned_and_grounded():
-    client = TestClient(app)
+    client = authenticated_client(app)
     first = client.post(f"/api/v1/investigations/{INVESTIGATION_ID}/briefs", json={"temporal_mode": "current"})
     assert first.status_code == 200
     payload = first.json()
@@ -20,6 +21,6 @@ def test_brief_generation_is_versioned_and_grounded():
     assert latest.json()["id"] == second.json()["id"]
 
 def test_brief_rejects_foreign_investigation():
-    client = TestClient(app)
+    client = authenticated_client(app)
     response = client.get("/api/v1/investigations/00000000-0000-0000-0000-000000000000/briefs/latest")
     assert response.status_code == 404

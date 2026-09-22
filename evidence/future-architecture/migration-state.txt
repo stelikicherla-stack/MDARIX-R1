@@ -1,0 +1,2 @@
+Run alembic current, heads, and history with the controlled environment.
+Secrets omitted.

@@ -1,0 +1,1 @@
+Frontend test command is prepared; browser/RTL evidence requires configured frontend test fixtures.

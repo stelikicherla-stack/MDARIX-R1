@@ -1,0 +1,49 @@
+"""Stage 2 durable platform primitives."""
+import uuid
+from sqlalchemy import DateTime, ForeignKey, Index, Integer, String, Text, UniqueConstraint
+from sqlalchemy.dialects.postgresql import JSONB, UUID
+from sqlalchemy.orm import Mapped, mapped_column
+from backend.app.db.base import Base
+
+def _id(): return mapped_column(UUID(as_uuid=True), primary_key=True, server_default=__import__('sqlalchemy').text('gen_random_uuid()'))
+def _tenant(): return mapped_column(UUID(as_uuid=True), ForeignKey('tenants.id'), nullable=False)
+def _ts(nullable=True): return mapped_column(DateTime(timezone=True), nullable=nullable)
+
+class AuthSession(Base):
+    __tablename__ = 'auth_sessions'
+    id = _id(); session_hash: Mapped[str] = mapped_column(String(128), unique=True, nullable=False)
+    user_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), nullable=False); tenant_id = _tenant()
+    expires_at = _ts(False); revoked_at = _ts(); created_at = _ts(False); last_seen_at = _ts(False)
+    __table_args__ = (UniqueConstraint('tenant_id','id',name='uq_auth_sessions_tenant_id'),)
+
+class UserInvitation(Base):
+    __tablename__ = 'user_invitations'
+    id = _id(); user_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), nullable=False); tenant_id = _tenant()
+    token_hash: Mapped[str] = mapped_column(String(128), unique=True, nullable=False)
+    expires_at = _ts(False); used_at = _ts(); created_at = _ts(False); created_by: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True))
+    __table_args__ = (Index('ix_user_invitations_user','tenant_id','user_id'),)
+
+class PasswordResetRequest(Base):
+    __tablename__ = 'password_reset_requests'
+    id = _id(); user_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), nullable=False); tenant_id = _tenant()
+    token_hash: Mapped[str] = mapped_column(String(128), unique=True, nullable=False)
+    expires_at = _ts(False); used_at = _ts(); created_at = _ts(False); created_by: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True))
+    __table_args__ = (Index('ix_password_reset_user','tenant_id','user_id'),)
+
+class AuthenticationEvent(Base):
+    __tablename__ = 'authentication_events'
+    id = _id(); tenant_id = mapped_column(UUID(as_uuid=True), ForeignKey('tenants.id'))
+    user_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True)); event_type: Mapped[str] = mapped_column(String(80), nullable=False)
+    outcome: Mapped[str] = mapped_column(String(40), nullable=False); correlation_id: Mapped[str | None] = mapped_column(String(120)); metadata_json: Mapped[dict | None] = mapped_column('metadata', JSONB); created_at = _ts(False)
+
+class MDARIXCaseContext(Base):
+    __tablename__ = 'case_contexts'
+    id = _id(); tenant_id = _tenant(); user_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), nullable=False); membership_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True))
+    product_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True)); product_version_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True)); signal_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True)); complaint_cluster_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True)); investigation_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True))
+    temporal_mode: Mapped[str] = mapped_column(String(30), nullable=False, server_default='CURRENT'); temporal_cutoff = _ts(); decision_brief_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True)); decision_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True)); context_version: Mapped[int] = mapped_column(Integer, nullable=False, server_default='1'); last_page: Mapped[str | None] = mapped_column(String(160)); created_at = _ts(False); updated_at = _ts(False)
+    __table_args__ = (UniqueConstraint('tenant_id','user_id',name='uq_case_context_tenant_user'),)
+
+class OutboxEvent(Base):
+    __tablename__ = 'event_outbox'
+    id = _id(); tenant_id = _tenant(); event_name: Mapped[str] = mapped_column(String(120), nullable=False); aggregate_type: Mapped[str] = mapped_column(String(120), nullable=False); aggregate_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True)); payload: Mapped[dict] = mapped_column(JSONB, nullable=False); occurred_at = _ts(False); published_at = _ts(); attempts: Mapped[int] = mapped_column(Integer, nullable=False, server_default='0'); next_attempt_at = _ts(); dead_lettered_at = _ts(); last_error: Mapped[str | None] = mapped_column(Text)
+    __table_args__ = (Index('ix_event_outbox_pending','published_at','occurred_at'),)

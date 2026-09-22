@@ -1,3 +1,4 @@
+import os
 from fastapi import APIRouter, HTTPException, Response, Request, Depends
 from pydantic import BaseModel, Field
 from auth.service import auth_service, _hash
@@ -6,6 +7,9 @@ from backend.app.db.session import get_db
 from backend.app.db.models.foundation import AuthUser, Tenant, TenantMembership
 from sqlalchemy.orm import Session
 from datetime import datetime, timezone
+from auth.durable import persist_session, revoke_session, issue_reset, consume
+from auth.durable import hash_token
+from backend.app.db.models.stage2 import AuthSession
 router=APIRouter(prefix="/api/v1/auth",tags=["Authentication"])
 class Signup(BaseModel): email:str=Field(min_length=3,max_length=254); password: str=Field(min_length=12,max_length=128); display_name:str=Field(min_length=1,max_length=120); organization:str=Field(min_length=1,max_length=160)
 class Signin(BaseModel): email:str; password:str
@@ -39,29 +43,35 @@ def signin(data:Signin,response:Response,db:Session=Depends(get_db)):
   row=db.query(AuthUser).filter(AuthUser.username==data.email.strip().lower()).first()
   if not row: raise ValueError("INVALID_CREDENTIALS")
   token=auth_service.signin_persisted(data.email,data.password,user_id=row.id,display_name=row.display_name,tenant_id=row.tenant_id,password_hash=row.password_hash,role=row.role,status=row.status,email_verified=row.email_verified)
-  response.set_cookie('mdarix_session',token,httponly=True,samesite='lax',secure=False,max_age=3600); return auth_service.context(token)
+  persist_session(db, token, row.id, row.tenant_id)
+  secure_default = 'false' if os.getenv('MDARIX_ENV','development').lower() == 'development' else 'true'
+  response.set_cookie('mdarix_session',token,httponly=True,samesite='lax',secure=os.getenv('MDARIX_COOKIE_SECURE',secure_default).lower()=='true',max_age=3600); return auth_service.context(token)
  except ValueError as e: raise HTTPException(401,detail={"code":"INVALID_CREDENTIALS","message":"Invalid credentials."}) from e
 @router.post('/signout')
-def signout(request:Request,response:Response):
+def signout(request:Request,response:Response,db:Session=Depends(get_db)):
  token=request.cookies.get('mdarix_session');
- if token: auth_service.signout(token)
+ if token: auth_service.signout(token); revoke_session(db, token)
  response.delete_cookie('mdarix_session'); return {"status":"SIGNED_OUT"}
 @router.get('/session')
-def session(request:Request):
- try:return auth_service.context(request.cookies.get('mdarix_session',''))
- except ValueError as e: raise HTTPException(401,detail={"code":"UNAUTHENTICATED","message":"Authentication required"}) from e
+def session(request:Request, db:Session=Depends(get_db)):
+ token = request.cookies.get('mdarix_session','')
+ row = db.query(AuthSession).filter(AuthSession.session_hash == hash_token(token), AuthSession.revoked_at.is_(None), AuthSession.expires_at > datetime.now(timezone.utc)).first() if token else None
+ user = db.query(AuthUser).filter(AuthUser.id == row.user_id, AuthUser.tenant_id == row.tenant_id, AuthUser.status == 'ACTIVE').first() if row else None
+ if not user: raise HTTPException(401,detail={"code":"UNAUTHENTICATED","message":"Authentication required"})
+ row.last_seen_at = datetime.now(timezone.utc); db.commit()
+ return {"user_id":str(user.id),"display_name":user.display_name,"email":user.username,"tenant_id":str(user.tenant_id),"active_role":user.role}
 @router.post('/forgot-password')
 def forgot(data:ResetRequest, db:Session=Depends(get_db)):
  row=db.query(AuthUser).filter(AuthUser.username==data.email.strip().lower()).first()
  if not row:
   return {"status":"RESET_REQUEST_ACCEPTED","email_delivery":"NOT_SENT"}
- token=auth_service.issue_token(str(row.id),"reset")
+ token=issue_reset(db, row.id, row.tenant_id)
  delivery=send_password_reset_email(row.username,token)
  return {"status":"RESET_REQUEST_ACCEPTED","email_delivery":delivery,"development_token": token if delivery=="NOT_CONFIGURED" else None}
 @router.post('/reset-password')
 def reset(data:Reset, db:Session=Depends(get_db)):
  try:
-  user_id=auth_service.consume_token(data.token,"reset")
+  user_id=consume(db, data.token, "reset")
   row=db.query(AuthUser).filter(AuthUser.id==user_id).first()
   if row is None: raise ValueError("INVALID_RESET")
   row.password_hash=_hash(data.password); row.status="ACTIVE"; row.email_verified=True; row.updated_at=datetime.now(timezone.utc)
@@ -75,7 +85,7 @@ def reset(data:Reset, db:Session=Depends(get_db)):
 @router.post('/activate-account')
 def activate(data:Reset, db:Session=Depends(get_db)):
  try:
-  user_id=auth_service.consume_token(data.token,"activation")
+  user_id=consume(db, data.token, "activation")
   row=db.query(AuthUser).filter(AuthUser.id==user_id).first()
   if row is None: raise ValueError("INVALID_ACTIVATION")
   row.password_hash=_hash(data.password); row.status="ACTIVE"; row.email_verified=True; row.updated_at=datetime.now(timezone.utc); db.commit()

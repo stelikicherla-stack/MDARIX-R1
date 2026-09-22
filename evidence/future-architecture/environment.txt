@@ -1,0 +1,3 @@
+Python is controlled by the invoking test command.
+
+Secrets intentionally omitted.

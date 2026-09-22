@@ -1,0 +1,1 @@
+Run platform/customer-admin, entitlement, SoD, SMTP-status, and audit tests.

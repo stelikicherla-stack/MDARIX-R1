@@ -6,6 +6,7 @@ from sqlalchemy.orm import Session
 
 from backend.app.db.session import get_db
 from backend.app.evidence.router import get_default_tenant_id
+from backend.app.request_context import AuthenticatedRequestContext, get_request_context
 from investigation_workspace.schemas import InvestigationWorkspaceRequest, InvestigationWorkspaceResponse
 from investigation_workspace.service import InvestigationWorkspaceError, InvestigationWorkspaceService
 from investigator.schemas import InvestigationAnalysisRequest, InvestigationAnalysisResponse
@@ -43,8 +44,9 @@ def get_investigation_workspace(
     include_retrieval: bool = True,
     retrieval_top_k: int = Query(8, ge=1, le=25),
     db: Session = Depends(get_db),
+    ctx: AuthenticatedRequestContext = Depends(get_request_context),
 ) -> InvestigationWorkspaceResponse:
-    tenant_id = get_default_tenant_id(db)
+    tenant_id = ctx.tenant_id
     request = InvestigationWorkspaceRequest(
         tenant_id=tenant_id,
         investigation_id=investigation_id,
@@ -64,8 +66,9 @@ def create_investigation_analysis(
     investigation_id: uuid.UUID,
     request: InvestigationAnalysisRequest,
     db: Session = Depends(get_db),
+    ctx: AuthenticatedRequestContext = Depends(get_request_context),
 ) -> InvestigationAnalysisResponse:
-    tenant_id = get_default_tenant_id(db)
+    tenant_id = ctx.tenant_id
     scoped_request = request.model_copy(update={"tenant_id": tenant_id, "investigation_id": investigation_id})
     try:
         return investigator_service.analyze(db, scoped_request)
@@ -77,8 +80,9 @@ def create_investigation_analysis(
 def get_latest_investigation_analysis(
     investigation_id: uuid.UUID,
     db: Session = Depends(get_db),
+    ctx: AuthenticatedRequestContext = Depends(get_request_context),
 ) -> InvestigationAnalysisResponse:
-    tenant_id = get_default_tenant_id(db)
+    tenant_id = ctx.tenant_id
     result = investigator_service.latest(db, tenant_id, investigation_id)
     if result is None:
         raise HTTPException(status_code=404, detail={"code": "ANALYSIS_NOT_FOUND", "message": "No investigation analysis exists"})
@@ -90,8 +94,9 @@ def get_investigation_analysis(
     investigation_id: uuid.UUID,
     analysis_id: uuid.UUID,
     db: Session = Depends(get_db),
+    ctx: AuthenticatedRequestContext = Depends(get_request_context),
 ) -> InvestigationAnalysisResponse:
-    tenant_id = get_default_tenant_id(db)
+    tenant_id = ctx.tenant_id
     try:
         return investigator_service.get(db, tenant_id, investigation_id, analysis_id)
     except InvestigatorError as exc:
@@ -103,8 +108,9 @@ def create_hypotheses(
     investigation_id: uuid.UUID,
     request: HypothesisSetRequest,
     db: Session = Depends(get_db),
+    ctx: AuthenticatedRequestContext = Depends(get_request_context),
 ) -> HypothesisSetResponse:
-    tenant_id = get_default_tenant_id(db)
+    tenant_id = ctx.tenant_id
     scoped_request = request.model_copy(update={"tenant_id": tenant_id, "investigation_id": investigation_id})
     try:
         return hypothesis_service.generate(db, scoped_request)
@@ -116,8 +122,9 @@ def create_hypotheses(
 def list_latest_hypotheses(
     investigation_id: uuid.UUID,
     db: Session = Depends(get_db),
+    ctx: AuthenticatedRequestContext = Depends(get_request_context),
 ) -> HypothesisSetResponse:
-    tenant_id = get_default_tenant_id(db)
+    tenant_id = ctx.tenant_id
     result = hypothesis_service.latest(db, tenant_id, investigation_id)
     if result is None:
         raise HTTPException(status_code=404, detail={"code": "HYPOTHESIS_SET_NOT_FOUND", "message": "No hypothesis set exists"})
@@ -129,8 +136,9 @@ def get_hypothesis(
     investigation_id: uuid.UUID,
     hypothesis_id: uuid.UUID,
     db: Session = Depends(get_db),
+    ctx: AuthenticatedRequestContext = Depends(get_request_context),
 ) -> HypothesisSetResponse:
-    tenant_id = get_default_tenant_id(db)
+    tenant_id = ctx.tenant_id
     try:
         return hypothesis_service.get(db, tenant_id, investigation_id, hypothesis_id)
     except HypothesisEngineError as exc:

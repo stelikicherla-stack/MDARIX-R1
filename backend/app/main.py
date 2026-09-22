@@ -28,6 +28,9 @@ from backend.app.auth_router import router as auth_router
 from backend.app.governance_router import router as governance_router
 from backend.app.ask_router import router as ask_router
 from scenario_intelligence.router import router as scenario_router
+from backend.app.workspace_context import router as workspace_context_router
+from backend.app.stage3_router import router as stage3_router
+from backend.app.request_context import AuthenticatedRequestContext, get_request_context
 from graph.schemas import GraphResponse, HealthResponse, RelationshipDetail
 from graph.service import GraphError, RealityGraphService
 
@@ -60,6 +63,8 @@ app.include_router(auth_router)
 app.include_router(governance_router)
 app.include_router(ask_router)
 app.include_router(scenario_router)
+app.include_router(workspace_context_router)
+app.include_router(stage3_router)
 graph_service = RealityGraphService()
 product360_service = Product360Service()
 
@@ -92,62 +97,62 @@ def readiness() -> dict[str, str]:
 
 
 @app.get("/api/v1/graph/nodes/{entity_type}/{entity_id}")
-def get_node(entity_type: str, entity_id: str):
+def get_node(entity_type: str, entity_id: str, ctx: AuthenticatedRequestContext = Depends(get_request_context)):
     try:
-        return graph_service.get_node(entity_type, entity_id)
+        return graph_service.get_node(entity_type, entity_id, ctx.tenant_id)
     except GraphError as exc:
         raise graph_error(exc) from exc
 
 
 @app.get("/api/v1/graph/nodes/{entity_type}/{entity_id}/neighbors", response_model=GraphResponse)
-def get_neighbors(entity_type: str, entity_id: str, depth: int = Query(1, ge=0, le=3), direction: str = "both", relationship_type: str | None = None, target_entity_type: str | None = None) -> GraphResponse:
+def get_neighbors(entity_type: str, entity_id: str, depth: int = Query(1, ge=0, le=3), direction: str = "both", relationship_type: str | None = None, target_entity_type: str | None = None, ctx: AuthenticatedRequestContext = Depends(get_request_context)) -> GraphResponse:
     try:
-        return graph_service.get_neighbors(entity_type, entity_id, depth, direction, relationship_type, target_entity_type)
+        return graph_service.get_neighbors(entity_type, entity_id, depth, direction, relationship_type, target_entity_type, ctx.tenant_id)
     except GraphError as exc:
         raise graph_error(exc) from exc
 
 
 @app.get("/api/v1/graph/products/{product_id}", response_model=GraphResponse)
-def get_product_graph(product_id: str, depth: int = Query(2, ge=0, le=3)) -> GraphResponse:
+def get_product_graph(product_id: str, depth: int = Query(2, ge=0, le=3), ctx: AuthenticatedRequestContext = Depends(get_request_context)) -> GraphResponse:
     try:
-        return graph_service.get_product_graph(product_id, depth)
+        return graph_service.get_product_graph(product_id, depth, ctx.tenant_id)
     except GraphError as exc:
         raise graph_error(exc) from exc
 
 
 @app.get("/api/v1/graph/investigations/{investigation_id}", response_model=GraphResponse)
-def get_investigation_graph(investigation_id: str, depth: int = Query(2, ge=0, le=3)) -> GraphResponse:
+def get_investigation_graph(investigation_id: str, depth: int = Query(2, ge=0, le=3), ctx: AuthenticatedRequestContext = Depends(get_request_context)) -> GraphResponse:
     try:
-        return graph_service.get_investigation_graph(investigation_id, depth)
+        return graph_service.get_investigation_graph(investigation_id, depth, ctx.tenant_id)
     except GraphError as exc:
         raise graph_error(exc) from exc
 
 
 @app.get("/api/v1/graph/relationships/{relationship_id}", response_model=RelationshipDetail)
-def get_relationship(relationship_id: str) -> RelationshipDetail:
+def get_relationship(relationship_id: str, ctx: AuthenticatedRequestContext = Depends(get_request_context)) -> RelationshipDetail:
     try:
-        return graph_service.get_relationship_detail(relationship_id)
+        return graph_service.get_relationship_detail(relationship_id, ctx.tenant_id)
     except GraphError as exc:
         raise graph_error(exc) from exc
 
 
 @app.get("/api/v1/graph/paths", response_model=GraphResponse)
-def get_path(source_type: str, source_id: str, target_type: str, target_id: str, max_depth: int = Query(4, ge=0, le=5)) -> GraphResponse:
+def get_path(source_type: str, source_id: str, target_type: str, target_id: str, max_depth: int = Query(4, ge=0, le=5), ctx: AuthenticatedRequestContext = Depends(get_request_context)) -> GraphResponse:
     try:
-        return graph_service.get_path(source_type, source_id, target_type, target_id, max_depth)
+        return graph_service.get_path(source_type, source_id, target_type, target_id, max_depth, ctx.tenant_id)
     except GraphError as exc:
         raise graph_error(exc) from exc
 
 
 @app.get("/api/v1/products", response_model=list[ProductSummary])
-def list_products() -> list[ProductSummary]:
-    return product360_service.list_products()
+def list_products(ctx: AuthenticatedRequestContext = Depends(get_request_context)) -> list[ProductSummary]:
+    return product360_service.list_products(ctx.tenant_id)
 
 
 @app.get("/api/v1/products/{product_id}/investigations")
-def list_product_investigations(product_id: str) -> list[dict]:
+def list_product_investigations(product_id: str, ctx: AuthenticatedRequestContext = Depends(get_request_context)) -> list[dict]:
     try:
-        return product360_service.list_product_investigations(product_id)
+        return product360_service.list_product_investigations(product_id, ctx.tenant_id)
     except Product360Error as exc:
         raise product_error(exc) from exc
 
@@ -171,9 +176,9 @@ def _product360_audit(db: Session, request: Request, product: Product360Response
 
 
 @app.get("/api/v1/products/{product_id}/product-360", response_model=Product360Response)
-def get_product360(request: Request, product_id: str, version_id: str | None = None, as_of: datetime | None = None, mode: str = Query("current", pattern="^(current|event|known)$"), db: Session = Depends(get_db)) -> Product360Response:
+def get_product360(request: Request, product_id: str, version_id: str | None = None, as_of: datetime | None = None, mode: str = Query("current", pattern="^(current|event|known)$"), db: Session = Depends(get_db), ctx: AuthenticatedRequestContext = Depends(get_request_context)) -> Product360Response:
     try:
-        result = product360_service.product360(product_id, version_id, as_of, mode)
+        result = product360_service.product360(product_id, version_id, as_of, mode, ctx.tenant_id)
         _product360_audit(db, request, result, mode, as_of, request.headers.get("X-Correlation-ID") or str(uuid4()))
         return result
     except Product360Error as exc:
@@ -181,9 +186,9 @@ def get_product360(request: Request, product_id: str, version_id: str | None = N
 
 
 @app.get("/api/v1/products/{product_id}/timeline", response_model=TemporalRealityResponse)
-def get_timeline(request: Request, product_id: str, version_id: str | None = None, as_of: datetime | None = None, mode: str = Query("event", pattern="^(event|known)$"), db: Session = Depends(get_db)) -> TemporalRealityResponse:
+def get_timeline(request: Request, product_id: str, version_id: str | None = None, as_of: datetime | None = None, mode: str = Query("event", pattern="^(event|known)$"), db: Session = Depends(get_db), ctx: AuthenticatedRequestContext = Depends(get_request_context)) -> TemporalRealityResponse:
     try:
-        result = product360_service.temporal_reality(product_id, version_id, as_of, mode)
+        result = product360_service.temporal_reality(product_id, version_id, as_of, mode, ctx.tenant_id)
         _product360_audit(db, request, product360_service.product360(product_id, version_id, as_of, mode), mode, as_of, request.headers.get("X-Correlation-ID") or str(uuid4()))
         return result
     except Product360Error as exc:

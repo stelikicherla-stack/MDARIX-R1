@@ -37,8 +37,8 @@ class Product360Service:
     def tenant_id(self) -> str:
         return self.graph.tenant_id()
 
-    def list_products(self) -> list[ProductSummary]:
-        tenant_id = self.tenant_id()
+    def list_products(self, tenant_id: str | None = None) -> list[ProductSummary]:
+        tenant_id = tenant_id or self.tenant_id()
         with engine.connect() as conn:
             rows = conn.execute(
                 text(
@@ -125,8 +125,8 @@ class Product360Service:
             metadata={"tenant_id": tenant_id, "generated_at": utcnow().isoformat(), "ground_truth_used": False},
         )
 
-    def temporal_reality(self, product_id: str, version_id: str | None = None, as_of: datetime | None = None, mode: str = "event") -> TemporalRealityResponse:
-        product = self.product360(product_id, version_id, as_of, "known" if mode == "known" else "event")
+    def temporal_reality(self, product_id: str, version_id: str | None = None, as_of: datetime | None = None, mode: str = "event", tenant_id: str | None = None) -> TemporalRealityResponse:
+        product = self.product360(product_id, version_id, as_of, "known" if mode == "known" else "event", tenant_id)
         events = product.timeline
         return TemporalRealityResponse(
             product_id=product_id,
@@ -205,13 +205,13 @@ class Product360Service:
     def investigations(self, conn, tenant_id: str, product_id: str):
         return conn.execute(text("SELECT id, investigation_identifier, investigation_question, status, opened_at, closed_at FROM investigations WHERE tenant_id=:tenant_id AND product_id=:product_id ORDER BY opened_at"), {"tenant_id": tenant_id, "product_id": product_id}).mappings().all()
 
-    def list_product_investigations(self, product_id: str) -> list[dict[str, Any]]:
+    def list_product_investigations(self, product_id: str, tenant_id: str | None = None) -> list[dict[str, Any]]:
         """Return all investigations associated with a product for workspace access.
 
         This intentionally does not apply an as-of filter: association access must not
         reinterpret a historical Product 360 snapshot as absence of an investigation.
         """
-        tenant_id = self.tenant_id()
+        tenant_id = tenant_id or self.tenant_id()
         with engine.connect() as conn:
             product = conn.execute(text("SELECT id FROM products WHERE tenant_id=:tenant_id AND id=:id"), {"tenant_id": tenant_id, "id": product_id}).mappings().one_or_none()
             if not product:

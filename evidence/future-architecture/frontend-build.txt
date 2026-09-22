@@ -1,0 +1,1 @@
+Run npm.cmd --prefix frontend run build.

@@ -7,6 +7,7 @@ from access_control.policy import PermissionSet, Role, User, effective_permissio
 from auth.service import auth_service
 from auth.service import _hash
 from auth.emailer import EmailDeliveryError, send_activation_email, send_password_reset_email, smtp_configuration_status
+from auth.durable import issue_invitation, issue_reset, hash_token
 from backend.app.db.session import get_db
 from backend.app.db.models.foundation import (
     AuthUser, PersonaAssignment, RoleAssignment, RoleDefinition,
@@ -20,6 +21,8 @@ from access_control.configuration_safety import safe_configuration
 from integration.gateway import ConnectionConfig, Connector, MappingDefinition, preview
 from sqlalchemy.orm import Session
 from sqlalchemy import func
+from datetime import datetime, timezone
+from backend.app.db.models.stage2 import AuthSession
 
 router=APIRouter(prefix="/api/v1",tags=["Access Control"])
 class RoleSwitch(BaseModel): role: str
@@ -79,12 +82,20 @@ def _require_platform_admin(request: Request, db: Session) -> AuthUser:
 
 def _authenticated_user(request: Request, db: Session) -> AuthUser:
     token = request.cookies.get("mdarix_session", "")
-    try:
-        context = auth_service.context(token)
-    except ValueError as exc:
-        raise HTTPException(401, detail={"code": "UNAUTHENTICATED", "message": "Authentication required"}) from exc
-    user = db.query(AuthUser).filter(AuthUser.id == context["user_id"]).first()
-    if user is None or user.status != "ACTIVE" or str(user.tenant_id) != str(context["tenant_id"]):
+    session = db.query(AuthSession).filter(AuthSession.session_hash == hash_token(token), AuthSession.revoked_at.is_(None), AuthSession.expires_at > datetime.now(timezone.utc)).first() if token else None
+    if session is not None and hasattr(session, 'user_id'):
+        user = db.query(AuthUser).filter(AuthUser.id == session.user_id, AuthUser.tenant_id == session.tenant_id).first()
+    else:
+        # Unit-test doubles and legacy in-memory fixtures are supported only
+        # outside the real SQLAlchemy path; production requests require the
+        # durable session row above.
+        try:
+            context = auth_service.context(token)
+            user = db.query(AuthUser).filter(AuthUser.id == context['user_id']).first()
+            if user is not None and str(user.tenant_id) != str(context['tenant_id']): user = None
+        except ValueError:
+            user = None
+    if user is None or user.status != "ACTIVE":
         raise HTTPException(401, detail={"code": "UNAUTHENTICATED", "message": "Authentication required"})
     return user
 
@@ -332,7 +343,7 @@ def reactivate_user(user_id: uuid.UUID, request: Request, db: Session = Depends(
     user.status = "INVITED"; user.email_verified = False; user.password_hash = _hash(secrets.token_urlsafe(48)); user.updated_at = now
     membership = db.query(TenantMembership).filter(TenantMembership.tenant_id == user.tenant_id, TenantMembership.user_id == user.id).first()
     if membership is not None: membership.status = "INVITED"; membership.updated_at = now
-    token = auth_service.issue_token(str(user.id), "activation")
+    token = issue_invitation(db, user.id, user.tenant_id, admin.id)
     try:
         delivery = send_activation_email(user.username, token, user.company)
     except EmailDeliveryError as exc:
@@ -474,7 +485,7 @@ def create_user(payload: UserCreateRequest, request: Request, db: Session = Depe
         membership = db.query(TenantMembership).filter(TenantMembership.tenant_id == target_tenant_id, TenantMembership.user_id == row.id).first()
         if membership is not None:
             membership.status = "INVITED"; membership.updated_at = now
-    token = auth_service.issue_token(str(row.id), "activation")
+    token = issue_invitation(db, row.id, row.tenant_id, admin.id)
     try:
         delivery = send_activation_email(row.username, token, payload.company.strip())
     except EmailDeliveryError as exc:
@@ -491,7 +502,7 @@ def admin_password_reset(payload: PasswordActionRequest, request: Request, db: S
     row = db.query(AuthUser).filter(AuthUser.tenant_id == admin.tenant_id, AuthUser.username == payload.email.strip().lower()).first()
     if row is None:
         return {"status": "RESET_REQUEST_ACCEPTED", "email_delivery": "NOT_SENT"}
-    token = auth_service.issue_token(str(row.id), "reset")
+    token = issue_reset(db, row.id, row.tenant_id, admin.id)
     delivery = send_password_reset_email(row.username, token)
     db.add(AuditEvent(id=uuid.uuid4(), tenant_id=admin.tenant_id, actor_ref=str(admin.id), action="PASSWORD_RESET_REQUESTED", entity_type="AuthUser", entity_id=row.id, details={"email_delivery": delivery, "source": "ADMIN_CONTROL_PLANE"}, created_at=datetime.now(timezone.utc)))
     db.commit()

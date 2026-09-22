@@ -114,14 +114,14 @@ class RealityGraphService:
         evidence = self.evidence_for_relationship(rel, tenant_id)
         return RelationshipDetail(relationship=rel, provenance=provenance, evidence=evidence)
 
-    def get_neighbors(self, entity_type: str, entity_id: str, depth: int = 1, direction: str = "both", relationship_type: str | None = None, target_entity_type: str | None = None) -> GraphResponse:
+    def get_neighbors(self, entity_type: str, entity_id: str, depth: int = 1, direction: str = "both", relationship_type: str | None = None, target_entity_type: str | None = None, tenant_id: str | None = None) -> GraphResponse:
         self.validate_depth(depth)
         entity_type = self.clean_entity_type(entity_type)
         if relationship_type:
             self.clean_relationship_type(relationship_type)
         if target_entity_type:
             target_entity_type = self.clean_entity_type(target_entity_type)
-        tenant_id = self.tenant_id()
+        tenant_id = tenant_id or self.tenant_id()
         start = node_key(entity_type, entity_id)
         nodes = {start: self.get_node(entity_type, entity_id, tenant_id)}
         rels: dict[str, GraphRelationship] = {}
@@ -151,17 +151,17 @@ class RealityGraphService:
                     queue.append((adjacent[0], adjacent[1], current_depth + 1))
         return self.response(nodes, rels, tenant_id, depth)
 
-    def get_product_graph(self, product_id: str, depth: int = 2) -> GraphResponse:
-        return self.get_neighbors("product", product_id, depth=min(depth, MAX_DEPTH))
+    def get_product_graph(self, product_id: str, depth: int = 2, tenant_id: str | None = None) -> GraphResponse:
+        return self.get_neighbors("product", product_id, depth=min(depth, MAX_DEPTH), tenant_id=tenant_id)
 
-    def get_investigation_graph(self, investigation_id: str, depth: int = 2) -> GraphResponse:
-        return self.get_neighbors("investigation", investigation_id, depth=min(depth, MAX_DEPTH))
+    def get_investigation_graph(self, investigation_id: str, depth: int = 2, tenant_id: str | None = None) -> GraphResponse:
+        return self.get_neighbors("investigation", investigation_id, depth=min(depth, MAX_DEPTH), tenant_id=tenant_id)
 
-    def get_path(self, source_type: str, source_id: str, target_type: str, target_id: str, max_depth: int = 4) -> GraphResponse:
+    def get_path(self, source_type: str, source_id: str, target_type: str, target_id: str, max_depth: int = 4, tenant_id: str | None = None) -> GraphResponse:
         self.validate_depth(max_depth, max_allowed=5)
         source_type = self.clean_entity_type(source_type)
         target_type = self.clean_entity_type(target_type)
-        tenant_id = self.tenant_id()
+        tenant_id = tenant_id or self.tenant_id()
         all_rels = self.all_relationships(tenant_id)
         start = (source_type, source_id)
         target = (target_type, target_id)

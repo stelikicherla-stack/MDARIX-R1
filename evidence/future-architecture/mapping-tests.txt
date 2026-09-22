@@ -1,0 +1,1 @@
+Run master/tenant mapping version and protected-field tests.

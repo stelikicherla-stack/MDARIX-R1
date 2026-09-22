@@ -14,13 +14,8 @@ service = EvidenceIntelligenceService()
 
 
 def get_default_tenant_id(db: Session) -> uuid.UUID:
-    """Helper to obtain default tenant ID."""
-    tenant = db.query(Tenant).filter(Tenant.tenant_key == "ACME_CARE_SYNTHETIC").first()
-    if not tenant:
-        tenant = db.query(Tenant).first()
-    if not tenant:
-        raise HTTPException(status_code=500, detail="No tenant configured in database.")
-    return tenant.id
+    """Legacy compatibility guard: anonymous default-tenant access is forbidden."""
+    raise HTTPException(status_code=401, detail={"code": "UNAUTHENTICATED", "message": "Authentication required"})
 
 def tenant_context(request: Request, db: Session) -> uuid.UUID:
     token = request.cookies.get("mdarix_session", "")

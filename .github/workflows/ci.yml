@@ -1,0 +1,49 @@
+name: MDARIX R1 CI
+on:
+  push:
+    branches: [main]
+  pull_request:
+jobs:
+  backend:
+    runs-on: ubuntu-latest
+    env:
+      POSTGRES_USER: mdarix_app
+      POSTGRES_PASSWORD: mdarix_app
+      POSTGRES_HOST: localhost
+      POSTGRES_PORT: '5432'
+      POSTGRES_DB: mdarix_r1
+    services:
+      postgres:
+        image: pgvector/pgvector:pg16
+        env:
+          POSTGRES_USER: mdarix_app
+          POSTGRES_PASSWORD: mdarix_app
+          POSTGRES_DB: mdarix_r1
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd="pg_isready -U mdarix_app -d mdarix_r1"
+          --health-interval=10s --health-timeout=5s --health-retries=10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.14'
+      - run: python -m pip install -r requirements.txt
+      - run: python -m pip install pip-audit
+      - run: python -m pip check
+      - run: pip-audit -r requirements.txt
+      - run: alembic upgrade head
+      - run: python -m compileall backend auth access_control counterfactual graph scenario_intelligence
+      - run: python -m pytest -q
+  frontend:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - run: npm.cmd --prefix frontend ci
+      - run: npm.cmd --prefix frontend audit --audit-level=high
+      - run: npm.cmd --prefix frontend run build
