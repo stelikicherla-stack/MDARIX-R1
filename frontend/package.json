@@ -9,19 +9,19 @@
     "test": "vitest run"
   },
   "dependencies": {
-    "@vitejs/plugin-react": "latest",
-    "lucide-react": "latest",
-    "react": "latest",
-    "react-dom": "latest",
-    "typescript": "latest",
-    "vite": "latest"
+    "@vitejs/plugin-react": "6.1.1",
+    "lucide-react": "1.46.0",
+    "react": "19.3.0",
+    "react-dom": "19.3.0",
+    "typescript": "7.0.2",
+    "vite": "8.3.0"
   },
   "devDependencies": {
     "@types/react": "^19.3.0",
     "@types/react-dom": "^19.3.0",
-    "autoprefixer": "latest",
-    "postcss": "latest",
+    "autoprefixer": "10.6.1",
+    "postcss": "8.5.28",
     "tailwindcss": "^3.4.17",
-    "vitest": "latest"
+    "vitest": "5.0.1"
   }
 }
