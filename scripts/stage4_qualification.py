@@ -9,6 +9,8 @@ from __future__ import annotations
 import os
 import shutil
 import subprocess
+import sys
+import uuid
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -53,10 +55,11 @@ def main() -> int:
         execute("alembic_current", "alembic", "current") +
         execute("alembic_heads", "alembic", "heads"), encoding="utf-8")
 
-    py = os.environ.get("STAGE4_PYTHON", shutil.which("python") or "python")
+    py = os.environ.get("STAGE4_PYTHON", sys.executable)
+    basetemp = Path(os.environ.get("TEMP", ".")) / f"mdarix-stage4-basetemp-{uuid.uuid4()}"
     (OUT / "backend-tests.txt").write_text(
         execute("full_regression", py, "-m", "pytest", "-q", "--basetemp=" +
-                str(Path(os.environ.get("TEMP", ".")) / "mdarix-stage4-basetemp"), timeout=900), encoding="utf-8")
+                str(basetemp), timeout=900), encoding="utf-8")
     (OUT / "frontend-tests.txt").write_text(
         "Frontend unit/browser automation: MANUAL_REQUIRED when no configured runner is present.\n",
         encoding="utf-8")

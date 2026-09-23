@@ -2,27 +2,19 @@ full_regression: PASS
 ........................................................................ [ 20%]
 ........................................................................ [ 40%]
 ........................................................................ [ 60%]
-........................................................................ [ 81%]
-...................................................................      [100%]
+........................................................................ [ 80%]
+........................................................................ [100%]
 ============================== warnings summary ===============================
-..\..\AppData\Roaming\Python\Python314\site-packages\fastapi\testclient.py:1
-  C:\Users\user\AppData\Roaming\Python\Python314\site-packages\fastapi\testclient.py:1: StarletteDeprecationWarning: Using `httpx` with `starlette.testclient` is deprecated; install `httpx2` instead.
+.venv\Lib\site-packages\fastapi\testclient.py:1
+  C:\Users\user\Srinivas\MDARIX-R1\.venv\Lib\site-packages\fastapi\testclient.py:1: StarletteDeprecationWarning: Using `httpx` with `starlette.testclient` is deprecated; install `httpx2` instead.
     from starlette.testclient import TestClient as TestClient  # noqa
-
-..\..\AppData\Roaming\Python\Python314\site-packages\starlette\testclient.py:53
-  C:\Users\user\AppData\Roaming\Python\Python314\site-packages\starlette\testclient.py:53: DeprecationWarning: The anyio.abc.BlockingPortal alias is deprecated, use anyio.from_thread.BlockingPortal instead.
-    _PortalFactoryType = Callable[[], AbstractContextManager[anyio.abc.BlockingPortal]]
 
 tests/test_day12_hypothesis_engine.py::test_hypothesis_api_create_list_and_get
 tests/test_day9_retrieval.py::test_retrieval_api_index_and_query
-  C:\Users\user\AppData\Roaming\Python\Python314\site-packages\pydantic\main.py:475: UserWarning: Pydantic serializer warnings:
+  C:\Users\user\Srinivas\MDARIX-R1\.venv\Lib\site-packages\pydantic\main.py:475: UserWarning: Pydantic serializer warnings:
     PydanticSerializationUnexpectedValue(Expected `uuid` - serialized value may not be as expected [field_name='tenant_id', input_value='414e8075-26e8-456e-b2b2-330919f02eed', input_type=str])
     return self.__pydantic_serializer__.to_python(
 
-..\..\AppData\Roaming\Python\Python314\site-packages\_pytest\cacheprovider.py:469
-  C:\Users\user\AppData\Roaming\Python\Python314\site-packages\_pytest\cacheprovider.py:469: PytestCacheWarning: could not create cache path C:\Users\user\Srinivas\MDARIX-R1\.pytest_cache\v\cache\nodeids: [WinError 183] Cannot create a file when that file already exists: 'C:\\Users\\user\\Srinivas\\MDARIX-R1\\.pytest_cache\\v\\cache'
-    config.cache.set("cache/nodeids", sorted(self.cached_nodeids))
-
 -- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
-355 passed, 5 warnings in 89.23s (0:01:29)
+360 passed, 3 warnings in 86.25s (0:01:26)
 exit_code=0

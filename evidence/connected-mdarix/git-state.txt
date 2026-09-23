@@ -2,78 +2,42 @@ branch: PASS
 main
 exit_code=0
 revision: PASS
-bb17e00c48387672c192d1eca0a1e1dbc0e33aef
+eaec36d5526f5086b937e4c8e2b6a106ab7dd781
 exit_code=0
 working_tree: PASS
-D .pytest-tmp-day29-final/test_schema_drift_failure_is_e0/bad_complaints.csv
- D .pytest-tmp-day30-final-20260918-215501/test_schema_drift_failure_is_e0/bad_complaints.csv
- D .pytest-tmp-day30-final-20260918-222829/test_schema_drift_failure_is_e0/bad_complaints.csv
- D .pytest-tmp-day30-final-20260918-223718/test_schema_drift_failure_is_e0/bad_complaints.csv
- D .pytest-tmp-day30-full/test_schema_drift_failure_is_e0/bad_complaints.csv
- D .pytest-tmp-day31-final-20260919-111527/test_schema_drift_failure_is_e0/bad_complaints.csv
- D .pytest-tmp-day31-full-20260918-235141/test_schema_drift_failure_is_e0/bad_complaints.csv
- D .pytest-tmp-host/test_schema_drift_failure_is_e0/bad_complaints.csv
- M backend/app/db/base.py
- M backend/app/governance_router.py
- M backend/app/main.py
- M frontend/src/app/router.ts
- M frontend/src/main.tsx
+M evidence/connected-mdarix/backend-tests.txt
+ M evidence/connected-mdarix/docker-state.txt
+ M evidence/connected-mdarix/environment.txt
+ M evidence/connected-mdarix/frontend-build.txt
+ M evidence/connected-mdarix/git-state.txt
  M scripts/stage4_qualification.py
-?? .pytest-tmp-auth-final/
-?? .pytest-tmp-day15-actions-full/
-?? .pytest-tmp-day15-full/
-?? .pytest-tmp-day155-full/
-?? .pytest-tmp-day16-final-full4/
-?? .pytest-tmp-day16-final-full5/
-?? .pytest-tmp-day16-final-regression/
-?? .pytest-tmp-day16-full/
-?? .pytest-tmp-day16-isolation-full/
-?? .pytest-tmp-day16-remediation-full/
-?? .pytest-tmp-day16-remediation-full2/
-?? .pytest-tmp-day16-remediation-full3/
-?? .pytest-tmp-day16-warning-audit/
-?? .pytest-tmp-day17-full/
-?? .pytest-tmp-day18-full/
-?? .pytest-tmp-day19-full/
-?? .pytest-tmp-day19-full2/
-?? .pytest-tmp-day20-full/
-?? .pytest-tmp-day21-full/
-?? .pytest-tmp-day22-fix-full/
-?? .pytest-tmp-day22-full/
-?? .pytest-tmp-day23-final/
-?? .pytest-tmp-day23-full/
-?? .pytest-tmp-day23-release/
-?? .pytest-tmp-day25-full/
-?? .pytest-tmp-day29-full/
-?? .pytest-tmp-day29-remediation-full-20260918-190620/
-?? .pytest-tmp-round3-final/
-?? backend/app/communication_router.py
-?? backend/app/db/models/stage3.py
-?? backend/app/stage3_workflow_router.py
-?? communication/
-?? docs/MDARIX_AI_ASSURANCE_ARCHITECTURE.md
-?? docs/MDARIX_ASK_ARCHITECTURE.md
-?? docs/MDARIX_CASE_AUDIT_ARCHITECTURE.md
-?? docs/MDARIX_CONNECTED_EXPERIENCE_FINAL_REPORT.md
-?? docs/MDARIX_DECISION_ARCHITECTURE.md
-?? docs/MDARIX_INBOUND_EMAIL_EVIDENCE_WORKFLOW.md
-?? docs/MDARIX_REPORTING_ARCHITECTURE.md
-?? docs/MDARIX_RESEND_ARCHITECTURE.md
-?? docs/MDARIX_STAGE3_IMPLEMENTATION_REPORT.md
-?? evidence/connected-mdarix/
-?? frontend/src/features/ask/
-?? infrastructure/database/migrations/versions/t36_stage3_interactions_email.py
-?? object_storage/
-?? reports/
-?? tests/test_stage3_communication.py
-?? tests/test_stage3_completion.py
 
-warning: could not open directory '.pytest-tmp-day29-final/': No such file or directory
-warning: could not open directory '.pytest-tmp-day30-final-20260918-215501/': No such file or directory
-warning: could not open directory '.pytest-tmp-day30-final-20260918-222829/': No such file or directory
-warning: could not open directory '.pytest-tmp-day30-final-20260918-223718/': No such file or directory
-warning: could not open directory '.pytest-tmp-day30-full/': No such file or directory
-warning: could not open directory '.pytest-tmp-day31-final-20260919-111527/': No such file or directory
-warning: could not open directory '.pytest-tmp-day31-full-20260918-235141/': No such file or directory
-warning: could not open directory '.pytest-tmp-host/': No such file or directory
+warning: could not open directory '.pytest-tmp-auth-final/': Permission denied
+warning: could not open directory '.pytest-tmp-day15-actions-full/': Permission denied
+warning: could not open directory '.pytest-tmp-day15-full/': Permission denied
+warning: could not open directory '.pytest-tmp-day155-full/': Permission denied
+warning: could not open directory '.pytest-tmp-day16-final-full4/': Permission denied
+warning: could not open directory '.pytest-tmp-day16-final-full5/': Permission denied
+warning: could not open directory '.pytest-tmp-day16-final-regression/': Permission denied
+warning: could not open directory '.pytest-tmp-day16-full/': Permission denied
+warning: could not open directory '.pytest-tmp-day16-isolation-full/': Permission denied
+warning: could not open directory '.pytest-tmp-day16-remediation-full/': Permission denied
+warning: could not open directory '.pytest-tmp-day16-remediation-full2/': Permission denied
+warning: could not open directory '.pytest-tmp-day16-remediation-full3/': Permission denied
+warning: could not open directory '.pytest-tmp-day16-warning-audit/': Permission denied
+warning: could not open directory '.pytest-tmp-day17-full/': Permission denied
+warning: could not open directory '.pytest-tmp-day18-full/': Permission denied
+warning: could not open directory '.pytest-tmp-day19-full/': Permission denied
+warning: could not open directory '.pytest-tmp-day19-full2/': Permission denied
+warning: could not open directory '.pytest-tmp-day20-full/': Permission denied
+warning: could not open directory '.pytest-tmp-day21-full/': Permission denied
+warning: could not open directory '.pytest-tmp-day22-fix-full/': Permission denied
+warning: could not open directory '.pytest-tmp-day22-full/': Permission denied
+warning: could not open directory '.pytest-tmp-day23-final/': Permission denied
+warning: could not open directory '.pytest-tmp-day23-full/': Permission denied
+warning: could not open directory '.pytest-tmp-day23-release/': Permission denied
+warning: could not open directory '.pytest-tmp-day25-full/': Permission denied
+warning: could not open directory '.pytest-tmp-day29-full/': Permission denied
+warning: could not open directory '.pytest-tmp-day29-remediation-full-20260918-190620/': Permission denied
+warning: could not open directory '.pytest-tmp-round3-final/': Permission denied
 exit_code=0

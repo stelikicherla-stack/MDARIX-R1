@@ -3,6 +3,7 @@ import uuid
 from fastapi import APIRouter,Depends,HTTPException,Request
 from sqlalchemy.orm import Session
 from backend.app.db.session import get_db
+from backend.app.request_context import AuthenticatedRequestContext, get_request_context
 from auth.service import auth_service
 from backend.app.enterprise_audit import make_audit_event
 from day14_service import Day14Error,Day14Service
@@ -25,17 +26,17 @@ def _authorize_investigation(db: Session, tenant_id: uuid.UUID, investigation_id
     if db.query(Investigation.id).filter(Investigation.id == investigation_id, Investigation.tenant_id == tenant_id).first() is None:
         raise HTTPException(status_code=404, detail={"code":"INVESTIGATION_NOT_FOUND","message":"Investigation not found"})
 @router.post("/{investigation_id}/unknowns",response_model=UnknownResponse)
-def create_unknowns(investigation_id:uuid.UUID,request:Request,data:UnknownRequest,db:Session=Depends(get_db)):
-    try:return service.unknowns(db,data.model_copy(update={"tenant_id":uuid.UUID(_context(request)["tenant_id"]),"investigation_id":investigation_id}))
+def create_unknowns(investigation_id:uuid.UUID,request:Request,data:UnknownRequest,db:Session=Depends(get_db),ctx:AuthenticatedRequestContext=Depends(get_request_context)):
+    try:return service.unknowns(db,data.model_copy(update={"tenant_id":uuid.UUID(ctx.tenant_id),"investigation_id":investigation_id}))
     except Day14Error as e:raise err(e) from e
 @router.get("/{investigation_id}/unknowns",response_model=UnknownResponse)
-def latest_unknowns(investigation_id:uuid.UUID,request:Request,db:Session=Depends(get_db)):
-    item=service.latest(db,uuid.UUID(_context(request)["tenant_id"]),investigation_id,U_PROVIDER,U_VERSION,UnknownSet)
+def latest_unknowns(investigation_id:uuid.UUID,request:Request,db:Session=Depends(get_db),ctx:AuthenticatedRequestContext=Depends(get_request_context)):
+    item=service.latest(db,uuid.UUID(ctx.tenant_id),investigation_id,U_PROVIDER,U_VERSION,UnknownSet)
     if not item:raise HTTPException(404,detail={"code":"UNKNOWN_SET_NOT_FOUND","message":"No unknown set exists"})
     result,row=item;return UnknownResponse(unknown_set=result,persisted=True,ai_execution_id=row)
 @router.post("/{investigation_id}/failure-chains",response_model=FailureChainResponse)
-def create_chains(investigation_id:uuid.UUID,request:Request,data:FailureChainRequest,db:Session=Depends(get_db)):
-    context=_context(request); tenant_id=uuid.UUID(context["tenant_id"]); correlation=request.headers.get("X-Correlation-ID") or str(uuid.uuid4())
+def create_chains(investigation_id:uuid.UUID,request:Request,data:FailureChainRequest,db:Session=Depends(get_db),ctx:AuthenticatedRequestContext=Depends(get_request_context)):
+    context={"tenant_id":ctx.tenant_id,"user_id":ctx.user_id}; tenant_id=uuid.UUID(ctx.tenant_id); correlation=ctx.correlation_id
     try:
         _authorize_investigation(db, tenant_id, investigation_id)
         if _controlled_dependency_failure():
@@ -52,7 +53,7 @@ def create_chains(investigation_id:uuid.UUID,request:Request,data:FailureChainRe
         db.commit()
         raise HTTPException(status_code=503,detail={"code":"DEPENDENCY_UNAVAILABLE","message":"Analysis dependency is temporarily unavailable","correlation_id":correlation}) from exc
 @router.get("/{investigation_id}/failure-chains",response_model=FailureChainResponse)
-def latest_chains(investigation_id:uuid.UUID,request:Request,db:Session=Depends(get_db)):
-    item=service.latest(db,uuid.UUID(_context(request)["tenant_id"]),investigation_id,F_PROVIDER,F_VERSION,FailureChainSet)
+def latest_chains(investigation_id:uuid.UUID,request:Request,db:Session=Depends(get_db),ctx:AuthenticatedRequestContext=Depends(get_request_context)):
+    item=service.latest(db,uuid.UUID(ctx.tenant_id),investigation_id,F_PROVIDER,F_VERSION,FailureChainSet)
     if not item:raise HTTPException(404,detail={"code":"FAILURE_CHAIN_SET_NOT_FOUND","message":"No failure-chain set exists"})
     result,row=item;return FailureChainResponse(failure_chain_set=result,persisted=True,ai_execution_id=row)

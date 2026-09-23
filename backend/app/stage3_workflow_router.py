@@ -1,6 +1,6 @@
 import uuid
 from datetime import datetime, timezone
-from fastapi import APIRouter, Depends, Header, HTTPException, Request, UploadFile, File
+from fastapi import APIRouter, Depends, Header, HTTPException, Request, UploadFile, File, Response
 from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 from backend.app.db.session import get_db
@@ -21,6 +21,9 @@ class FeedbackRequest(BaseModel):
     rating: str = Field(min_length=1, max_length=40); comment: str | None = Field(default=None, max_length=4000)
 class SupplierEvidenceRequestPayload(BaseModel):
     recipient: str = Field(min_length=3, max_length=254); title: str = Field(min_length=1, max_length=240); requested_items: list[str] = Field(min_length=1, max_length=50); investigation_id: uuid.UUID | None = None; supplier_id: uuid.UUID | None = None
+
+MAX_ATTACHMENT_BYTES = 10 * 1024 * 1024
+ALLOWED_ATTACHMENT_TYPES = {"application/pdf", "text/plain", "text/csv", "image/png", "image/jpeg"}
 
 @router.post("/interactions")
 def create_interaction(payload: InteractionRequest, db: Session = Depends(get_db), ctx: AuthenticatedRequestContext = Depends(get_request_context)):
@@ -61,7 +64,28 @@ def list_supplier_evidence_requests(db: Session = Depends(get_db), ctx: Authenti
 async def upload_supplier_attachment(request_id: uuid.UUID, file: UploadFile = File(...), db: Session = Depends(get_db), ctx: AuthenticatedRequestContext = Depends(get_request_context)):
     row = db.query(SupplierEvidenceRequest).filter(SupplierEvidenceRequest.id == request_id, SupplierEvidenceRequest.tenant_id == ctx.tenant_id).first()
     if not row: raise HTTPException(404, detail={"code":"EVIDENCE_REQUEST_NOT_FOUND","message":"Evidence request is not available"})
-    content = await file.read(); metadata = ObjectStorageService().put(ctx.tenant_id, f"{request_id}-{file.filename or 'attachment'}", content); now = NOW(); attachment = EvidenceAttachment(id=uuid.uuid4(), tenant_id=ctx.tenant_id, request_id=row.id, uploaded_by=ctx.user_id, filename=file.filename or "attachment", content_type=file.content_type or "application/octet-stream", object_key=metadata["object_key"], size=metadata["size"], checksum=metadata["checksum"], created_at=now); db.add(attachment); db.add(AuditEvent(id=uuid.uuid4(), tenant_id=ctx.tenant_id, actor_ref=ctx.user_id, action="SUPPLIER_EVIDENCE_ATTACHMENT_UPLOADED", entity_type="EvidenceAttachment", entity_id=attachment.id, details={"filename":attachment.filename,"size":attachment.size,"checksum":attachment.checksum}, created_at=now)); db.commit(); return {"id":str(attachment.id),**metadata,"filename":attachment.filename}
+    content_type = (file.content_type or "").lower()
+    if content_type not in ALLOWED_ATTACHMENT_TYPES:
+        raise HTTPException(415, detail={"code":"UNSUPPORTED_ATTACHMENT_TYPE","message":"Attachment type is not permitted"})
+    content = await file.read(MAX_ATTACHMENT_BYTES + 1)
+    if len(content) > MAX_ATTACHMENT_BYTES:
+        raise HTTPException(413, detail={"code":"ATTACHMENT_TOO_LARGE","message":"Attachment exceeds the permitted size"})
+    metadata = ObjectStorageService().put(ctx.tenant_id, f"{request_id}-{file.filename or 'attachment'}", content); now = NOW(); attachment = EvidenceAttachment(id=uuid.uuid4(), tenant_id=ctx.tenant_id, request_id=row.id, uploaded_by=ctx.user_id, filename=file.filename or "attachment", content_type=content_type, object_key=metadata["object_key"], size=metadata["size"], checksum=metadata["checksum"], created_at=now); db.add(attachment); db.add(AuditEvent(id=uuid.uuid4(), tenant_id=ctx.tenant_id, actor_ref=ctx.user_id, action="SUPPLIER_EVIDENCE_ATTACHMENT_UPLOADED", entity_type="EvidenceAttachment", entity_id=attachment.id, details={"filename":attachment.filename,"size":attachment.size,"checksum":attachment.checksum}, created_at=now)); db.commit(); return {"id":str(attachment.id),**metadata,"filename":attachment.filename}
+
+@router.get("/supplier-evidence-requests/{request_id}/attachments")
+def list_supplier_attachments(request_id: uuid.UUID, db: Session = Depends(get_db), ctx: AuthenticatedRequestContext = Depends(get_request_context)):
+    row = db.query(SupplierEvidenceRequest).filter(SupplierEvidenceRequest.id == request_id, SupplierEvidenceRequest.tenant_id == ctx.tenant_id).first()
+    if not row: raise HTTPException(404, detail={"code":"EVIDENCE_REQUEST_NOT_FOUND","message":"Evidence request is not available"})
+    return [{"id":str(item.id),"filename":item.filename,"content_type":item.content_type,"size":item.size,"checksum":item.checksum,"created_at":item.created_at} for item in db.query(EvidenceAttachment).filter(EvidenceAttachment.request_id == request_id, EvidenceAttachment.tenant_id == ctx.tenant_id).order_by(EvidenceAttachment.created_at.desc()).all()]
+
+@router.get("/supplier-evidence-requests/{request_id}/attachments/{attachment_id}")
+def download_supplier_attachment(request_id: uuid.UUID, attachment_id: uuid.UUID, db: Session = Depends(get_db), ctx: AuthenticatedRequestContext = Depends(get_request_context)):
+    attachment = db.query(EvidenceAttachment).filter(EvidenceAttachment.id == attachment_id, EvidenceAttachment.request_id == request_id, EvidenceAttachment.tenant_id == ctx.tenant_id).first()
+    if not attachment: raise HTTPException(404, detail={"code":"ATTACHMENT_NOT_FOUND","message":"Attachment is not available"})
+    try: content = ObjectStorageService().get(ctx.tenant_id, attachment.object_key)
+    except FileNotFoundError as exc: raise HTTPException(404, detail={"code":"ATTACHMENT_NOT_FOUND","message":"Attachment is not available"}) from exc
+    safe_name = attachment.filename.replace('"', "")
+    return Response(content=content, media_type=attachment.content_type, headers={"Content-Disposition":f'attachment; filename="{safe_name}"'})
 
 @router.post("/resend/webhook")
 async def persisted_resend_webhook(request: Request, x_resend_signature: str | None = Header(default=None), db: Session = Depends(get_db)):

@@ -1,4 +1,7 @@
-docker_version: MANUAL_REQUIRED
-command_not_found=docker
-compose_state: MANUAL_REQUIRED
-command_not_found=docker
+docker_version: PASS
+29.8.0
+exit_code=0
+compose_state: PASS
+NAME                 IMAGE                    COMMAND                  SERVICE    CREATED      STATUS                  PORTS
+mdarix-r1-postgres   pgvector/pgvector:pg16   "docker-entrypoint.sâ€¦"   postgres   7 days ago   Up 47 hours (healthy)   0.0.0.0:5433->5432/tcp, [::]:5433->5432/tcp
+exit_code=0

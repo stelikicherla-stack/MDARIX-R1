@@ -3,6 +3,7 @@ import uuid
 from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlalchemy.orm import Session
 from backend.app.db.session import get_db
+from backend.app.request_context import AuthenticatedRequestContext, get_request_context
 from auth.service import auth_service
 from backend.app.enterprise_audit import make_audit_event
 from challenger.schemas import ChallengeRequest, ChallengeResponse
@@ -22,8 +23,8 @@ def _authorize_investigation(db: Session, tenant_id: uuid.UUID, investigation_id
     if db.query(Investigation.id).filter(Investigation.id == investigation_id, Investigation.tenant_id == tenant_id).first() is None:
         raise HTTPException(status_code=404, detail={"code":"INVESTIGATION_NOT_FOUND","message":"Investigation not found"})
 @router.post("/{investigation_id}/challenges",response_model=ChallengeResponse)
-def create_challenges(investigation_id: uuid.UUID,request: Request, data: ChallengeRequest,db: Session=Depends(get_db)):
-    context=_context(request); tenant_id=uuid.UUID(context["tenant_id"]); correlation=request.headers.get("X-Correlation-ID") or str(uuid.uuid4())
+def create_challenges(investigation_id: uuid.UUID,request: Request, data: ChallengeRequest,db: Session=Depends(get_db), ctx: AuthenticatedRequestContext=Depends(get_request_context)):
+    context={"tenant_id":ctx.tenant_id,"user_id":ctx.user_id}; tenant_id=uuid.UUID(ctx.tenant_id); correlation=ctx.correlation_id
     try:
         _authorize_investigation(db, tenant_id, investigation_id)
         if _controlled_dependency_failure():
@@ -40,7 +41,7 @@ def create_challenges(investigation_id: uuid.UUID,request: Request, data: Challe
         db.commit()
         raise HTTPException(status_code=503,detail={"code":"DEPENDENCY_UNAVAILABLE","message":"Analysis dependency is temporarily unavailable","correlation_id":correlation}) from exc
 @router.get("/{investigation_id}/challenges",response_model=ChallengeResponse)
-def latest_challenges(investigation_id: uuid.UUID,request: Request,db: Session=Depends(get_db)):
-    result=service.latest(db,uuid.UUID(_context(request)["tenant_id"]),investigation_id)
+def latest_challenges(investigation_id: uuid.UUID,request: Request,db: Session=Depends(get_db), ctx: AuthenticatedRequestContext=Depends(get_request_context)):
+    result=service.latest(db,uuid.UUID(ctx.tenant_id),investigation_id)
     if result is None: raise HTTPException(status_code=404,detail={"code":"CHALLENGE_SET_NOT_FOUND","message":"No challenge set exists"})
     return result

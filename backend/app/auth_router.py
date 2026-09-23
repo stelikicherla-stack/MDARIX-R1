@@ -17,6 +17,8 @@ class Verify(BaseModel): token:str
 class ResetRequest(BaseModel): email:str=Field(min_length=3,max_length=254)
 class Reset(BaseModel): token:str; password:str=Field(min_length=12,max_length=128)
 def fail(exc): return HTTPException(400,detail={"code":str(exc),"message":"Request could not be completed"})
+def _development_token(token: str | None) -> str | None:
+    return token if os.getenv("MDARIX_ENV", "development").lower() == "development" else None
 @router.post('/signup')
 def signup(data:Signup, db:Session=Depends(get_db)):
  try:
@@ -44,8 +46,9 @@ def signin(data:Signin,response:Response,db:Session=Depends(get_db)):
   if not row: raise ValueError("INVALID_CREDENTIALS")
   token=auth_service.signin_persisted(data.email,data.password,user_id=row.id,display_name=row.display_name,tenant_id=row.tenant_id,password_hash=row.password_hash,role=row.role,status=row.status,email_verified=row.email_verified)
   persist_session(db, token, row.id, row.tenant_id)
-  secure_default = 'false' if os.getenv('MDARIX_ENV','development').lower() == 'development' else 'true'
-  response.set_cookie('mdarix_session',token,httponly=True,samesite='lax',secure=os.getenv('MDARIX_COOKIE_SECURE',secure_default).lower()=='true',max_age=3600); return auth_service.context(token)
+  is_development = os.getenv('MDARIX_ENV','development').lower() == 'development'
+  secure_cookie = True if not is_development else os.getenv('MDARIX_COOKIE_SECURE','false').lower() == 'true'
+  response.set_cookie('mdarix_session',token,httponly=True,samesite='lax',secure=secure_cookie,max_age=3600); return auth_service.context(token)
  except ValueError as e: raise HTTPException(401,detail={"code":"INVALID_CREDENTIALS","message":"Invalid credentials."}) from e
 @router.post('/signout')
 def signout(request:Request,response:Response,db:Session=Depends(get_db)):
@@ -67,7 +70,7 @@ def forgot(data:ResetRequest, db:Session=Depends(get_db)):
   return {"status":"RESET_REQUEST_ACCEPTED","email_delivery":"NOT_SENT"}
  token=issue_reset(db, row.id, row.tenant_id)
  delivery=send_password_reset_email(row.username,token)
- return {"status":"RESET_REQUEST_ACCEPTED","email_delivery":delivery,"development_token": token if delivery=="NOT_CONFIGURED" else None}
+ return {"status":"RESET_REQUEST_ACCEPTED","email_delivery":delivery,"development_token": _development_token(token) if delivery=="NOT_CONFIGURED" else None}
 @router.post('/reset-password')
 def reset(data:Reset, db:Session=Depends(get_db)):
  try:

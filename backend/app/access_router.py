@@ -1,5 +1,6 @@
 import uuid
 import secrets
+import os
 from datetime import datetime, timezone
 from fastapi import APIRouter, HTTPException, Request, Depends
 from pydantic import BaseModel, Field
@@ -25,6 +26,8 @@ from datetime import datetime, timezone
 from backend.app.db.models.stage2 import AuthSession
 
 router=APIRouter(prefix="/api/v1",tags=["Access Control"])
+def _development_token(token: str | None) -> str | None:
+    return token if os.getenv("MDARIX_ENV", "development").lower() == "development" else None
 class RoleSwitch(BaseModel): role: str
 class MembershipRequest(BaseModel): user_id: uuid.UUID; is_default: bool = False
 class PersonaRequest(BaseModel): user_id: uuid.UUID; persona_code: str
@@ -352,7 +355,7 @@ def reactivate_user(user_id: uuid.UUID, request: Request, db: Session = Depends(
         raise HTTPException(502, detail={"code": "SMTP_DELIVERY_FAILED", "message": str(exc)}) from exc
     db.add(AuditEvent(id=uuid.uuid4(), tenant_id=user.tenant_id, actor_ref=str(admin.id), action="USER_REACTIVATED", entity_type="AuthUser", entity_id=user.id, details={"email_delivery": delivery, "source": "ADMIN_CONTROL_PLANE"}, created_at=now))
     db.commit()
-    return {"user_id": str(user.id), "email": user.username, "status": user.status, "invitation_status": "RESENT", "email_delivery": delivery, "development_token": token if delivery == "NOT_CONFIGURED" else None}
+    return {"user_id": str(user.id), "email": user.username, "status": user.status, "invitation_status": "RESENT", "email_delivery": delivery, "development_token": _development_token(token) if delivery == "NOT_CONFIGURED" else None}
 
 
 @router.post("/me/tenant-context")
@@ -494,7 +497,7 @@ def create_user(payload: UserCreateRequest, request: Request, db: Session = Depe
         raise HTTPException(502, detail={"code": "SMTP_DELIVERY_FAILED", "message": str(exc)}) from exc
     db.add(AuditEvent(id=uuid.uuid4(), tenant_id=target_tenant_id, actor_ref=str(admin.id), action="USER_INVITATION_SENT", entity_type="AuthUser", entity_id=row.id, details={"role": role, "email_delivery": delivery, "source": "ADMIN_CONTROL_PLANE"}, created_at=now))
     db.commit()
-    return {"id": str(row.id), "email": row.username, "display_name": row.display_name, "tenant_id": str(row.tenant_id), "role": row.role, "status": row.status, "invitation_status": "SENT", "email_delivery": delivery, "development_token": token if delivery == "NOT_CONFIGURED" else None}
+    return {"id": str(row.id), "email": row.username, "display_name": row.display_name, "tenant_id": str(row.tenant_id), "role": row.role, "status": row.status, "invitation_status": "SENT", "email_delivery": delivery, "development_token": _development_token(token) if delivery == "NOT_CONFIGURED" else None}
 
 
 @router.post("/admin/identity/users/password-reset")
@@ -507,7 +510,7 @@ def admin_password_reset(payload: PasswordActionRequest, request: Request, db: S
     delivery = send_password_reset_email(row.username, token)
     db.add(AuditEvent(id=uuid.uuid4(), tenant_id=admin.tenant_id, actor_ref=str(admin.id), action="PASSWORD_RESET_REQUESTED", entity_type="AuthUser", entity_id=row.id, details={"email_delivery": delivery, "source": "ADMIN_CONTROL_PLANE"}, created_at=datetime.now(timezone.utc)))
     db.commit()
-    return {"status": "RESET_REQUEST_ACCEPTED", "email_delivery": delivery, "development_token": token if delivery == "NOT_CONFIGURED" else None}
+    return {"status": "RESET_REQUEST_ACCEPTED", "email_delivery": delivery, "development_token": _development_token(token) if delivery == "NOT_CONFIGURED" else None}
 
 
 @router.post("/platform-admin/customers")
