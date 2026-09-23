@@ -8,6 +8,7 @@ import { Stage3CommandCenter } from "./features/command-center/Stage3CommandCent
 import { Stage2Experience } from "./features/stage2/Stage2Experience";
 import { Stage2AdminControlPlane } from "./features/stage2/Stage2AdminControlPlane";
 import { AskMdarixPage } from "./features/ask/AskMdarixPage";
+import { MappingStudio } from "./features/stage2/MappingStudio";
 
 type Product = {
   id: string;
@@ -238,7 +239,7 @@ function PrivateApplication() {
   const isAdminRole = Boolean(activeRole && ["ADMIN", "ADMINISTRATOR", "MDARIX ADMINISTRATOR", "PLATFORM ADMIN", "PLATFORM_ADMIN", "CUSTOMER ADMIN", "CUSTOMER_ADMIN"].includes(activeRole));
 
   useEffect(() => {
-    if (isAdminRole && !["admin", "admin-stage2", "admin-customers", "admin-create-customer", "admin-customer-360", "admin-manage", "admin-audit"].includes(activeView)) changeView("admin");
+    if (isAdminRole && !["admin", "admin-stage2", "admin-mapping", "admin-customers", "admin-create-customer", "admin-customer-360", "admin-manage", "admin-audit"].includes(activeView)) changeView("admin");
   }, [isAdminRole]);
 
   const contextToolbar = <div className="toolbar">
@@ -270,6 +271,7 @@ function PrivateApplication() {
             <p className="nav-section-label">Administrator control plane</p>
             <button className={`nav-link ${activeView === "admin" ? "active" : ""}`} onClick={() => changeView("admin")}>Administration <small>Identity, access &amp; configuration</small></button>
             <button className={`nav-link ${activeView === "admin-stage2" ? "active" : ""}`} onClick={() => changeView("admin-stage2")}>Plans &amp; Integrations <small>Subscriptions, connectors &amp; mappings</small></button>
+            <button className={`nav-link ${activeView === "admin-mapping" ? "active" : ""}`} onClick={() => changeView("admin-mapping")}>Mapping Studio <small>Catalog, versions, dry run &amp; drift</small></button>
             <button className={`nav-link ${activeView === "admin-customers" ? "active" : ""}`} onClick={() => changeView("admin-customers")}>Customers / Tenants <small>Search and review customers</small></button>
             <button className={`nav-link ${activeView === "admin-create-customer" ? "active" : ""}`} onClick={() => changeView("admin-create-customer")}>Create Customer <small>Provision a tenant and limits</small></button>
             <button className={`nav-link ${activeView === "admin-manage" ? "active" : ""}`} onClick={() => changeView("admin-manage")}>Customer Administrators <small>Search, update or retire accounts</small></button>
@@ -295,7 +297,7 @@ function PrivateApplication() {
       </aside>
       <main>
         <button className="logout-control" onClick={async () => { await fetch("/api/v1/auth/signout", { method: "POST" }); window.location.replace("/signin"); }} aria-label="Sign out of MDARIX">Logout</button>
-        {!['admin', 'admin-stage2', 'admin-customers', 'admin-create-customer', 'admin-customer-360', 'admin-manage', 'admin-audit'].includes(activeView) && <header className={`topbar ${activeView === "home" ? "home-topbar" : ""}`}>
+        {!['admin', 'admin-stage2', 'admin-mapping', 'admin-customers', 'admin-create-customer', 'admin-customer-360', 'admin-manage', 'admin-audit'].includes(activeView) && <header className={`topbar ${activeView === "home" ? "home-topbar" : ""}`}>
           {activeView === "home" && contextToolbar}
           <div>
             <p className="eyebrow">{activeView === "home" ? "Intelligence workspace" : "Persistent workflow context"}</p>
@@ -318,6 +320,7 @@ function PrivateApplication() {
         {view && activeView === "audit" && <AuditTrailView view={view} />}
         {activeView === "admin" && <AdministratorControlPlane securityContext={securityContext} onNavigate={changeView} />}
         {activeView === "admin-stage2" && <Stage2AdminControlPlane />}
+        {activeView === "admin-mapping" && <MappingStudio />}
         {activeView === "admin-customers" && <PlatformCustomers onNavigate={changeView} />}
         {activeView === "admin-create-customer" && <CreateCustomer onCreated={() => changeView("admin-customers")} />}
         {activeView === "admin-customer-360" && <Customer360 />}
@@ -328,14 +331,17 @@ function PrivateApplication() {
   );
 }
 
-type AdminData = { users: any[]; roles: any[]; permissions: any[]; memberships: any[]; personas: any[]; entitlements: any[]; connectors: any[]; mappings: any[]; authorities: any[]; sod: any[]; audit: any[] };
+type AdminHealth = { status: string; metrics: Record<string, number>; alerts: any[]; recent_audit: any[] };
+type AdminData = { users: any[]; roles: any[]; permissions: any[]; memberships: any[]; personas: any[]; entitlements: any[]; connectors: any[]; mappings: any[]; authorities: any[]; sod: any[]; audit: any[]; health: AdminHealth };
 
 function PlatformAdminDashboard({ data, onNavigate }: { data: AdminData | null; onNavigate: (view: AppView) => void }) {
-  const cards = [["Platform users", data?.users.length ?? 0, "admin-manage"], ["Roles", data?.roles.length ?? 0, "admin"], ["Permission sets", data?.permissions.length ?? 0, "admin"], ["Memberships", data?.memberships.length ?? 0, "admin"], ["Personas", data?.personas.length ?? 0, "admin"], ["Connectors", data?.connectors.length ?? 0, "admin"], ["Mappings", data?.mappings.length ?? 0, "admin"], ["Audit events", data?.audit.length ?? 0, "admin-audit"]] as const;
+  const metrics = data?.health.metrics ?? {};
+  const cards = [["Connector failures", metrics.connector_failures ?? 0, "admin-stage2"], ["Pending approvals", metrics.pending_approvals ?? 0, "admin"], ["Pending invitations", metrics.pending_invitations ?? 0, "admin-manage"], ["Security events", metrics.security_events ?? 0, "admin-audit"], ["Mapping issues", metrics.mapping_issues ?? 0, "admin-mapping"], ["Recent audit events", metrics.recent_audit_events ?? 0, "admin-audit"]] as const;
   return <>
     <section className="governance-hero"><div><span className="eyebrow">Platform overview</span><h2>Administrator dashboard</h2><p>Tenant-scoped administration: operate customers, identity, integrations, and governance from one tenant-aware control plane.</p></div><div className="governance-status"><ShieldCheck size={22}/><strong>Controlled administration</strong><span>Business records remain outside platform administration.</span></div></section>
-    <section className="admin-metric-grid">{cards.map(([label, value, target]) => <button className="admin-metric-card" key={label} onClick={() => onNavigate(target as AppView)}><span>{label}</span><strong>{value}</strong></button>)}</section>
-    <section className="panel"><div className="section-title"><AlertTriangle size={18}/> Requires attention</div><p>No unacknowledged platform alerts are currently surfaced. Connector, mapping, invitation, and security signals appear here when reported by the server.</p></section>
+    <section className="admin-metric-grid">{cards.map(([label, value, target]) => <button className={`admin-metric-card ${(value as number) > 0 ? "metric-attention" : ""}`} key={label} onClick={() => onNavigate(target as AppView)}><span>{label}</span><strong>{value}</strong></button>)}</section>
+    <section className={`panel admin-health-panel ${data?.health.status === "ATTENTION_REQUIRED" ? "attention-required" : "health-ok"}`}><div className="section-title"><AlertTriangle size={18}/> Requires attention <small>{data?.health.status === "ATTENTION_REQUIRED" ? "Action recommended" : "No active alerts"}</small></div>{data?.health.alerts.length ? <div className="admin-alert-list">{data.health.alerts.map((alert: any) => <button className="admin-alert" key={alert.code} onClick={() => onNavigate(alert.code.includes("MAPPING") ? "admin-mapping" : alert.code.includes("SECURITY") ? "admin-audit" : "admin-manage")}><strong>{alert.label}</strong><span>{alert.count} · {alert.severity}</span></button>)}</div> : <p>All monitored administrator signals are currently within expected limits.</p>}</section>
+    <section className="panel"><div className="section-title">Recent platform activity</div>{data?.health.recent_audit.slice(0, 5).map((event: any, index: number) => <div className="audit-row" key={`${event.action}-${index}`}><strong>{event.action}</strong><span>{event.entity_type}</span><small>{event.created_at ? String(event.created_at).slice(0, 19).replace("T", " ") : "Server recorded"}</small></div>)}</section>
     <section className="panel"><div className="section-title">Customer health</div><p>Open Customers / Tenants to review tenant status, plan, capacity, and administrative health.</p><button className="primary-action" onClick={() => onNavigate("admin-customers")}>Open customer health</button></section>
   </>;
 }
@@ -372,8 +378,8 @@ function AdministratorControlPlane({ securityContext, onNavigate }: { securityCo
     Promise.all([
       api<any[]>("/api/v1/admin/identity/users"), api<any[]>("/api/v1/admin/identity/roles"), api<any[]>("/api/v1/admin/identity/permission-sets"),
       api<any[]>("/api/v1/admin/identity/memberships"), api<any[]>("/api/v1/admin/identity/persona-assignments"), api<any[]>("/api/v1/admin/governance/entitlements"),
-      api<any[]>("/api/v1/admin/configuration/connectors"), api<any[]>("/api/v1/admin/configuration/mappings"), api<any>("/api/v1/admin/governance/policies"), api<any[]>("/api/v1/admin/audit-history"),
-    ]).then(([users, roles, permissions, memberships, personas, entitlements, connectors, mappings, policies, audit]) => setData({ users, roles, permissions, memberships, personas, entitlements, connectors, mappings, authorities: policies.approval_authorities ?? [], sod: policies.sod_policies ?? [], audit })).catch((error) => setMessage(error.message)).finally(() => setBusy(false));
+      api<any[]>("/api/v1/admin/configuration/connectors"), api<any[]>("/api/v1/admin/configuration/mappings"), api<any>("/api/v1/admin/governance/policies"), api<any[]>("/api/v1/admin/audit-history"), api<AdminHealth>("/api/v1/admin/health-summary"),
+    ]).then(([users, roles, permissions, memberships, personas, entitlements, connectors, mappings, policies, audit, health]) => setData({ users, roles, permissions, memberships, personas, entitlements, connectors, mappings, authorities: policies.approval_authorities ?? [], sod: policies.sod_policies ?? [], audit, health })).catch((error) => setMessage(error.message)).finally(() => setBusy(false));
   }, []);
   if (busy) return <div className="content"><section className="panel"><span className="eyebrow">Administrator control plane</span><h2>Loading tenant administration…</h2></section></div>;
   if (!data) return <div className="content"><section className="panel"><h2>Administration unavailable</h2><p>{message}</p></section></div>;

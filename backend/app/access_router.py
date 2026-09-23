@@ -1,6 +1,9 @@
 import uuid
 import secrets
 import os
+import json
+from urllib.request import Request as UrlRequest, urlopen
+from urllib.error import URLError, HTTPError
 from datetime import datetime, timezone
 from fastapi import APIRouter, HTTPException, Request, Depends
 from pydantic import BaseModel, Field
@@ -15,7 +18,7 @@ from backend.app.db.models.foundation import (
     AuthUser, PersonaAssignment, RoleAssignment, RoleDefinition,
     RolePermissionSet, PermissionSetDefinition, TenantMembership,
     FeatureEntitlement, PlanDefinition, Tenant, TenantPlanAssignment, Product, ProductVersion,
-    ApprovalAuthority, SegregationOfDutiesPolicy, ConnectorConfiguration, MappingConfiguration, AuditEvent,
+    ApprovalAuthority, SegregationOfDutiesPolicy, ConnectorConfiguration, MappingConfiguration, AuditEvent, Decision,
     MasterMapping, TenantMappingVersion, TenantMappingOverride,
 )
 from access_control.personas import R1_PERSONAS as PERSONAS, get_persona
@@ -24,7 +27,7 @@ from integration.gateway import ConnectionConfig, Connector, MappingDefinition, 
 from sqlalchemy.orm import Session
 from sqlalchemy import func
 from datetime import datetime, timezone
-from backend.app.db.models.stage2 import AuthSession
+from backend.app.db.models.stage2 import AuthSession, UserInvitation
 
 router=APIRouter(prefix="/api/v1",tags=["Access Control"])
 def _development_token(token: str | None) -> str | None:
@@ -55,7 +58,7 @@ class MappingOverrideRequest(BaseModel): mapping_version_id: uuid.UUID; field_na
 class LifecycleRequest(BaseModel): lifecycle_status: str = Field(pattern="^(active|retired|archived)$")
 class ConnectorRunRequest(BaseModel): records: list[dict] = []; source_system: str = "SIMULATED"; required_fields: list[str] = []
 class MappingPreviewRequest(BaseModel): records: list[dict]; rules: dict; source_object: str; target_entity: str; mapping_version: str
-class StatusRequest(BaseModel): status: str = Field(pattern="^(DRAFT|ACTIVE|RETIRED)$")
+class StatusRequest(BaseModel): status: str = Field(pattern="^(DRAFT|VALIDATION|READY_FOR_APPROVAL|APPROVED|ACTIVE|RELEASED|SUPERSEDED|RETIRED)$")
 
 
 @router.get("/admin/smtp-status")
@@ -439,6 +442,31 @@ def audit_history(request: Request, action: str | None = None, entity_type: str 
     if entity_type: query = query.filter(AuditEvent.entity_type == entity_type)
     rows = query.order_by(AuditEvent.created_at.desc()).limit(200).all()
     return [{"id": str(row.id), "tenant_id": str(row.tenant_id), "actor_ref": row.actor_ref, "action": row.action, "entity_type": row.entity_type, "entity_id": str(row.entity_id) if row.entity_id else None, "details": row.details, "created_at": row.created_at} for row in rows]
+
+
+@router.get("/admin/health-summary")
+def admin_health_summary(request: Request, db: Session = Depends(get_db)):
+    """Return operational administrator signals, scoped to the authenticated tenant."""
+    admin = _admin_tenant(request, db)
+    tenant_id = admin.tenant_id
+    recent = db.query(AuditEvent).filter(AuditEvent.tenant_id == tenant_id).order_by(AuditEvent.created_at.desc()).limit(100).all()
+    connector_failures = sum(1 for row in recent if any(token in row.action.upper() for token in ("CONNECTOR", "PROVIDER")) and any(token in row.action.upper() for token in ("FAILED", "FAILURE", "ERROR", "UNAVAILABLE")))
+    security_events = sum(1 for row in recent if any(token in row.action.upper() for token in ("DENIED", "UNAUTHORIZED", "SECURITY", "AUTHENTICATION_FAILED")))
+    invitation_failures = sum(1 for row in recent if "INVIT" in row.action.upper() and any(token in row.action.upper() for token in ("FAILED", "FAILURE", "ERROR")))
+    pending_invitations = db.query(UserInvitation).filter(UserInvitation.tenant_id == tenant_id, UserInvitation.used_at.is_(None)).count()
+    pending_approvals = db.query(Decision).filter(Decision.tenant_id == tenant_id, Decision.decision_status.in_(["DRAFT", "PENDING", "PENDING_APPROVAL", "READY_FOR_APPROVAL"])).count()
+    mapping_issues = db.query(MappingConfiguration).filter(MappingConfiguration.tenant_id == tenant_id, MappingConfiguration.status.in_(["DRAFT", "BLOCKED", "FAILED", "REVIEW"])).count()
+    alerts = []
+    for code, label, count, severity in (
+        ("CONNECTOR_FAILURES", "Failed or degraded connectors", connector_failures, "HIGH"),
+        ("PENDING_APPROVALS", "Pending approvals", pending_approvals, "MEDIUM"),
+        ("INVITATION_FAILURES", "Invitation or activation failures", invitation_failures, "HIGH"),
+        ("SECURITY_EVENTS", "Security or authorization events", security_events, "HIGH"),
+        ("MAPPING_ISSUES", "Schema or mapping items needing review", mapping_issues, "MEDIUM"),
+    ):
+        if count:
+            alerts.append({"code": code, "label": label, "count": count, "severity": severity})
+    return {"tenant_id": str(tenant_id), "status": "ATTENTION_REQUIRED" if alerts else "HEALTHY", "metrics": {"connector_failures": connector_failures, "pending_approvals": pending_approvals, "pending_invitations": pending_invitations, "invitation_failures": invitation_failures, "security_events": security_events, "mapping_issues": mapping_issues, "recent_audit_events": len(recent)}, "alerts": alerts, "recent_audit": [{"action": row.action, "entity_type": row.entity_type, "created_at": row.created_at} for row in recent[:10]]}
 
 
 @router.get("/admin/identity/users")
@@ -858,6 +886,39 @@ def test_connector(configuration_id: uuid.UUID, request: Request, db: Session = 
     if row is None: raise HTTPException(404, detail={"code": "CONNECTOR_NOT_FOUND", "message": "Connector is not available for this tenant"})
     result = Connector(ConnectionConfig(str(admin.tenant_id), str(row.id), row.code, row.connector_type, "CONFIGURED")).test_connection(); _audit_configuration(db, admin, "CONNECTOR_TEST_EXECUTED", "ConnectorConfiguration", row.id, row.version); db.commit(); return result
 
+def _provider_get(row: ConnectorConfiguration, path_key: str):
+    configuration = row.configuration or {}
+    endpoint = configuration.get("endpoint")
+    if not endpoint:
+        return {"status": "NOT_CONFIGURED", "reason": "CONNECTOR_ENDPOINT_MISSING", "connector_id": str(row.id)}
+    url = endpoint.rstrip("/") + "/" + str(configuration.get(path_key, "health")).lstrip("/")
+    headers = {"Accept": "application/json"}
+    token_ref = configuration.get("credential_ref")
+    if token_ref:
+        token = os.getenv(str(token_ref))
+        if token:
+            headers["Authorization"] = f"Bearer {token}"
+    try:
+        with urlopen(UrlRequest(url, headers=headers, method="GET"), timeout=float(configuration.get("timeout_seconds", 5))) as response:
+            payload = response.read(1_000_000).decode("utf-8")
+            return {"status": "HEALTHY", "http_status": response.status, "payload": json.loads(payload) if payload else {}}
+    except HTTPError as exc:
+        return {"status": "FAILED", "http_status": exc.code, "reason": "PROVIDER_HTTP_ERROR"}
+    except (URLError, TimeoutError, ValueError):
+        return {"status": "FAILED", "reason": "PROVIDER_UNREACHABLE"}
+
+@router.post("/admin/configuration/connectors/{configuration_id}/provider-health")
+def provider_health(configuration_id: uuid.UUID, request: Request, db: Session = Depends(get_db)):
+    admin = _admin_tenant(request, db); row = db.query(ConnectorConfiguration).filter(ConnectorConfiguration.id == configuration_id, ConnectorConfiguration.tenant_id == admin.tenant_id).first()
+    if row is None: raise HTTPException(404, detail={"code": "CONNECTOR_NOT_FOUND", "message": "Connector is not available for this tenant"})
+    result = _provider_get(row, "health_path"); _audit_configuration(db, admin, "CONNECTOR_PROVIDER_HEALTH_CHECKED", "ConnectorConfiguration", row.id, row.version); db.commit(); return {"connector_id": str(row.id), "code": row.code, **result}
+
+@router.post("/admin/configuration/connectors/{configuration_id}/discover-schema")
+def provider_schema(configuration_id: uuid.UUID, request: Request, db: Session = Depends(get_db)):
+    admin = _admin_tenant(request, db); row = db.query(ConnectorConfiguration).filter(ConnectorConfiguration.id == configuration_id, ConnectorConfiguration.tenant_id == admin.tenant_id).first()
+    if row is None: raise HTTPException(404, detail={"code": "CONNECTOR_NOT_FOUND", "message": "Connector is not available for this tenant"})
+    result = _provider_get(row, "schema_path"); result["auto_applied"] = False; result["schema_version"] = (row.configuration or {}).get("schema_version", row.version); _audit_configuration(db, admin, "CONNECTOR_SCHEMA_DISCOVERED", "ConnectorConfiguration", row.id, row.version); db.commit(); return {"connector_id": str(row.id), "code": row.code, **result}
+
 
 @router.post("/admin/configuration/connectors/{configuration_id}/execute")
 def execute_connector(configuration_id: uuid.UUID, payload: ConnectorRunRequest, request: Request, db: Session = Depends(get_db)):
@@ -875,7 +936,7 @@ def preview_mapping(configuration_id: uuid.UUID, payload: MappingPreviewRequest,
 
 @router.post("/admin/catalog/master-mappings")
 def create_master_mapping(payload: MasterMappingRequest, request: Request, db: Session = Depends(get_db)):
-    admin = _admin_tenant(request, db)
+    admin = _require_platform_admin(request, db)
     if db.query(MasterMapping).filter(MasterMapping.code == payload.code).first(): raise HTTPException(409, detail={"code": "MASTER_MAPPING_EXISTS", "message": "Master mapping code already exists"})
     now = datetime.now(timezone.utc); row = MasterMapping(id=uuid.uuid4(), code=payload.code, source_system=payload.source_system, target_entity=payload.target_entity, definition=payload.definition, status="ACTIVE", created_at=now, updated_at=now)
     db.add(row); _audit_configuration(db, admin, "MASTER_MAPPING_CREATED", "MasterMapping", row.id, "v1"); db.commit(); return {"id": str(row.id), "code": row.code, "source_system": row.source_system, "target_entity": row.target_entity, "status": row.status}
@@ -883,13 +944,13 @@ def create_master_mapping(payload: MasterMappingRequest, request: Request, db: S
 
 @router.get("/admin/catalog/master-mappings")
 def list_master_mappings(request: Request, db: Session = Depends(get_db)):
-    _admin_tenant(request, db); rows = db.query(MasterMapping).filter(MasterMapping.status == "ACTIVE").order_by(MasterMapping.code).all()
+    _require_platform_admin(request, db); rows = db.query(MasterMapping).filter(MasterMapping.status != "RETIRED").order_by(MasterMapping.code).all()
     return [{"id": str(row.id), "code": row.code, "source_system": row.source_system, "target_entity": row.target_entity, "definition": row.definition, "status": row.status} for row in rows]
 
 
 @router.post("/admin/catalog/mapping-versions")
 def create_mapping_version(payload: MappingVersionRequest, request: Request, db: Session = Depends(get_db)):
-    admin = _admin_tenant(request, db); master = db.query(MasterMapping).filter(MasterMapping.id == payload.master_mapping_id, MasterMapping.status == "ACTIVE").first()
+    admin = _admin_tenant(request, db); master = db.query(MasterMapping).filter(MasterMapping.id == payload.master_mapping_id, MasterMapping.status.in_(["ACTIVE", "RELEASED"])).first()
     if master is None: raise HTTPException(404, detail={"code": "MASTER_MAPPING_NOT_FOUND", "message": "Master mapping is not available"})
     if db.query(TenantMappingVersion).filter_by(tenant_id=admin.tenant_id, master_mapping_id=master.id, version=payload.version).first(): raise HTTPException(409, detail={"code": "MAPPING_VERSION_EXISTS", "message": "Mapping version already exists"})
     now = datetime.now(timezone.utc); effective = datetime.fromisoformat(payload.effective_from.replace("Z", "+00:00")) if payload.effective_from else now
@@ -901,6 +962,9 @@ def create_mapping_version(payload: MappingVersionRequest, request: Request, db:
 def create_mapping_override(payload: MappingOverrideRequest, request: Request, db: Session = Depends(get_db)):
     admin = _admin_tenant(request, db); version = db.query(TenantMappingVersion).filter(TenantMappingVersion.id == payload.mapping_version_id, TenantMappingVersion.tenant_id == admin.tenant_id).first()
     if version is None: raise HTTPException(404, detail={"code": "MAPPING_VERSION_NOT_FOUND", "message": "Mapping version is not available for this tenant"})
+    protected = {"tenant_id", "id", "created_by", "audit_id", "provenance_id", "mapping_version_id", "authorization_metadata", "source_identity", "external_id"}
+    if payload.field_name in protected or payload.override_rule.get("override_policy") == "PLATFORM_ONLY":
+        raise HTTPException(403, detail={"code": "PLATFORM_ONLY_FIELD", "message": "Protected mapping fields cannot be overridden by a tenant"})
     row = TenantMappingOverride(id=uuid.uuid4(), tenant_id=admin.tenant_id, mapping_version_id=version.id, field_name=payload.field_name, override_rule=payload.override_rule, status="ACTIVE", created_at=datetime.now(timezone.utc), updated_at=datetime.now(timezone.utc)); db.add(row); _audit_configuration(db, admin, "TENANT_MAPPING_OVERRIDE_CREATED", "TenantMappingOverride", row.id, version.version); db.commit(); return {"id": str(row.id), "mapping_version_id": str(row.mapping_version_id), "field_name": row.field_name, "status": row.status}
 
 
@@ -912,8 +976,12 @@ def list_mapping_versions(request: Request, db: Session = Depends(get_db)):
 
 @router.patch("/admin/catalog/master-mappings/{mapping_id}/status")
 def update_master_mapping_status(mapping_id: uuid.UUID, payload: StatusRequest, request: Request, db: Session = Depends(get_db)):
-    admin = _admin_tenant(request, db); row = db.query(MasterMapping).filter(MasterMapping.id == mapping_id).first()
+    admin = _require_platform_admin(request, db); row = db.query(MasterMapping).filter(MasterMapping.id == mapping_id).first()
     if row is None: raise HTTPException(404, detail={"code": "MASTER_MAPPING_NOT_FOUND", "message": "Master mapping is not available"})
+    if row.status in {"RELEASED", "RETIRED"} and payload.status not in {"RETIRED", "SUPERSEDED"}:
+        raise HTTPException(409, detail={"code": "IMMUTABLE_MAPPING_VERSION", "message": "Released or retired master mappings cannot be reopened"})
+    if payload.status == "RELEASED" and row.status not in {"APPROVED", "ACTIVE"}:
+        raise HTTPException(409, detail={"code": "RELEASE_GATE_BLOCKED", "message": "Master mapping must be approved before release"})
     row.status = payload.status; row.updated_at = datetime.now(timezone.utc); _audit_configuration(db, admin, "MASTER_MAPPING_STATUS_CHANGED", "MasterMapping", row.id, "v1"); db.commit(); return {"id": str(row.id), "status": row.status}
 
 
@@ -921,6 +989,10 @@ def update_master_mapping_status(mapping_id: uuid.UUID, payload: StatusRequest, 
 def update_mapping_version_status(version_id: uuid.UUID, payload: StatusRequest, request: Request, db: Session = Depends(get_db)):
     admin = _admin_tenant(request, db); row = db.query(TenantMappingVersion).filter(TenantMappingVersion.id == version_id, TenantMappingVersion.tenant_id == admin.tenant_id).first()
     if row is None: raise HTTPException(404, detail={"code": "MAPPING_VERSION_NOT_FOUND", "message": "Mapping version is not available for this tenant"})
+    if row.status == "RELEASED" and payload.status not in {"SUPERSEDED", "RETIRED"}:
+        raise HTTPException(409, detail={"code": "IMMUTABLE_MAPPING_VERSION", "message": "Released mapping versions are immutable"})
+    if payload.status in {"APPROVED", "RELEASED"} and not row.rules:
+        raise HTTPException(409, detail={"code": "RELEASE_GATE_BLOCKED", "message": "A mapping must contain validated rules before approval or release"})
     row.status = payload.status; row.updated_at = datetime.now(timezone.utc); _audit_configuration(db, admin, "TENANT_MAPPING_VERSION_STATUS_CHANGED", "TenantMappingVersion", row.id, row.version); db.commit(); return {"id": str(row.id), "version": row.version, "status": row.status}
 
 
