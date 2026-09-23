@@ -33,6 +33,7 @@ from backend.app.workspace_context import router as workspace_context_router
 from backend.app.stage3_router import router as stage3_router
 from backend.app.communication_router import router as communication_router
 from backend.app.stage3_workflow_router import router as stage3_workflow_router
+from backend.app.mapping_catalog_router import router as mapping_catalog_router
 from backend.app.request_context import AuthenticatedRequestContext, get_request_context
 from graph.schemas import GraphResponse, HealthResponse, RelationshipDetail
 from graph.service import GraphError, RealityGraphService
@@ -85,6 +86,7 @@ app.include_router(workspace_context_router)
 app.include_router(stage3_router)
 app.include_router(communication_router)
 app.include_router(stage3_workflow_router)
+app.include_router(mapping_catalog_router)
 graph_service = RealityGraphService()
 product360_service = Product360Service()
 
