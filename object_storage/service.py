@@ -8,3 +8,7 @@ class ObjectStorageService:
     def put(self, tenant_id: str, key: str, content: bytes) -> dict:
         safe = Path(key).name; path = self.root / tenant_id / safe; path.parent.mkdir(parents=True, exist_ok=True); path.write_bytes(content)
         return {"tenant_id":tenant_id,"object_key":f"{tenant_id}/{safe}","size":len(content),"checksum":hashlib.sha256(content).hexdigest()}
+    def get(self, tenant_id: str, object_key: str) -> bytes:
+        path = self.root / tenant_id / Path(object_key).name
+        if not path.is_file(): raise FileNotFoundError(object_key)
+        return path.read_bytes()

@@ -37,3 +37,11 @@ class InboundEmailEvent(Base):
     __tablename__ = "inbound_email_events"
     id = uuid_pk(); tenant_id = tenant_fk(nullable=True); provider_event_id: Mapped[str] = mapped_column(String(255), nullable=False); event_type: Mapped[str] = mapped_column(String(100), nullable=False); status: Mapped[str] = mapped_column(String(50), nullable=False); event_metadata: Mapped[dict | None] = mapped_column("metadata", JSONB); created_at = tz(False)
     __table_args__ = (UniqueConstraint("provider_event_id", name="uq_inbound_email_provider_event"),)
+
+class SupplierEvidenceRequest(Base):
+    __tablename__ = "supplier_evidence_requests"
+    id = uuid_pk(); tenant_id = tenant_fk(); investigation_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True)); supplier_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True)); requested_by: Mapped[str] = mapped_column(String(255), nullable=False); recipient: Mapped[str] = mapped_column(String(254), nullable=False); title: Mapped[str] = mapped_column(String(240), nullable=False); requested_items: Mapped[dict] = mapped_column(JSONB, nullable=False); status: Mapped[str] = mapped_column(String(40), nullable=False, server_default="PENDING_DELIVERY"); provider_message_id: Mapped[str | None] = mapped_column(String(255)); created_at = tz(False); updated_at = tz(False)
+
+class EvidenceAttachment(Base):
+    __tablename__ = "evidence_attachments"
+    id = uuid_pk(); tenant_id = tenant_fk(); request_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True)); uploaded_by: Mapped[str] = mapped_column(String(255), nullable=False); filename: Mapped[str] = mapped_column(String(255), nullable=False); content_type: Mapped[str] = mapped_column(String(120), nullable=False); object_key: Mapped[str] = mapped_column(String(500), nullable=False); size: Mapped[int] = mapped_column(nullable=False); checksum: Mapped[str] = mapped_column(String(64), nullable=False); created_at = tz(False)
