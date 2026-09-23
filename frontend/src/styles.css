@@ -101,6 +101,17 @@ main {
 
 .logout-control:hover { background: #eef5f6; }
 
+.admin-metric-grid { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:14px; padding:24px 28px 0; }
+.admin-metric-card { display:grid; gap:10px; min-height:105px; padding:18px; border:1px solid var(--border-default); border-radius:10px; background:var(--surface-primary); color:var(--text-primary); text-align:left; cursor:pointer; }
+.admin-metric-card:hover { border-color:#1f746d; box-shadow:0 6px 18px #17212b12; }
+.admin-metric-card span { color:var(--text-secondary); font-size:12px; text-transform:uppercase; letter-spacing:.08em; }
+.admin-metric-card strong { font-size:28px; color:#123f57; }
+.admin-stepper { display:flex; flex-wrap:wrap; gap:8px; margin:18px 0; }
+.admin-stepper button { border:1px solid var(--border-default); border-radius:6px; padding:9px 12px; background:var(--surface-primary); color:var(--text-primary); cursor:pointer; }
+.admin-stepper button.selected { background:#164d63; color:#fff; }
+@media(max-width:900px){.admin-metric-grid{grid-template-columns:repeat(2,minmax(0,1fr));}}
+@media(max-width:560px){.admin-metric-grid{grid-template-columns:1fr; padding:16px;}}
+
 .topbar {
   display: flex;
   justify-content: space-between;

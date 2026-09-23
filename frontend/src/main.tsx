@@ -6,6 +6,7 @@ import { PublicMegaSite } from "./PublicMegaSite";
 import { AppView, navigateTo, viewFromPath } from "./app/router";
 import { Stage3CommandCenter } from "./features/command-center/Stage3CommandCenter";
 import { Stage2Experience } from "./features/stage2/Stage2Experience";
+import { Stage2AdminControlPlane } from "./features/stage2/Stage2AdminControlPlane";
 import { AskMdarixPage } from "./features/ask/AskMdarixPage";
 
 type Product = {
@@ -237,7 +238,7 @@ function PrivateApplication() {
   const isAdminRole = Boolean(activeRole && ["ADMIN", "ADMINISTRATOR", "MDARIX ADMINISTRATOR", "PLATFORM ADMIN", "PLATFORM_ADMIN", "CUSTOMER ADMIN", "CUSTOMER_ADMIN"].includes(activeRole));
 
   useEffect(() => {
-    if (isAdminRole && !["admin", "admin-manage", "admin-audit"].includes(activeView)) changeView("admin");
+    if (isAdminRole && !["admin", "admin-stage2", "admin-customers", "admin-create-customer", "admin-customer-360", "admin-manage", "admin-audit"].includes(activeView)) changeView("admin");
   }, [isAdminRole]);
 
   const contextToolbar = <div className="toolbar">
@@ -268,7 +269,10 @@ function PrivateApplication() {
           {isAdminRole ? <>
             <p className="nav-section-label">Administrator control plane</p>
             <button className={`nav-link ${activeView === "admin" ? "active" : ""}`} onClick={() => changeView("admin")}>Administration <small>Identity, access &amp; configuration</small></button>
-            <button className={`nav-link ${activeView === "admin-manage" ? "active" : ""}`} onClick={() => changeView("admin-manage")}>Manage Customer Administrators <small>Search, update or retire accounts</small></button>
+            <button className={`nav-link ${activeView === "admin-stage2" ? "active" : ""}`} onClick={() => changeView("admin-stage2")}>Plans &amp; Integrations <small>Subscriptions, connectors &amp; mappings</small></button>
+            <button className={`nav-link ${activeView === "admin-customers" ? "active" : ""}`} onClick={() => changeView("admin-customers")}>Customers / Tenants <small>Search and review customers</small></button>
+            <button className={`nav-link ${activeView === "admin-create-customer" ? "active" : ""}`} onClick={() => changeView("admin-create-customer")}>Create Customer <small>Provision a tenant and limits</small></button>
+            <button className={`nav-link ${activeView === "admin-manage" ? "active" : ""}`} onClick={() => changeView("admin-manage")}>Customer Administrators <small>Search, update or retire accounts</small></button>
             <button className="nav-link" onClick={() => setActiveView("admin-audit")}>Recent platform administration activity <small>Review user changes and audit evidence</small></button>
           </> : <>
             <p className="nav-section-label">Workspace</p>
@@ -291,7 +295,7 @@ function PrivateApplication() {
       </aside>
       <main>
         <button className="logout-control" onClick={async () => { await fetch("/api/v1/auth/signout", { method: "POST" }); window.location.replace("/signin"); }} aria-label="Sign out of MDARIX">Logout</button>
-        {!['admin', 'admin-manage', 'admin-audit'].includes(activeView) && <header className={`topbar ${activeView === "home" ? "home-topbar" : ""}`}>
+        {!['admin', 'admin-stage2', 'admin-customers', 'admin-create-customer', 'admin-customer-360', 'admin-manage', 'admin-audit'].includes(activeView) && <header className={`topbar ${activeView === "home" ? "home-topbar" : ""}`}>
           {activeView === "home" && contextToolbar}
           <div>
             <p className="eyebrow">{activeView === "home" ? "Intelligence workspace" : "Persistent workflow context"}</p>
@@ -312,7 +316,11 @@ function PrivateApplication() {
         {view && activeView === "decision" && !selectedInvestigationId && <div className="content"><section className="panel empty-state"><h2>Select an investigation first</h2><p>Open Investigations and select a live investigation before entering Decision Center.</p></section></div>}
         {view && activeView === "assurance" && <AssuranceView view={view} />}
         {view && activeView === "audit" && <AuditTrailView view={view} />}
-        {activeView === "admin" && <AdministratorControlPlane securityContext={securityContext} />}
+        {activeView === "admin" && <AdministratorControlPlane securityContext={securityContext} onNavigate={changeView} />}
+        {activeView === "admin-stage2" && <Stage2AdminControlPlane />}
+        {activeView === "admin-customers" && <PlatformCustomers onNavigate={changeView} />}
+        {activeView === "admin-create-customer" && <CreateCustomer onCreated={() => changeView("admin-customers")} />}
+        {activeView === "admin-customer-360" && <Customer360 />}
         {activeView === "admin-manage" && <CustomerAdminManagement />}
         {activeView === "admin-audit" && <PlatformAdministrationAudit />}
       </main>
@@ -322,7 +330,40 @@ function PrivateApplication() {
 
 type AdminData = { users: any[]; roles: any[]; permissions: any[]; memberships: any[]; personas: any[]; entitlements: any[]; connectors: any[]; mappings: any[]; authorities: any[]; sod: any[]; audit: any[] };
 
-function AdministratorControlPlane({ securityContext }: { securityContext: {display_name:string; active_role:string|null; tenant_id?:string} | null }) {
+function PlatformAdminDashboard({ data, onNavigate }: { data: AdminData | null; onNavigate: (view: AppView) => void }) {
+  const cards = [["Platform users", data?.users.length ?? 0, "admin-manage"], ["Roles", data?.roles.length ?? 0, "admin"], ["Permission sets", data?.permissions.length ?? 0, "admin"], ["Memberships", data?.memberships.length ?? 0, "admin"], ["Personas", data?.personas.length ?? 0, "admin"], ["Connectors", data?.connectors.length ?? 0, "admin"], ["Mappings", data?.mappings.length ?? 0, "admin"], ["Audit events", data?.audit.length ?? 0, "admin-audit"]] as const;
+  return <>
+    <section className="governance-hero"><div><span className="eyebrow">Platform overview</span><h2>Administrator dashboard</h2><p>Tenant-scoped administration: operate customers, identity, integrations, and governance from one tenant-aware control plane.</p></div><div className="governance-status"><ShieldCheck size={22}/><strong>Controlled administration</strong><span>Business records remain outside platform administration.</span></div></section>
+    <section className="admin-metric-grid">{cards.map(([label, value, target]) => <button className="admin-metric-card" key={label} onClick={() => onNavigate(target as AppView)}><span>{label}</span><strong>{value}</strong></button>)}</section>
+    <section className="panel"><div className="section-title"><AlertTriangle size={18}/> Requires attention</div><p>No unacknowledged platform alerts are currently surfaced. Connector, mapping, invitation, and security signals appear here when reported by the server.</p></section>
+    <section className="panel"><div className="section-title">Customer health</div><p>Open Customers / Tenants to review tenant status, plan, capacity, and administrative health.</p><button className="primary-action" onClick={() => onNavigate("admin-customers")}>Open customer health</button></section>
+  </>;
+}
+
+type AdminTenant = { id: string; tenant_key: string; name: string; status: string; created_at?: string | null };
+function PlatformCustomers({ onNavigate }: { onNavigate: (view: AppView) => void }) {
+  const [rows, setRows] = useState<AdminTenant[]>([]); const [query, setQuery] = useState(""); const [error, setError] = useState("");
+  useEffect(() => { api<AdminTenant[]>("/api/v1/platform-admin/customers").then(setRows).catch((e) => setError(e.message)); }, []);
+  const visible = rows.filter((row) => `${row.name} ${row.tenant_key} ${row.status}`.toLowerCase().includes(query.toLowerCase()));
+  const open360 = (id: string) => { window.history.pushState({}, "", `/app/admin/customers/detail?tenant_id=${encodeURIComponent(id)}`); window.dispatchEvent(new PopStateEvent("popstate")); };
+  return <div className="content governance-view"><section className="governance-hero"><div><span className="eyebrow">Customers</span><h2>Customers / Tenants</h2><p>Search and administer tenant metadata without exposing regulated business records.</p></div><button className="primary-action" onClick={() => onNavigate("admin-create-customer")}>Create customer</button></section><section className="panel"><input aria-label="Search customers" value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search company, tenant code, or status" />{error && <p className="field-error">{error}</p>}<div className="audit-row"><strong>Company</strong><span>Tenant code</span><small>Status</small></div>{visible.map((row) => <div className="audit-row" key={row.id}><strong>{row.name}</strong><span>{row.tenant_key}</span><small>{row.status} <button className="secondary-link" onClick={() => open360(row.id)}>Customer 360</button></small></div>)}{!visible.length && !error && <p>No customers match the search.</p>}</section></div>;
+}
+
+function CreateCustomer({ onCreated }: { onCreated: () => void }) {
+  const [form, setForm] = useState({ company_name: "", tenant_code: "", plan_code: "ENTERPRISE_TEST", licensed_users_limit: 25, customer_admin_limit: 2, connector_limit: 5 }); const [message, setMessage] = useState(""); const [step, setStep] = useState(1);
+  const submit = async (event: React.FormEvent) => { event.preventDefault(); const response = await fetch("/api/v1/platform-admin/customers", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(form) }); const result = await response.json(); if (!response.ok) { setMessage(result.detail?.message ?? "Customer creation failed"); return; } setMessage(`Customer ${result.name} created.`); };
+  const stepLabels = ["Organization", "Tenant", "Plan & Limits", "Review", "Provision"];
+  return <div className="content governance-view"><section className="panel"><div className="section-title">Create Customer</div><p>Provision organization, tenant, plan, and contractual limits. The server remains authoritative.</p><div className="admin-stepper">{stepLabels.map((label, index) => <button key={label} className={step === index + 1 ? "selected" : ""} onClick={() => setStep(index + 1)}>{index + 1}. {label}</button>)}</div><form className="admin-form-grid" onSubmit={submit}>{step <= 2 && <><label>Company name<input required value={form.company_name} onChange={(e) => setForm({ ...form, company_name: e.target.value })} /></label><label>Tenant code<input required value={form.tenant_code} onChange={(e) => setForm({ ...form, tenant_code: e.target.value })} /></label></>}{step >= 3 && <><label>Plan<input value={form.plan_code} onChange={(e) => setForm({ ...form, plan_code: e.target.value })} /></label><label>Licensed users<input type="number" min="1" value={form.licensed_users_limit} onChange={(e) => setForm({ ...form, licensed_users_limit: Number(e.target.value) })} /></label><label>Customer admin limit<input type="number" min="1" value={form.customer_admin_limit} onChange={(e) => setForm({ ...form, customer_admin_limit: Number(e.target.value) })} /></label><label>Connector limit<input type="number" min="0" value={form.connector_limit} onChange={(e) => setForm({ ...form, connector_limit: Number(e.target.value) })} /></label></>}{step === 4 && <p>Review: {form.company_name || "Company"} / {form.tenant_code || "TENANT_CODE"} / {form.plan_code}</p>}{step === 5 && <button className="primary-action" type="submit">Create Tenant &amp; Continue</button>}</form><div className="toolbar"><button className="secondary-link" disabled={step === 1} onClick={() => setStep(step - 1)}>Back</button><button className="primary-action" disabled={step === 5} onClick={() => setStep(step + 1)}>Next</button></div>{message && <p className="review-success" role="status">{message} {message.endsWith("created.") && <button className="secondary-link" onClick={onCreated}>Open customers</button>}</p>}</section></div>;
+}
+
+function Customer360() {
+  const [record, setRecord] = useState<any>(null); const [error, setError] = useState("");
+  useEffect(() => { const tenantId = new URLSearchParams(window.location.search).get("tenant_id"); if (!tenantId) { setError("Select a customer from Customers / Tenants first."); return; } api<any>(`/api/v1/platform-admin/customers/${tenantId}`).then(setRecord).catch((e) => setError(e.message)); }, []);
+  const sections = record ? [["Overview", record.status], ["Subscription", record.plan_id ?? "Not assigned"], ["Users", record.counts.users], ["Customer Administrators", record.counts.administrators], ["Entitlements", "Server-scoped"], ["Integrations", record.counts.connectors], ["Mappings", record.counts.mappings], ["Security", "Tenant-scoped"], ["Usage", `${record.counts.users} users`], ["Administrative Audit", record.counts.audit_events]] : [];
+  return <div className="content governance-view"><section className="governance-hero"><div><span className="eyebrow">Customer 360</span><h2>{record?.name ?? "Customer administration view"}</h2><p>Tenant {record?.tenant_key ?? "metadata"}. Regulated business content is intentionally excluded.</p></div></section>{error && <section className="panel field-error">{error}</section>}<section className="admin-metric-grid">{sections.map(([label, value]) => <article className="admin-metric-card" key={label}><span>{label}</span><strong>{String(value)}</strong></article>)}</section></div>;
+}
+
+function AdministratorControlPlane({ securityContext, onNavigate }: { securityContext: {display_name:string; active_role:string|null; tenant_id?:string} | null; onNavigate: (view: AppView) => void }) {
   const [data, setData] = useState<AdminData | null>(null);
   const [message, setMessage] = useState("");
   const [busy, setBusy] = useState(true);
@@ -336,7 +377,7 @@ function AdministratorControlPlane({ securityContext }: { securityContext: {disp
   }, []);
   if (busy) return <div className="content"><section className="panel"><span className="eyebrow">Administrator control plane</span><h2>Loading tenant administration…</h2></section></div>;
   if (!data) return <div className="content"><section className="panel"><h2>Administration unavailable</h2><p>{message}</p></section></div>;
-  return <div className="content governance-view"><section className="governance-hero"><div><span className="eyebrow">Administrator control plane</span><h2>Identity, access &amp; configuration</h2><p>Tenant-scoped administration with versioned roles, personas, entitlements, connectors, mappings, governance policies, and audit evidence.</p><p className="context-summary" aria-label="Authenticated administrator">{securityContext?.display_name ?? "Authenticated user"} | {securityContext?.active_role ?? "No active role"}</p></div><div className="governance-status"><ShieldCheck size={22}/><strong>Controlled administration</strong><span>All records are scoped to the authenticated tenant.</span></div></section><CustomerAdminInviteForm onSaved={() => setMessage("Customer administrator invitation created. The user creates their own password from the activation link.")} />{message && <p className="review-success" role="status">{message}</p>}</div>;
+  return <div className="content governance-view"><PlatformAdminDashboard data={data} onNavigate={onNavigate} /><section className="panel"><div className="section-title">Create customer administrator</div><p className="context-summary" aria-label="Authenticated administrator">{securityContext?.display_name ?? "Authenticated user"} | {securityContext?.active_role ?? "No active role"}</p><CustomerAdminInviteForm onSaved={() => setMessage("Customer administrator invitation created. The user creates their own password from the activation link.")} />{message && <p className="review-success" role="status">{message}</p>}</section></div>;
 }
 
 function CustomerAdminManagement() {

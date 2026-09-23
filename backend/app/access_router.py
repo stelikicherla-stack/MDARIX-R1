@@ -40,6 +40,7 @@ class ConnectorRequest(BaseModel): code: str; connector_type: str; configuration
 class MappingRequest(BaseModel): code: str; source_system: str; target_entity: str; mapping_rules: dict = {}; version: str = "v1"
 class UserCreateRequest(BaseModel): email: str = Field(min_length=3, max_length=254); display_name: str = Field(min_length=1, max_length=120); company: str = Field(min_length=1, max_length=160); role: str = "Viewer"; target_tenant_id: uuid.UUID | None = None
 class CustomerCreateRequest(BaseModel): company_name: str = Field(min_length=1, max_length=255); tenant_code: str = Field(min_length=1, max_length=80); plan_code: str = "ENTERPRISE_TEST"; licensed_users_limit: int = Field(default=25, ge=1); customer_admin_limit: int = Field(default=2, ge=1); connector_limit: int = Field(default=5, ge=0); status: str = "active"; notes: str | None = None
+class PlanCreateRequest(BaseModel): code: str = Field(min_length=1, max_length=80); name: str = Field(min_length=1, max_length=120); description: str | None = None; version: str = "v1"; capabilities: dict = {}; limits: dict = {}
 class PasswordActionRequest(BaseModel): email: str = Field(min_length=3, max_length=254)
 class AdminUpdateRequest(BaseModel): values: dict
 class ProductRequest(BaseModel): product_identifier: str; name: str; description: str | None = None; product_family: str | None = None; manufacturer_context: str | None = None
@@ -535,6 +536,130 @@ def create_customer(payload: CustomerCreateRequest, request: Request, db: Sessio
     db.add(AuditEvent(id=uuid.uuid4(), tenant_id=admin.tenant_id, actor_ref=str(admin.id), action="CUSTOMER_CREATED", entity_type="Tenant", entity_id=tenant.id, details={"tenant_key": key, "plan_code": payload.plan_code, "licensed_users_limit": payload.licensed_users_limit, "customer_admin_limit": payload.customer_admin_limit}, created_at=now))
     db.commit()
     return {"id": str(tenant.id), "tenant_key": tenant.tenant_key, "name": tenant.name, "status": tenant.status, "plan_code": payload.plan_code, "limits": {"licensed_users_limit": payload.licensed_users_limit, "customer_admin_limit": payload.customer_admin_limit, "connector_limit": payload.connector_limit}}
+
+
+@router.get("/platform-admin/customers")
+def list_platform_customers(request: Request, db: Session = Depends(get_db)):
+    """Return tenant administration metadata only; never customer business data."""
+    _require_platform_admin(request, db)
+    rows = db.query(Tenant).order_by(Tenant.name).all()
+    return [{"id": str(row.id), "tenant_key": row.tenant_key, "name": row.name,
+             "status": row.status, "created_at": row.created_at.isoformat() if row.created_at else None}
+            for row in rows]
+
+
+@router.get("/platform-admin/customers/{tenant_id}")
+def get_platform_customer(tenant_id: uuid.UUID, request: Request, db: Session = Depends(get_db)):
+    """Return Customer 360 administration metadata, never regulated records."""
+    _require_platform_admin(request, db)
+    tenant = db.query(Tenant).filter(Tenant.id == tenant_id).first()
+    if tenant is None:
+        raise HTTPException(404, detail={"code": "TENANT_NOT_FOUND", "message": "Customer is not available"})
+    membership_count = db.query(TenantMembership).filter(TenantMembership.tenant_id == tenant.id).count()
+    admin_count = db.query(AuthUser).filter(AuthUser.tenant_id == tenant.id, func.upper(AuthUser.role).in_(["ADMINISTRATOR", "ADMIN", "CUSTOMER_ADMIN"])).count()
+    connector_count = db.query(ConnectorConfiguration).filter(ConnectorConfiguration.tenant_id == tenant.id).count()
+    mapping_count = db.query(TenantMappingVersion).filter(TenantMappingVersion.tenant_id == tenant.id).count()
+    audit_count = db.query(AuditEvent).filter(AuditEvent.tenant_id == tenant.id).count()
+    assignment = db.query(TenantPlanAssignment).filter(TenantPlanAssignment.tenant_id == tenant.id, TenantPlanAssignment.status == "ACTIVE").order_by(TenantPlanAssignment.effective_from.desc()).first()
+    return {"id": str(tenant.id), "tenant_key": tenant.tenant_key, "name": tenant.name, "status": tenant.status,
+            "created_at": tenant.created_at.isoformat() if tenant.created_at else None,
+            "plan_id": str(assignment.plan_id) if assignment else None,
+            "counts": {"users": membership_count, "administrators": admin_count, "connectors": connector_count, "mappings": mapping_count, "audit_events": audit_count}}
+
+
+@router.get("/platform-admin/plans")
+def list_platform_plans(request: Request, db: Session = Depends(get_db)):
+    """Platform plan catalog with feature and limit provenance."""
+    _require_platform_admin(request, db)
+    plans = db.query(PlanDefinition).order_by(PlanDefinition.code).all()
+    result = []
+    for plan in plans:
+        features = db.query(FeatureEntitlement).filter(FeatureEntitlement.plan_id == plan.id).all()
+        capabilities = {f.feature_code: bool(f.enabled) for f in features}
+        limits = {}
+        for feature in features:
+            if feature.limits:
+                limits.update(feature.limits)
+        result.append({"id": str(plan.id), "code": plan.code, "name": plan.name, "description": plan.description,
+                       "version": plan.version, "status": plan.status, "capabilities": capabilities, "limits": limits,
+                       "provenance": "PLAN"})
+    return result
+
+
+@router.post("/platform-admin/plans")
+def create_platform_plan(payload: PlanCreateRequest, request: Request, db: Session = Depends(get_db)):
+    admin = _require_platform_admin(request, db)
+    if db.query(PlanDefinition).filter(PlanDefinition.code == payload.code).first():
+        raise HTTPException(409, detail={"code": "PLAN_EXISTS", "message": "Plan code already exists"})
+    now = datetime.now(timezone.utc)
+    plan = PlanDefinition(id=uuid.uuid4(), code=payload.code, name=payload.name, description=payload.description,
+                          version=payload.version, status="ACTIVE", effective_from=now, created_at=now, updated_at=now)
+    db.add(plan); db.flush()
+    for code, enabled in payload.capabilities.items():
+        db.add(FeatureEntitlement(id=uuid.uuid4(), plan_id=plan.id, feature_code=code, enabled=bool(enabled),
+                                  limits=payload.limits if code == "ADMIN_CONTROL_PLANE" else {}, status="ACTIVE", created_at=now, updated_at=now))
+    db.add(AuditEvent(id=uuid.uuid4(), tenant_id=admin.tenant_id, actor_ref=str(admin.id), action="PLAN_CREATED",
+                      entity_type="PlanDefinition", entity_id=plan.id, details={"code": plan.code, "version": plan.version}, created_at=now))
+    db.commit()
+    return {"id": str(plan.id), "code": plan.code, "status": plan.status}
+
+
+@router.get("/platform-admin/customers/{tenant_id}/subscription")
+def get_platform_subscription(tenant_id: uuid.UUID, request: Request, db: Session = Depends(get_db)):
+    _require_platform_admin(request, db)
+    assignment = db.query(TenantPlanAssignment).filter(TenantPlanAssignment.tenant_id == tenant_id,
+        TenantPlanAssignment.status == "ACTIVE").order_by(TenantPlanAssignment.effective_from.desc()).first()
+    if assignment is None:
+        raise HTTPException(404, detail={"code": "SUBSCRIPTION_NOT_FOUND", "message": "Active subscription is not available"})
+    plan = db.query(PlanDefinition).filter(PlanDefinition.id == assignment.plan_id).first()
+    features = db.query(FeatureEntitlement).filter(FeatureEntitlement.plan_id == assignment.plan_id,
+                                                    FeatureEntitlement.status == "ACTIVE").all()
+    limits = {}
+    for feature in features:
+        if feature.limits: limits.update(feature.limits)
+    return {"subscription_id": str(assignment.id), "tenant_id": str(tenant_id), "plan_id": str(assignment.plan_id),
+            "plan_code": plan.code if plan else None, "status": assignment.status,
+            "effective_from": assignment.effective_from.isoformat() if assignment.effective_from else None,
+            "effective_to": assignment.effective_to.isoformat() if assignment.effective_to else None,
+            "limits": limits, "entitlements": [{"feature_code": f.feature_code, "enabled": f.enabled,
+            "limits": f.limits or {}, "provenance": "PLAN"} for f in features]}
+
+
+@router.get("/platform-admin/customers/{tenant_id}/usage")
+def get_platform_usage(tenant_id: uuid.UUID, request: Request, db: Session = Depends(get_db)):
+    _require_platform_admin(request, db)
+    if db.query(Tenant).filter(Tenant.id == tenant_id).first() is None:
+        raise HTTPException(404, detail={"code": "TENANT_NOT_FOUND", "message": "Customer is not available"})
+    users = db.query(TenantMembership).filter(TenantMembership.tenant_id == tenant_id).count()
+    admins = db.query(AuthUser).filter(AuthUser.tenant_id == tenant_id, func.upper(AuthUser.role) == "CUSTOMER_ADMIN").count()
+    connectors = db.query(ConnectorConfiguration).filter(ConnectorConfiguration.tenant_id == tenant_id).count()
+    assignment = db.query(TenantPlanAssignment).filter(TenantPlanAssignment.tenant_id == tenant_id, TenantPlanAssignment.status == "ACTIVE").first()
+    limits = {}
+    if assignment:
+        for feature in db.query(FeatureEntitlement).filter(FeatureEntitlement.plan_id == assignment.plan_id, FeatureEntitlement.status == "ACTIVE").all():
+            limits.update(feature.limits or {})
+    usage = {"licensed_users": users, "customer_admins": admins, "connectors": connectors}
+    alerts = []
+    for key, code in (("customer_admins", "CUSTOMER_ADMIN_LIMIT_REACHED"), ("licensed_users", "LICENSED_USER_LIMIT_REACHED"), ("connectors", "CONNECTOR_LIMIT_NEAR")):
+        limit_key = {"customer_admins": "customer_admin_limit", "licensed_users": "licensed_users_limit", "connectors": "connector_limit"}[key]
+        limit = limits.get(limit_key)
+        if isinstance(limit, int) and ((usage[key] >= limit) or (key == "connectors" and usage[key] >= max(0, limit - 1))): alerts.append(code)
+    return {"tenant_id": str(tenant_id), "usage": usage, "limits": limits, "alerts": alerts,
+            "limit_change_authority": "PLATFORM_ADMIN_ONLY"}
+
+
+@router.get("/platform-admin/canonical-model")
+def get_canonical_model(request: Request, db: Session = Depends(get_db)):
+    _require_platform_admin(request, db)
+    entities = ["Product", "ProductVersion", "Component", "Material", "Supplier", "Site", "Lot", "Batch", "Complaint", "QualityEvent", "Investigation", "Evidence", "Observation", "Hypothesis", "Contradiction", "Unknown", "Risk", "FailureMode", "Control", "CAPA", "FieldAction", "Recall", "Change", "Decision", "Approval", "Signature", "SourceRecord", "Provenance", "AuditEvent"]
+    return {"entities": [{"name": name, "governed": True, "raw_schema_editable": False} for name in entities], "future_entities_supported": True}
+
+
+@router.get("/platform-admin/mapping-impact")
+def get_mapping_impact(request: Request, db: Session = Depends(get_db)):
+    _require_platform_admin(request, db)
+    mappings = db.query(MasterMapping).order_by(MasterMapping.code).all()
+    return {"mappings": [{"id": str(m.id), "code": m.code, "source_system": m.source_system, "target_entity": m.target_entity, "status": m.status, "released_immutable": m.status == "RELEASED"} for m in mappings], "release_rule": "REVIEW -> VALIDATION -> APPROVAL -> ACTIVATION", "silent_propagation": False}
 
 
 @router.get("/admin/identity/persona-assignments")
