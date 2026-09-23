@@ -1,0 +1,4 @@
+alembic_current: MANUAL_REQUIRED
+command_not_found=alembic
+alembic_heads: MANUAL_REQUIRED
+command_not_found=alembic

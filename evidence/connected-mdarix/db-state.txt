@@ -1,0 +1,5 @@
+Database health and tenant fixture verification are environment-dependent.
+Run the repository database verification command against the approved local
+PostgreSQL instance; credentials and connection strings are intentionally not
+recorded here.
+Status: MANUAL_REQUIRED when PostgreSQL/Docker is unavailable.

@@ -82,7 +82,24 @@ button, input, select, textarea {
 
 main {
   min-width: 0;
+  position: relative;
 }
+
+.logout-control {
+  position: absolute;
+  top: 14px;
+  right: 24px;
+  z-index: 20;
+  border: 1px solid #c7d0db;
+  border-radius: 6px;
+  background: #ffffff;
+  color: #174b60;
+  padding: 8px 14px;
+  font: inherit;
+  cursor: pointer;
+}
+
+.logout-control:hover { background: #eef5f6; }
 
 .topbar {
   display: flex;

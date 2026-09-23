@@ -1,0 +1,1 @@
+Covered by full regression: tenant denial, non-disclosure, and scope tests.

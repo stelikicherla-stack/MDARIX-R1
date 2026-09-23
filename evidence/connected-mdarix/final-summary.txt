@@ -1,0 +1,4 @@
+LOCAL STAGE 4 QUALIFICATION PACKAGE GENERATED
+Automated repository gates were executed; inspect each file for its result.
+Manual gates: live GenAI, live Resend/inbound webhook, browser screenshots, production multi-instance, GitHub-hosted CI.
+Secrets and customer payloads are intentionally excluded.

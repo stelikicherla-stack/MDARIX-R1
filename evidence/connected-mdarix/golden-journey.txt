@@ -1,0 +1,1 @@
+VS001-VS012 deterministic execution is available via scripts/run_vs001_vs012.py; browser/live-provider portions are MANUAL_REQUIRED.

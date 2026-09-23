@@ -1,0 +1,4 @@
+docker_version: MANUAL_REQUIRED
+command_not_found=docker
+compose_state: MANUAL_REQUIRED
+command_not_found=docker

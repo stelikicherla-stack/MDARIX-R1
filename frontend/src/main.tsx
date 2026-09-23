@@ -6,6 +6,7 @@ import { PublicMegaSite } from "./PublicMegaSite";
 import { AppView, navigateTo, viewFromPath } from "./app/router";
 import { Stage3CommandCenter } from "./features/command-center/Stage3CommandCenter";
 import { Stage2Experience } from "./features/stage2/Stage2Experience";
+import { AskMdarixPage } from "./features/ask/AskMdarixPage";
 
 type Product = {
   id: string;
@@ -239,6 +240,26 @@ function PrivateApplication() {
     if (isAdminRole && !["admin", "admin-manage", "admin-audit"].includes(activeView)) changeView("admin");
   }, [isAdminRole]);
 
+  const contextToolbar = <div className="toolbar">
+    {securityContext && <span className="context-summary" aria-label="Authenticated user and active role">{securityContext.display_name} | {securityContext.active_role ?? "No active role"}</span>}
+    <button className="secondary-link" onClick={() => changeView("ask")}>Ask MDARIX</button><select value={selectedProduct} onChange={(e) => setSelectedProduct(e.target.value)} aria-label="Product">
+      {products.map((product) => <option key={product.id} value={product.id}>{product.name}</option>)}
+    </select>
+    <select value={version} onChange={(e) => setVersion(e.target.value)} aria-label="Version">
+      {(selected?.available_versions ?? ["D"]).map((item) => <option key={item} value={item}>{item}</option>)}
+    </select>
+    <select value={selectedInvestigationId} onChange={(e) => setSelectedInvestigationId(e.target.value)} aria-label="Investigation" disabled={investigationsLoading || !investigations.length}>
+      {!investigations.length && <option value="">{investigationsLoading ? "Loading investigations…" : "No investigations"}</option>}
+      {investigations.map((item) => <option key={item.id} value={item.id ?? ""}>{item.investigation_identifier ?? "Investigation"} — {item.status ?? "unknown"}</option>)}
+    </select>
+    <input type="date" value={asOf} onChange={(e) => setAsOf(e.target.value)} aria-label="As of date" />
+    <div className="segmented">
+      <button className={mode === "current" ? "selected" : ""} onClick={() => setMode("current")}>Current</button>
+      <button className={mode === "event" ? "selected" : ""} onClick={() => setMode("event")}>Event</button>
+      <button className={mode === "known" ? "selected" : ""} onClick={() => setMode("known")}>Known</button>
+    </div>
+  </div>;
+
   return (
     <div className="app-shell">
       <aside className="side-nav">
@@ -256,6 +277,7 @@ function PrivateApplication() {
             <button className={`nav-link ${activeView === "signals" ? "active" : ""}`} onClick={() => changeView("signals")}>Signals &amp; Complaints</button>
             <button className={`nav-link ${activeView === "story" ? "active" : ""}`} onClick={() => changeView("story")}>Story View</button>
             <button className={`nav-link ${activeView === "persona" ? "active" : ""}`} onClick={() => changeView("persona")}>Persona Dashboard</button>
+            <button className={`nav-link ${activeView === "ask" ? "active" : ""}`} onClick={() => changeView("ask")}>Ask MDARIX</button>
             <p className="nav-section-label">Investigation</p>
             <button className={`nav-link ${activeView === "investigations" ? "active" : ""}`} onClick={() => changeView("investigations")}>Investigations</button>
             <button className={`nav-link ${activeView === "evidence" ? "active" : ""}`} onClick={() => changeView("evidence")}>Evidence</button>
@@ -268,30 +290,14 @@ function PrivateApplication() {
         <div className="side-nav-footer"><p>Evidence before inference.<br/>Authorized humans decide.</p></div>
       </aside>
       <main>
+        <button className="logout-control" onClick={async () => { await fetch("/api/v1/auth/signout", { method: "POST" }); window.location.replace("/signin"); }} aria-label="Sign out of MDARIX">Logout</button>
         {!['admin', 'admin-manage', 'admin-audit'].includes(activeView) && <header className={`topbar ${activeView === "home" ? "home-topbar" : ""}`}>
+          {activeView === "home" && contextToolbar}
           <div>
             <p className="eyebrow">{activeView === "home" ? "Intelligence workspace" : "Persistent workflow context"}</p>
             <h1>{activeView === "home" ? "Good decisions start with product reality" : view?.product.name ?? "MDARIX"}</h1><div className="workflow-storyline" aria-label="End-to-end investigation workflow"><span className={activeView === "products" ? "active" : ""}>Product reality</span><i>›</i><span className={activeView === "investigations" ? "active" : ""}>Investigate</span><i>›</i><span className={activeView === "evidence" ? "active" : ""}>Evidence</span><i>›</i><span className={activeView === "decision" ? "active" : ""}>Decide</span><i>›</i><span className={activeView === "assurance" ? "active" : ""}>Assurance</span><i>›</i><span className={activeView === "audit" ? "active" : ""}>Audit</span></div>
           </div>
-          <div className="toolbar">
-            {securityContext && <span className="context-summary" aria-label="Authenticated user and active role">{securityContext.display_name} | {securityContext.active_role ?? "No active role"}</span>}
-            <select value={selectedProduct} onChange={(e) => setSelectedProduct(e.target.value)} aria-label="Product">
-              {products.map((product) => <option key={product.id} value={product.id}>{product.name}</option>)}
-            </select>
-            <select value={version} onChange={(e) => setVersion(e.target.value)} aria-label="Version">
-              {(selected?.available_versions ?? ["D"]).map((item) => <option key={item} value={item}>{item}</option>)}
-            </select>
-            <select value={selectedInvestigationId} onChange={(e) => setSelectedInvestigationId(e.target.value)} aria-label="Investigation" disabled={investigationsLoading || !investigations.length}>
-              {!investigations.length && <option value="">{investigationsLoading ? "Loading investigations…" : "No investigations"}</option>}
-              {investigations.map((item) => <option key={item.id} value={item.id ?? ""}>{item.investigation_identifier ?? "Investigation"} — {item.status ?? "unknown"}</option>)}
-            </select>
-            <input type="date" value={asOf} onChange={(e) => setAsOf(e.target.value)} aria-label="As of date" />
-            <div className="segmented">
-              <button className={mode === "current" ? "selected" : ""} onClick={() => setMode("current")}>Current</button>
-              <button className={mode === "event" ? "selected" : ""} onClick={() => setMode("event")}>Event</button>
-              <button className={mode === "known" ? "selected" : ""} onClick={() => setMode("known")}>Known</button>
-            </div>
-          </div>
+          {activeView !== "home" && contextToolbar}
         </header>}
         {error && <div className="error">{error}</div>}
         {view && activeView === "home" && <><ApplicationHome view={view} investigations={investigations} onNavigate={changeView} /><Stage3CommandCenter /></>}
@@ -299,6 +305,7 @@ function PrivateApplication() {
         {view && activeView === "signals" && <Stage2Experience mode="signals" />}
         {view && activeView === "persona" && <Stage2Experience mode="persona" />}
         {view && activeView === "story" && <Stage2Experience mode="story" investigationId={selectedInvestigationId} />}
+        {view && activeView === "ask" && <AskMdarixPage investigationId={selectedInvestigationId} productVersionId={view.selected_version?.id as string | undefined} />}
         {view && activeView === "investigations" && <InvestigationAccessView view={view} selectedInvestigationId={selectedInvestigationId} onSelect={setSelectedInvestigationId} temporalMode={mode} asOf={asOf} onOpenDecision={() => setActiveView("decision")} />}
         {view && activeView === "evidence" && <EvidenceAccessView productEvidenceCount={view.evidence.length} />}
         {view && activeView === "decision" && selectedInvestigationId && <DecisionCenterView investigationId={selectedInvestigationId} temporalMode={mode} asOf={asOf} />}

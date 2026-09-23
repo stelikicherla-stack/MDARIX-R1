@@ -1,0 +1,1 @@
+Covered by full regression: Ask scope, evidence grounding, contradiction, unknown, and injection tests.

@@ -1,4 +1,4 @@
-export type AppView = "home" | "products" | "signals" | "story" | "persona" | "investigations" | "evidence" | "decision" | "assurance" | "audit" | "admin" | "admin-manage" | "admin-audit";
+export type AppView = "home" | "products" | "signals" | "story" | "persona" | "ask" | "investigations" | "evidence" | "decision" | "assurance" | "audit" | "admin" | "admin-manage" | "admin-audit";
 
 export const APP_ROUTES: Record<AppView, string> = {
   home: "/app",
@@ -6,6 +6,7 @@ export const APP_ROUTES: Record<AppView, string> = {
   signals: "/app/signals",
   story: "/app/story",
   persona: "/app/persona",
+  ask: "/app/ask",
   investigations: "/app/investigations",
   evidence: "/app/evidence",
   decision: "/app/decision",

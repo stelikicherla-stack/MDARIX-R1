@@ -1,0 +1,1 @@
+Signature, replay, sender, attachment, and quarantine policy checks are automated; live webhook delivery is MANUAL_REQUIRED.
