@@ -10,6 +10,7 @@ from sqlalchemy.orm import Session
 from ask_mdarix import QueryInterpreter
 from ask_mdarix.retrieval import build_retrieval_plan
 from auth.service import auth_service
+from backend.app.request_context import AuthenticatedRequestContext, get_request_context
 from backend.app.db.models.foundation import (
     Evidence, FeatureEntitlement, Hypothesis, HypothesisEvidence, PlanDefinition,
     Investigation, Product, ProductVersion, Tenant, TenantPlanAssignment, Unknown,
@@ -46,10 +47,12 @@ class AskRequest(BaseModel):
     investigation_id: str | None = None
 
 
-def _authenticated_context(request: Request) -> dict:
-    token = request.cookies.get("mdarix_session", "")
+def _authenticated_context(request: Request, db: Session | None = None) -> dict:
+    if db is not None and os.getenv("MDARIX_ENV", "development").lower() in {"production", "staging"}:
+        ctx = get_request_context(request, db)
+        return {"user_id": ctx.user_id, "tenant_id": ctx.tenant_id, "active_role": ctx.active_role_id or "Viewer", "correlation_id": ctx.correlation_id}
     try:
-        return auth_service.context(token)
+        return auth_service.context(request.cookies.get("mdarix_session", ""))
     except ValueError as exc:
         raise HTTPException(status_code=401, detail={"code": "UNAUTHENTICATED", "message": "Authentication required"}) from exc
 
@@ -158,7 +161,7 @@ def _structured_intelligence(*, retrieval, lifecycle, intelligence, spec) -> dic
 
 @router.post("/")
 def ask(request: Request, data: AskRequest, db: Session = Depends(get_db)) -> dict:
-    context = _authenticated_context(request)
+    context = _authenticated_context(request, db) if os.getenv("MDARIX_ENV", "development").lower() in {"production", "staging"} else _authenticated_context(request)
     correlation_id = request.headers.get("X-Correlation-ID") or str(uuid4())
     tenant = db.query(Tenant).filter(Tenant.id == context["tenant_id"]).first()
     if tenant is None or str(tenant.status).lower() not in {"active", "enabled"}:

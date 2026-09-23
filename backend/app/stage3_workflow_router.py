@@ -3,8 +3,9 @@ from datetime import datetime, timezone
 from fastapi import APIRouter, Depends, Header, HTTPException, Request, UploadFile, File, Response
 from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
+from sqlalchemy import func
 from backend.app.db.session import get_db
-from backend.app.db.models.stage3 import AIInteraction, AIInteractionFeedback, AIInteractionSession, ContextSnapshot, InboundEmailEvent, SupplierEvidenceRequest, EvidenceAttachment
+from backend.app.db.models.stage3 import AIInteraction, AIInteractionFeedback, AIInteractionSession, ContextSnapshot, InboundEmailEvent, InboundProviderMapping, SupplierEvidenceRequest, EvidenceAttachment
 from backend.app.db.models.foundation import AuditEvent
 from object_storage.service import ObjectStorageService
 from communication.email.service import EmailService
@@ -23,6 +24,7 @@ class SupplierEvidenceRequestPayload(BaseModel):
     recipient: str = Field(min_length=3, max_length=254); title: str = Field(min_length=1, max_length=240); requested_items: list[str] = Field(min_length=1, max_length=50); investigation_id: uuid.UUID | None = None; supplier_id: uuid.UUID | None = None
 
 MAX_ATTACHMENT_BYTES = 10 * 1024 * 1024
+TENANT_ATTACHMENT_QUOTA_BYTES = 100 * 1024 * 1024
 ALLOWED_ATTACHMENT_TYPES = {"application/pdf", "text/plain", "text/csv", "image/png", "image/jpeg"}
 
 @router.post("/interactions")
@@ -70,6 +72,11 @@ async def upload_supplier_attachment(request_id: uuid.UUID, file: UploadFile = F
     content = await file.read(MAX_ATTACHMENT_BYTES + 1)
     if len(content) > MAX_ATTACHMENT_BYTES:
         raise HTTPException(413, detail={"code":"ATTACHMENT_TOO_LARGE","message":"Attachment exceeds the permitted size"})
+    used = int(db.query(func.coalesce(func.sum(EvidenceAttachment.size), 0)).filter(EvidenceAttachment.tenant_id == ctx.tenant_id).scalar() or 0)
+    if used + len(content) > TENANT_ATTACHMENT_QUOTA_BYTES:
+        raise HTTPException(413, detail={"code":"TENANT_ATTACHMENT_QUOTA_EXCEEDED","message":"Tenant attachment storage quota exceeded"})
+    if not ObjectStorageService().scan(content, content_type):
+        raise HTTPException(422, detail={"code":"MALWARE_SCAN_REJECTED","message":"Attachment failed the malware safety scan"})
     metadata = ObjectStorageService().put(ctx.tenant_id, f"{request_id}-{file.filename or 'attachment'}", content); now = NOW(); attachment = EvidenceAttachment(id=uuid.uuid4(), tenant_id=ctx.tenant_id, request_id=row.id, uploaded_by=ctx.user_id, filename=file.filename or "attachment", content_type=content_type, object_key=metadata["object_key"], size=metadata["size"], checksum=metadata["checksum"], created_at=now); db.add(attachment); db.add(AuditEvent(id=uuid.uuid4(), tenant_id=ctx.tenant_id, actor_ref=ctx.user_id, action="SUPPLIER_EVIDENCE_ATTACHMENT_UPLOADED", entity_type="EvidenceAttachment", entity_id=attachment.id, details={"filename":attachment.filename,"size":attachment.size,"checksum":attachment.checksum}, created_at=now)); db.commit(); return {"id":str(attachment.id),**metadata,"filename":attachment.filename}
 
 @router.get("/supplier-evidence-requests/{request_id}/attachments")
@@ -88,7 +95,7 @@ def download_supplier_attachment(request_id: uuid.UUID, attachment_id: uuid.UUID
     return Response(content=content, media_type=attachment.content_type, headers={"Content-Disposition":f'attachment; filename="{safe_name}"'})
 
 @router.post("/resend/webhook")
-async def persisted_resend_webhook(request: Request, x_resend_signature: str | None = Header(default=None), db: Session = Depends(get_db)):
+async def persisted_resend_webhook(request: Request, x_resend_signature: str | None = Header(default=None), x_provider_account_id: str | None = Header(default=None), db: Session = Depends(get_db)):
     body = await request.body()
     if not verify_webhook(body, x_resend_signature): raise HTTPException(401, detail={"code":"INVALID_WEBHOOK_SIGNATURE","message":"Webhook authentication failed"})
     try: event = await request.json()
@@ -97,8 +104,14 @@ async def persisted_resend_webhook(request: Request, x_resend_signature: str | N
     if not event_id: raise HTTPException(400, detail={"code":"MISSING_PROVIDER_EVENT_ID","message":"Provider event id is required"})
     existing = db.query(InboundEmailEvent).filter(InboundEmailEvent.provider_event_id == event_id).first()
     if existing: return {"status":"DUPLICATE_IGNORED","event_id":event_id}
-    classified = classify_inbound_event(event); row = InboundEmailEvent(id=uuid.uuid4(), tenant_id=None, provider_event_id=event_id, event_type=event_type, status=classified["status"], event_metadata={"processing_state":classified.get("processing_state"),"evidence_acceptance":"NEVER_AUTOMATIC"}, created_at=NOW())
-    # Tenant resolution is intentionally pending; the event is not authorized by email content.
+    account_id = x_provider_account_id or str(event.get("account_id") or event.get("data", {}).get("account_id") or "")
+    mapping = db.query(InboundProviderMapping).filter(InboundProviderMapping.provider == "resend", InboundProviderMapping.provider_account_id == account_id, InboundProviderMapping.status == "ACTIVE").first() if account_id else None
+    classified = classify_inbound_event(event)
+    metadata = {"processing_state":classified.get("processing_state"),"evidence_acceptance":"NEVER_AUTOMATIC","provider_account_id":account_id or None}
+    if mapping is None:
+        classified["status"] = "UNMAPPED_PROVIDER_ACCOUNT"
+        metadata["processing_state"] = "QUARANTINED_UNMAPPED_TENANT"
+    row = InboundEmailEvent(id=uuid.uuid4(), tenant_id=mapping.tenant_id if mapping else None, provider_event_id=event_id, event_type=event_type, status=classified["status"], event_metadata=metadata, created_at=NOW())
     db.add(row); db.commit(); return {**classified, "event_id": event_id}
 
 @router.get("/provider-health")

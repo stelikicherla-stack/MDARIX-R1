@@ -1,4 +1,6 @@
 from datetime import datetime
+import os
+from urllib.parse import urlparse
 
 from fastapi import Depends, FastAPI, HTTPException, Query, Request
 from fastapi.responses import JSONResponse
@@ -7,7 +9,6 @@ from sqlalchemy import text
 from backend.app.db.session import engine
 from backend.app.db.session import get_db
 from backend.app.enterprise_audit import make_audit_event
-from auth.service import auth_service
 from sqlalchemy.orm import Session
 from uuid import uuid4
 from backend.app.evidence.router import router as evidence_router
@@ -37,6 +38,21 @@ from graph.schemas import GraphResponse, HealthResponse, RelationshipDetail
 from graph.service import GraphError, RealityGraphService
 
 app = FastAPI(title="MDARIX R1 API", version="0.8.0")
+
+@app.middleware("http")
+async def enforce_cookie_csrf(request: Request, call_next):
+    """Reject cross-origin state changes authenticated only by a browser cookie."""
+    if request.method not in {"GET", "HEAD", "OPTIONS"} and request.cookies.get("mdarix_session") and os.getenv("MDARIX_ENV", "development").lower() in {"production", "staging"}:
+        configured = os.getenv("MDARIX_APP_URL", "").rstrip("/")
+        expected = f"{urlparse(configured).scheme}://{urlparse(configured).netloc}" if configured else ""
+        supplied = request.headers.get("origin")
+        if not supplied:
+            referer = request.headers.get("referer", "")
+            parsed = urlparse(referer)
+            supplied = f"{parsed.scheme}://{parsed.netloc}" if parsed.netloc else ""
+        if not expected or supplied.rstrip("/") != expected:
+            return JSONResponse(status_code=403, content={"detail": {"code": "CSRF_ORIGIN_DENIED", "message": "A trusted browser origin is required"}})
+    return await call_next(request)
 
 
 @app.exception_handler(Exception)
@@ -161,21 +177,13 @@ def list_product_investigations(product_id: str, ctx: AuthenticatedRequestContex
         raise product_error(exc) from exc
 
 
-def _product360_audit(db: Session, request: Request, product: Product360Response, mode: str, as_of: datetime | None, correlation_id: str) -> None:
-    actor = "anonymous"
-    tenant_id = product.metadata.get("tenant_id")
-    token = request.cookies.get("mdarix_session", "")
-    if token:
-        try:
-            context = auth_service.context(token)
-            actor = context["user_id"]
-            tenant_id = context["tenant_id"]
-        except ValueError:
-            pass
+def _product360_audit(db: Session, product: Product360Response, mode: str, as_of: datetime | None, ctx: AuthenticatedRequestContext) -> None:
+    actor = ctx.user_id
+    tenant_id = ctx.tenant_id
     details = {"temporal_mode": {"current": "CURRENT", "event": "EVENT_AS_OF", "known": "KNOWN_AS_OF"}[mode], "result_count": len(product.timeline)}
     if as_of:
         details["temporal_cutoff"] = as_of.isoformat()
-    db.add(make_audit_event(tenant_id=tenant_id, actor_ref=actor, action="PRODUCT360_TEMPORAL_RETRIEVAL", entity_type="Product360", correlation_id=correlation_id, details=details))
+    db.add(make_audit_event(tenant_id=tenant_id, actor_ref=actor, action="PRODUCT360_TEMPORAL_RETRIEVAL", entity_type="Product360", correlation_id=ctx.correlation_id, details=details))
     db.commit()
 
 
@@ -183,7 +191,7 @@ def _product360_audit(db: Session, request: Request, product: Product360Response
 def get_product360(request: Request, product_id: str, version_id: str | None = None, as_of: datetime | None = None, mode: str = Query("current", pattern="^(current|event|known)$"), db: Session = Depends(get_db), ctx: AuthenticatedRequestContext = Depends(get_request_context)) -> Product360Response:
     try:
         result = product360_service.product360(product_id, version_id, as_of, mode, ctx.tenant_id)
-        _product360_audit(db, request, result, mode, as_of, request.headers.get("X-Correlation-ID") or str(uuid4()))
+        _product360_audit(db, result, mode, as_of, ctx)
         return result
     except Product360Error as exc:
         raise product_error(exc) from exc
@@ -193,7 +201,7 @@ def get_product360(request: Request, product_id: str, version_id: str | None = N
 def get_timeline(request: Request, product_id: str, version_id: str | None = None, as_of: datetime | None = None, mode: str = Query("event", pattern="^(event|known)$"), db: Session = Depends(get_db), ctx: AuthenticatedRequestContext = Depends(get_request_context)) -> TemporalRealityResponse:
     try:
         result = product360_service.temporal_reality(product_id, version_id, as_of, mode, ctx.tenant_id)
-        _product360_audit(db, request, product360_service.product360(product_id, version_id, as_of, mode), mode, as_of, request.headers.get("X-Correlation-ID") or str(uuid4()))
+        _product360_audit(db, product360_service.product360(product_id, version_id, as_of, mode), mode, as_of, ctx)
         return result
     except Product360Error as exc:
         raise product_error(exc) from exc

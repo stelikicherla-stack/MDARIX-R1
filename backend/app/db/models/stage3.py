@@ -38,6 +38,11 @@ class InboundEmailEvent(Base):
     id = uuid_pk(); tenant_id = tenant_fk(nullable=True); provider_event_id: Mapped[str] = mapped_column(String(255), nullable=False); event_type: Mapped[str] = mapped_column(String(100), nullable=False); status: Mapped[str] = mapped_column(String(50), nullable=False); event_metadata: Mapped[dict | None] = mapped_column("metadata", JSONB); created_at = tz(False)
     __table_args__ = (UniqueConstraint("provider_event_id", name="uq_inbound_email_provider_event"),)
 
+class InboundProviderMapping(Base):
+    __tablename__ = "inbound_provider_mappings"
+    id = uuid_pk(); tenant_id = tenant_fk(); provider: Mapped[str] = mapped_column(String(80), nullable=False); provider_account_id: Mapped[str] = mapped_column(String(255), nullable=False); status: Mapped[str] = mapped_column(String(30), nullable=False, server_default="ACTIVE"); created_at = tz(False); updated_at = tz(False)
+    __table_args__ = (UniqueConstraint("provider", "provider_account_id", name="uq_inbound_provider_account"),)
+
 class SupplierEvidenceRequest(Base):
     __tablename__ = "supplier_evidence_requests"
     id = uuid_pk(); tenant_id = tenant_fk(); investigation_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True)); supplier_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True)); requested_by: Mapped[str] = mapped_column(String(255), nullable=False); recipient: Mapped[str] = mapped_column(String(254), nullable=False); title: Mapped[str] = mapped_column(String(240), nullable=False); requested_items: Mapped[dict] = mapped_column(JSONB, nullable=False); status: Mapped[str] = mapped_column(String(40), nullable=False, server_default="PENDING_DELIVERY"); provider_message_id: Mapped[str | None] = mapped_column(String(255)); created_at = tz(False); updated_at = tz(False)

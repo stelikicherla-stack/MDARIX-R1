@@ -4,18 +4,12 @@ from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlalchemy.orm import Session
 from backend.app.db.session import get_db
 from backend.app.request_context import AuthenticatedRequestContext, get_request_context
-from auth.service import auth_service
 from backend.app.enterprise_audit import make_audit_event
 from challenger.schemas import ChallengeRequest, ChallengeResponse
 from challenger.service import ChallengerError, ChallengerService
 from backend.app.db.models.foundation import Investigation
 
 router=APIRouter(prefix="/api/v1/investigations",tags=["AI Challenger"]); service=ChallengerService()
-def _context(request: Request) -> dict:
-    try:
-        return auth_service.context(request.cookies.get("mdarix_session", ""))
-    except ValueError as exc:
-        raise HTTPException(status_code=401, detail={"code":"UNAUTHENTICATED","message":"Authentication required"}) from exc
 def err(e): return HTTPException(status_code=404 if e.code.endswith("NOT_FOUND") else 400,detail={"code":e.code,"message":e.message})
 def _controlled_dependency_failure() -> bool:
     return os.environ.get("DAY31_LIVE_DEPENDENCY_FAILURE") == "1" and os.environ.get("MDARIX_ENV", "development").lower() != "production"

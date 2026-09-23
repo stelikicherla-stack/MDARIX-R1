@@ -23,10 +23,13 @@ def _development_token(token: str | None) -> str | None:
 def signup(data:Signup, db:Session=Depends(get_db)):
  try:
   if db.query(AuthUser).filter(AuthUser.username==data.email.lower()).first(): raise ValueError("ACCOUNT_EXISTS")
-  result=auth_service.signup(data.email,data.password,data.display_name,data.organization); account=auth_service.accounts[data.email.lower()]; tenant=db.query(Tenant).first()
-  if not tenant: raise ValueError("TENANT_NOT_CONFIGURED")
-  tenant_id=tenant.id; account.tenant_id=str(tenant_id); now=datetime.now(timezone.utc)
-  db.add(AuthUser(id=__import__('uuid').uuid4(),tenant_id=tenant_id,username=account.email,display_name=account.display_name,company=data.organization,password_hash=account.password_hash,role=account.role,status=account.status,email_verified=False,created_at=now,updated_at=now)); db.commit()
+  result=auth_service.signup(data.email,data.password,data.display_name,data.organization); account=auth_service.accounts[data.email.lower()]; now=datetime.now(timezone.utc)
+  user_id=__import__('uuid').uuid4()
+  tenant_key=("customer-"+"-".join(data.organization.lower().split()))[:60]+"-"+__import__('secrets').token_hex(6)
+  tenant=Tenant(id=__import__('uuid').uuid4(),tenant_key=tenant_key,name=data.organization.strip()[:255],status="active",created_at=now,updated_at=now)
+  db.add(tenant); db.flush(); account.tenant_id=str(tenant.id)
+  user=AuthUser(id=user_id,tenant_id=tenant.id,username=account.email,display_name=account.display_name,company=data.organization,password_hash=account.password_hash,role=account.role,status=account.status,email_verified=False,created_at=now,updated_at=now)
+  db.add(user); db.flush(); db.add(TenantMembership(id=__import__('uuid').uuid4(),tenant_id=tenant.id,user_id=user.id,status="ACTIVE",is_default=True,created_at=now,updated_at=now)); db.commit()
   result["email_delivery"] = send_verification_email(account.email, result["development_token"])
   return result
  except ValueError as e: raise fail(e)

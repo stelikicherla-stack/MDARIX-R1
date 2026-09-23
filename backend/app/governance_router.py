@@ -1,12 +1,14 @@
 import hashlib, json, uuid
 from datetime import datetime, timezone
-from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
-from auth.service import auth_service
+from auth.service import _verify
 from backend.app.db.session import get_db
 from backend.app.db.models.foundation import (ApprovalAuthority, AuditEvent, Decision, FeatureEntitlement, PlanDefinition, SegregationOfDutiesPolicy, SignedApprovalRecord, Tenant, TenantPlanAssignment)
 from backend.app.db.models.stage3 import ContextSnapshot
+from backend.app.request_context import AuthenticatedRequestContext, get_request_context
+from backend.app.db.models.foundation import AuthUser
 
 router=APIRouter(prefix="/api/v1/governance",tags=["Enterprise Governance"])
 FEATURE="DECISION_CENTER_SIGNATURES"; ASK_FEATURE="ASK_MDARIX"; NOW=lambda: datetime.now(timezone.utc)
@@ -41,15 +43,20 @@ def tenant(db,actor):
 def entitled(db,t):
  now=NOW(); row=db.query(TenantPlanAssignment).join(PlanDefinition,PlanDefinition.id==TenantPlanAssignment.plan_id).join(FeatureEntitlement,FeatureEntitlement.plan_id==PlanDefinition.id).filter(TenantPlanAssignment.tenant_id==t.id,TenantPlanAssignment.status=="ACTIVE",PlanDefinition.status=="ACTIVE",FeatureEntitlement.feature_code==FEATURE,FeatureEntitlement.enabled==True,FeatureEntitlement.status=="ACTIVE",TenantPlanAssignment.effective_from<=now).first()
  return bool(row)
-def session_actor(request):
- try:return auth_service.context(request.cookies.get("mdarix_session",""))
- except ValueError: raise HTTPException(401,detail={"code":"UNAUTHENTICATED","message":"Current authenticated session required"})
+def session_actor(db, ctx: AuthenticatedRequestContext):
+ try:
+  user=db.query(AuthUser).filter(AuthUser.id == uuid.UUID(ctx.user_id), AuthUser.tenant_id == ctx.tenant_id).first()
+ except (ValueError, TypeError):
+  user=None
+ if user is None:
+  return {"tenant_id":ctx.tenant_id,"user_id":ctx.user_id,"active_role":ctx.active_role_id or "Viewer","display_name":ctx.user_id,"session_id":ctx.session_id}
+ return {"tenant_id":ctx.tenant_id,"user_id":ctx.user_id,"active_role":user.role or "Viewer","display_name":user.display_name or ctx.user_id,"session_id":ctx.session_id}
 @router.get("/effective-access")
-def effective_access(request:Request,db:Session=Depends(get_db)):
- actor=session_actor(request); t=tenant(db,actor); return {"feature":FEATURE,"entitled":entitled(db,t),"user_id":actor["user_id"],"active_role":actor["active_role"]}
+def effective_access(db:Session=Depends(get_db),ctx: AuthenticatedRequestContext=Depends(get_request_context)):
+ actor=session_actor(db,ctx); t=tenant(db,actor); return {"feature":FEATURE,"entitled":entitled(db,t),"user_id":actor["user_id"],"active_role":actor["active_role"]}
 @router.post("/decisions/{decision_id}/sign")
-def sign(decision_id:uuid.UUID,payload:SignatureRequest,request:Request,db:Session=Depends(get_db)):
- actor=session_actor(request); t=tenant(db,actor); audit(db,t,actor["user_id"],"APPROVAL_REQUESTED",decision_id)
+def sign(decision_id:uuid.UUID,payload:SignatureRequest,db:Session=Depends(get_db),ctx: AuthenticatedRequestContext=Depends(get_request_context)):
+ actor=session_actor(db,ctx); t=tenant(db,actor); audit(db,t,actor["user_id"],"APPROVAL_REQUESTED",decision_id)
  if not entitled(db,t): audit(db,t,actor["user_id"],"ENTITLEMENT_ACCESS_DENIED",decision_id); db.commit(); raise HTTPException(403,detail={"code":"DENIED_NOT_ENTITLED","message":"Tenant is not entitled to controlled signatures"})
  item=db.query(Decision).filter(Decision.id==decision_id,Decision.tenant_id==t.id).first()
  if not item: raise HTTPException(404,detail={"code":"DECISION_NOT_FOUND","message":"Decision is not available for this tenant"})
@@ -60,8 +67,14 @@ def sign(decision_id:uuid.UUID,payload:SignatureRequest,request:Request,db:Sessi
  sod=db.query(SegregationOfDutiesPolicy).filter_by(tenant_id=t.id,object_type="Decision",decision_type="INVESTIGATION_REVIEW",status="ACTIVE").first()
  if sod and sod.creator_cannot_approve and item.authorized_by_ref==actor["user_id"]: audit(db,t,actor["user_id"],"SOD_DENIED",decision_id); db.commit(); raise HTTPException(403,detail={"code":"SOD_DENIED","message":"Approval by another authorized user is required"})
  if not payload.remarks.strip(): raise HTTPException(400,detail={"code":"REMARKS_REQUIRED","message":"Remarks are required"})
- try: auth_service.verify_current_password(request.cookies.get("mdarix_session",""),payload.password)
- except ValueError: audit(db,t,actor["user_id"],"SIGNATURE_REAUTHENTICATION_FAILED",decision_id); db.commit(); raise HTTPException(403,detail={"code":"INVALID_REAUTHENTICATION","message":"Current password was not verified"})
+ try:
+  user=db.query(AuthUser).filter(AuthUser.id==uuid.UUID(ctx.user_id),AuthUser.tenant_id==ctx.tenant_id).first()
+  password_ok = user is not None and _verify(payload.password, user.password_hash)
+ except (ValueError, TypeError):
+  from auth.service import auth_service
+  try: auth_service.verify_current_password(ctx.session_id, payload.password); password_ok = True
+  except ValueError: password_ok = False
+ if not password_ok: audit(db,t,actor["user_id"],"SIGNATURE_REAUTHENTICATION_FAILED",decision_id); db.commit(); raise HTTPException(403,detail={"code":"INVALID_REAUTHENTICATION","message":"Current password was not verified"})
  material={"decision_id":str(item.id),"version":version,"type":"INVESTIGATION_REVIEW","decision":payload.decision,"remarks":payload.remarks.strip()}; fingerprint=hashlib.sha256(json.dumps(material,sort_keys=True).encode()).hexdigest(); existing=db.query(SignedApprovalRecord).filter_by(tenant_id=t.id,object_type="Decision",object_id=item.id,object_version=version,decision_type="INVESTIGATION_REVIEW").first()
  if existing: raise HTTPException(409,detail={"code":"DUPLICATE_SIGNATURE","message":"This decision version is already signed"})
  meaning=f"I have reviewed this record and {payload.decision.lower()} this decision."; record=SignedApprovalRecord(id=uuid.uuid4(),tenant_id=t.id,object_type="Decision",object_id=item.id,object_version=version,decision_type="INVESTIGATION_REVIEW",decision=payload.decision,remarks=payload.remarks.strip(),signer_user_id=actor["user_id"],signer_role=actor["active_role"],signature_meaning=meaning,content_fingerprint=fingerprint,signature_hash=hashlib.sha256((fingerprint+actor["user_id"]+version).encode()).hexdigest(),status="SIGNED",signed_at=NOW(),created_at=NOW()); db.add(record); item.decision_status="APPROVED" if payload.decision=="APPROVE" else "REJECTED";
@@ -69,13 +82,13 @@ def sign(decision_id:uuid.UUID,payload:SignatureRequest,request:Request,db:Sessi
   db.add(ContextSnapshot(id=uuid.uuid4(), tenant_id=t.id, decision_id=item.id, decision_version=version, snapshot={"decision_id":str(item.id),"investigation_id":str(item.investigation_id),"product_id":str(item.product_id) if item.product_id else None,"product_version_id":str(item.product_version_id) if item.product_version_id else None,"selected_action":item.selected_action,"rationale":item.rationale,"approval":payload.remarks}, created_by=actor["user_id"], created_at=NOW()))
  audit(db,t,actor["user_id"],"SIGNED_APPROVAL_CREATED" if payload.decision=="APPROVE" else "SIGNED_REJECTION_CREATED",item.id,{"signature_id":str(record.id),"fingerprint":fingerprint}); db.commit(); return {"signature_id":record.id,"status":item.decision_status,"fingerprint":fingerprint,"signer":actor["display_name"],"role":actor["active_role"],"signed_at":record.signed_at}
 @router.post("/decisions/{decision_id}/material-change")
-def material_change(decision_id:uuid.UUID,payload:MaterialChangeRequest,request:Request,db:Session=Depends(get_db)):
- actor=session_actor(request); t=tenant(db,actor); item=db.query(Decision).filter(Decision.id==decision_id,Decision.tenant_id==t.id).first()
+def material_change(decision_id:uuid.UUID,payload:MaterialChangeRequest,db:Session=Depends(get_db),ctx: AuthenticatedRequestContext=Depends(get_request_context)):
+ actor=session_actor(db,ctx); t=tenant(db,actor); item=db.query(Decision).filter(Decision.id==decision_id,Decision.tenant_id==t.id).first()
  if not item: raise HTTPException(404,detail={"code":"DECISION_NOT_FOUND","message":"Decision is not available for this tenant"})
  current=item.updated_at.isoformat()
  if payload.expected_updated_at!=current: raise HTTPException(409,detail={"code":"STALE_OBJECT_VERSION","message":"Record changed since review"})
  item.updated_at=NOW(); item.decision_status="REQUIRES_REVIEW"; audit(db,t,actor["user_id"],"RE_REVIEW_REQUIRED",item.id,{"change_summary":payload.change_summary,"previous_version":current,"new_version":item.updated_at.isoformat()}); audit(db,t,actor["user_id"],"RE_SIGNATURE_REQUIRED",item.id); db.commit(); return {"status":"RE_REVIEW_REQUIRED","previous_version":current,"current_version":item.updated_at}
 @router.get("/decisions/{decision_id}/signature-history")
-def signature_history(decision_id:uuid.UUID,request:Request,db:Session=Depends(get_db)):
- actor=session_actor(request); t=tenant(db,actor); rows=db.query(SignedApprovalRecord).filter_by(tenant_id=t.id,object_type="Decision",object_id=decision_id).order_by(SignedApprovalRecord.signed_at).all()
+def signature_history(decision_id:uuid.UUID,db:Session=Depends(get_db),ctx: AuthenticatedRequestContext=Depends(get_request_context)):
+ actor=session_actor(db,ctx); t=tenant(db,actor); rows=db.query(SignedApprovalRecord).filter_by(tenant_id=t.id,object_type="Decision",object_id=decision_id).order_by(SignedApprovalRecord.signed_at).all()
  return [{"signature_id":r.id,"object_version":r.object_version,"decision":r.decision,"status":r.status,"signer_user_id":r.signer_user_id,"signer_role":r.signer_role,"signed_at":r.signed_at,"fingerprint":r.content_fingerprint,"signature_meaning":r.signature_meaning} for r in rows]

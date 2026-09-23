@@ -6,6 +6,7 @@ from fastapi import APIRouter, HTTPException, Request, Depends
 from pydantic import BaseModel, Field
 from access_control.policy import PermissionSet, Role, User, effective_permissions
 from auth.service import auth_service
+from backend.app.request_context import get_request_context
 from auth.service import _hash
 from auth.emailer import EmailDeliveryError, send_activation_email, send_password_reset_email, smtp_configuration_status
 from auth.durable import issue_invitation, issue_reset, hash_token
@@ -85,20 +86,13 @@ def _require_platform_admin(request: Request, db: Session) -> AuthUser:
     return user
 
 def _authenticated_user(request: Request, db: Session) -> AuthUser:
-    token = request.cookies.get("mdarix_session", "")
-    session = db.query(AuthSession).filter(AuthSession.session_hash == hash_token(token), AuthSession.revoked_at.is_(None), AuthSession.expires_at > datetime.now(timezone.utc)).first() if token else None
-    if session is not None and hasattr(session, 'user_id'):
-        user = db.query(AuthUser).filter(AuthUser.id == session.user_id, AuthUser.tenant_id == session.tenant_id).first()
-    else:
-        # Unit-test doubles and legacy in-memory fixtures are supported only
-        # outside the real SQLAlchemy path; production requests require the
-        # durable session row above.
-        try:
-            context = auth_service.context(token)
-            user = db.query(AuthUser).filter(AuthUser.id == context['user_id']).first()
-            if user is not None and str(user.tenant_id) != str(context['tenant_id']): user = None
-        except ValueError:
-            user = None
+    context = get_request_context(request, db)
+    try:
+        user = db.query(AuthUser).filter(AuthUser.id == uuid.UUID(context.user_id), AuthUser.tenant_id == context.tenant_id).first()
+    except (ValueError, TypeError):
+        user = None
+    if user is None and os.getenv("MDARIX_ENV", "development").lower() == "development":
+        user = db.query(AuthUser).filter(AuthUser.username == context.user_id.lower(), AuthUser.tenant_id == context.tenant_id).first()
     if user is None or user.status != "ACTIVE":
         raise HTTPException(401, detail={"code": "UNAUTHENTICATED", "message": "Authentication required"})
     return user
