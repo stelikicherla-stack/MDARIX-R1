@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 from integration.gateway import ConnectionConfig, MappingDefinition, preview
+import os
 from backend.app.request_context import AuthenticatedRequestContext, get_request_context
 router=APIRouter(prefix="/api/v1/integrations",tags=["Integration Gateway"])
 class PreviewRequest(BaseModel): connection_id:str; connector_type:str="FILE"; source_system_type:str="SIMULATED"; records:list[dict]; target_entity:str; mapping_version:str; rules:dict
@@ -13,4 +14,12 @@ def mapping_preview(request:PreviewRequest, ctx: AuthenticatedRequestContext = D
 def connector_health(connector_type: str, ctx: AuthenticatedRequestContext = Depends(get_request_context)):
     if connector_type not in {'FILE','REST','DATABASE'}:
         raise HTTPException(400, detail={'code':'UNSUPPORTED_CONNECTOR','message':'Connector type is not supported'})
-    return {'tenant_id':ctx.tenant_id,'connector_type':connector_type,'status':'HEALTHY','configuration_valid':True}
+    configured = {
+        'FILE': True,
+        'REST': bool(os.getenv('MDARIX_CONNECTOR_REST_BASE_URL')),
+        'DATABASE': bool(os.getenv('MDARIX_CONNECTOR_DATABASE_URL')),
+    }[connector_type]
+    return {'tenant_id':ctx.tenant_id,'connector_type':connector_type,
+            'status':'HEALTHY' if configured else 'NOT_CONFIGURED',
+            'configuration_valid':configured,
+            'limitations': [] if configured else ['Provider credentials or endpoint are not configured.']}

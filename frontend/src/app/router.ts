@@ -1,8 +1,11 @@
-export type AppView = "home" | "products" | "investigations" | "evidence" | "decision" | "assurance" | "audit" | "admin" | "admin-manage" | "admin-audit";
+export type AppView = "home" | "products" | "signals" | "story" | "persona" | "investigations" | "evidence" | "decision" | "assurance" | "audit" | "admin" | "admin-manage" | "admin-audit";
 
 export const APP_ROUTES: Record<AppView, string> = {
   home: "/app",
   products: "/app/products",
+  signals: "/app/signals",
+  story: "/app/story",
+  persona: "/app/persona",
   investigations: "/app/investigations",
   evidence: "/app/evidence",
   decision: "/app/decision",

@@ -5,6 +5,7 @@ import "./styles.css";
 import { PublicMegaSite } from "./PublicMegaSite";
 import { AppView, navigateTo, viewFromPath } from "./app/router";
 import { Stage3CommandCenter } from "./features/command-center/Stage3CommandCenter";
+import { Stage2Experience } from "./features/stage2/Stage2Experience";
 
 type Product = {
   id: string;
@@ -252,6 +253,9 @@ function PrivateApplication() {
             <p className="nav-section-label">Workspace</p>
             <button className={`nav-link ${activeView === "home" ? "active" : ""}`} onClick={() => changeView("home")}>Home</button>
             <button className={`nav-link ${activeView === "products" ? "active" : ""}`} onClick={() => changeView("products")}>Products</button>
+            <button className={`nav-link ${activeView === "signals" ? "active" : ""}`} onClick={() => changeView("signals")}>Signals &amp; Complaints</button>
+            <button className={`nav-link ${activeView === "story" ? "active" : ""}`} onClick={() => changeView("story")}>Story View</button>
+            <button className={`nav-link ${activeView === "persona" ? "active" : ""}`} onClick={() => changeView("persona")}>Persona Dashboard</button>
             <p className="nav-section-label">Investigation</p>
             <button className={`nav-link ${activeView === "investigations" ? "active" : ""}`} onClick={() => changeView("investigations")}>Investigations</button>
             <button className={`nav-link ${activeView === "evidence" ? "active" : ""}`} onClick={() => changeView("evidence")}>Evidence</button>
@@ -292,6 +296,9 @@ function PrivateApplication() {
         {error && <div className="error">{error}</div>}
         {view && activeView === "home" && <><ApplicationHome view={view} investigations={investigations} onNavigate={changeView} /><Stage3CommandCenter /></>}
         {view && activeView === "products" && <Product360View view={view} />}
+        {view && activeView === "signals" && <Stage2Experience mode="signals" />}
+        {view && activeView === "persona" && <Stage2Experience mode="persona" />}
+        {view && activeView === "story" && <Stage2Experience mode="story" investigationId={selectedInvestigationId} />}
         {view && activeView === "investigations" && <InvestigationAccessView view={view} selectedInvestigationId={selectedInvestigationId} onSelect={setSelectedInvestigationId} temporalMode={mode} asOf={asOf} onOpenDecision={() => setActiveView("decision")} />}
         {view && activeView === "evidence" && <EvidenceAccessView productEvidenceCount={view.evidence.length} />}
         {view && activeView === "decision" && selectedInvestigationId && <DecisionCenterView investigationId={selectedInvestigationId} temporalMode={mode} asOf={asOf} />}

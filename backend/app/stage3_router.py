@@ -34,6 +34,16 @@ def _tenant_count(db: Session, table: str, tenant_id: str) -> int:
         return 0
 
 
+def _rows(db: Session, query: str, params: dict) -> list[dict]:
+    """Return bounded analytics rows; missing optional tables become limitations."""
+    try:
+        result = db.execute(text(query), params)
+        return [dict(row._mapping) for row in result]
+    except Exception:
+        db.rollback()
+        return []
+
+
 @router.get("/analytics/command-center")
 def command_center(db: Session = Depends(get_db), ctx: AuthenticatedRequestContext = Depends(get_request_context)):
     counts = {name: _tenant_count(db, table, ctx.tenant_id) for name, table in _COUNT_TABLES.items()}
@@ -47,6 +57,57 @@ def command_center(db: Session = Depends(get_db), ctx: AuthenticatedRequestConte
         ],
         "limitations": ["Analytics are bounded to the authenticated tenant and available canonical tables."],
     }
+
+
+@router.get("/analytics/signals")
+def signals_summary(db: Session = Depends(get_db), ctx: AuthenticatedRequestContext = Depends(get_request_context)):
+    rows = _rows(db, """
+        SELECT complaint_identifier AS signal_id, description, severity, status, event_timestamp
+        FROM complaints WHERE tenant_id = :tenant_id
+        ORDER BY event_timestamp DESC NULLS LAST LIMIT 100
+    """, {"tenant_id": ctx.tenant_id})
+    return {"tenant_id": ctx.tenant_id, "scope": "TENANT", "signals": rows,
+            "limitations": ["Signal clusters are not inferred from complaint rows in this read-only foundation.",
+                            "Severity and status are returned only when recorded by the source system."]}
+
+
+@router.get("/analytics/investigations")
+def investigations_summary(db: Session = Depends(get_db), ctx: AuthenticatedRequestContext = Depends(get_request_context)):
+    rows = _rows(db, """
+        SELECT id, investigation_identifier, status, investigation_question
+        FROM investigations WHERE tenant_id = :tenant_id
+        ORDER BY created_at DESC NULLS LAST LIMIT 100
+    """, {"tenant_id": ctx.tenant_id})
+    return {"tenant_id": ctx.tenant_id, "investigations": rows,
+            "limitations": ["Investigation status is source-recorded; no readiness conclusion is inferred."]}
+
+
+@router.get("/analytics/evidence")
+def evidence_summary(db: Session = Depends(get_db), ctx: AuthenticatedRequestContext = Depends(get_request_context)):
+    rows = _rows(db, """
+        SELECT id, evidence_identifier, evidence_type, title, reliability_status, source_system
+        FROM evidence WHERE tenant_id = :tenant_id ORDER BY created_at DESC NULLS LAST LIMIT 100
+    """, {"tenant_id": ctx.tenant_id})
+    return {"tenant_id": ctx.tenant_id, "evidence": rows,
+            "classification": ["Supporting", "Contradicting", "Contextual", "Unresolved", "Missing"],
+            "limitations": ["Evidence classification is displayed only when persisted by an authorized workflow."]}
+
+
+@router.get("/analytics/persona/{persona}")
+def persona_dashboard(persona: str, db: Session = Depends(get_db), ctx: AuthenticatedRequestContext = Depends(get_request_context)):
+    allowed = {"investigator", "quality-manager", "regulatory", "risk-manager", "approver", "executive"}
+    normalized = persona.lower()
+    if normalized not in allowed:
+        return {"status": "NOT_AVAILABLE", "tenant_id": ctx.tenant_id, "persona": normalized}
+    counts = {name: _tenant_count(db, table, ctx.tenant_id) for name, table in _COUNT_TABLES.items()}
+    emphasis = {
+        "investigator": "evidence_gaps", "quality-manager": "investigation_progress",
+        "regulatory": "vigilance_scope", "risk-manager": "risk_challenges",
+        "approver": "decision_supportability", "executive": "material_attention",
+    }
+    return {"status": "READY_FOR_REVIEW", "tenant_id": ctx.tenant_id, "persona": normalized,
+            "emphasis": emphasis[normalized], "counts": counts, "human_review_required": True,
+            "limitations": ["Persona changes emphasis, not authorization or tenant scope."]}
 
 
 @router.get("/story/{investigation_id}")
