@@ -2,7 +2,7 @@
 
 Status: **NO-GO for design-partner release pending external and browser evidence**
 
-Validation date: 2026-09-24  
+Validation date: 2026-09-24
 Scope: Parts 1–7 integration and release-gate verification. This report records only evidence observed in the current workspace and local runtime.
 
 ## 1. Evidence summary
@@ -89,4 +89,3 @@ Invoke-RestMethod http://127.0.0.1:8102/health
 Invoke-RestMethod http://127.0.0.1:8103/health
 Invoke-RestMethod http://127.0.0.1:8104/health
 ```
-
