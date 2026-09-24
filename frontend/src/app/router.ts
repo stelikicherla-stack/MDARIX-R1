@@ -1,4 +1,4 @@
-export type AppView = "home" | "products" | "signals" | "story" | "persona" | "ask" | "investigations" | "evidence" | "decision" | "assurance" | "audit" | "admin" | "admin-stage2" | "admin-customers" | "admin-create-customer" | "admin-customer-360" | "admin-manage" | "admin-audit";
+export type AppView = "home" | "products" | "signals" | "story" | "persona" | "ask" | "investigations" | "evidence" | "decision" | "assurance" | "audit" | "customer-admin" | "admin" | "admin-stage2" | "admin-subscriptions" | "admin-mapping" | "admin-customers" | "admin-create-customer" | "admin-customer-360" | "admin-manage" | "admin-audit";
 
 export const APP_ROUTES: Record<AppView, string> = {
   home: "/app",
@@ -12,8 +12,11 @@ export const APP_ROUTES: Record<AppView, string> = {
   decision: "/app/decision",
   assurance: "/app/assurance",
   audit: "/app/audit",
+  "customer-admin": "/app/customer-admin",
   admin: "/app/admin",
   "admin-stage2": "/app/admin/stage2",
+  "admin-subscriptions": "/app/admin/subscriptions",
+  "admin-mapping": "/app/admin/mapping-studio",
   "admin-customers": "/app/admin/customers",
   "admin-create-customer": "/app/admin/customers/new",
   "admin-customer-360": "/app/admin/customers/detail",

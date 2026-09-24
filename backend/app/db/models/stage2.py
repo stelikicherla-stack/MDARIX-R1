@@ -1,6 +1,6 @@
 """Stage 2 durable platform primitives."""
 import uuid
-from sqlalchemy import DateTime, ForeignKey, Index, Integer, String, Text, UniqueConstraint
+from sqlalchemy import DateTime, ForeignKey, Index, Integer, String, Text, UniqueConstraint, Boolean
 from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import Mapped, mapped_column
 from backend.app.db.base import Base
@@ -47,3 +47,20 @@ class OutboxEvent(Base):
     __tablename__ = 'event_outbox'
     id = _id(); tenant_id = _tenant(); event_name: Mapped[str] = mapped_column(String(120), nullable=False); aggregate_type: Mapped[str] = mapped_column(String(120), nullable=False); aggregate_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True)); payload: Mapped[dict] = mapped_column(JSONB, nullable=False); occurred_at = _ts(False); published_at = _ts(); attempts: Mapped[int] = mapped_column(Integer, nullable=False, server_default='0'); next_attempt_at = _ts(); dead_lettered_at = _ts(); last_error: Mapped[str | None] = mapped_column(Text)
     __table_args__ = (Index('ix_event_outbox_pending','published_at','occurred_at'),)
+
+class SubscriptionLifecycle(Base):
+    __tablename__ = 'subscription_lifecycles'
+    id = _id(); tenant_id = _tenant(); plan_id = mapped_column(UUID(as_uuid=True), ForeignKey('plan_definitions.id'), nullable=False)
+    plan_version: Mapped[str] = mapped_column(String(40), nullable=False); starts_at = _ts(False); expires_at = _ts(False); grace_ends_at = _ts()
+    expiry_version: Mapped[int] = mapped_column(Integer, nullable=False, server_default='1'); status: Mapped[str] = mapped_column(String(40), nullable=False, server_default='ACTIVE')
+    renewal_state: Mapped[str] = mapped_column(String(40), nullable=False, server_default='NOT_REQUESTED'); exception_expires_at = _ts(); created_at = _ts(False); updated_at = _ts(False)
+    __table_args__ = (UniqueConstraint('tenant_id','id',name='uq_subscription_lifecycle_tenant_id'),)
+
+class ReminderPolicy(Base):
+    __tablename__ = 'subscription_reminder_policies'
+    id = _id(); tenant_id = _tenant(); name: Mapped[str] = mapped_column(String(120), nullable=False); thresholds = mapped_column(JSONB, nullable=False, server_default='[60,30,7]'); timezone: Mapped[str] = mapped_column(String(80), nullable=False, server_default='UTC'); recipient_types = mapped_column(JSONB, nullable=False, server_default='["CUSTOMER_ADMIN"]'); version: Mapped[str] = mapped_column(String(40), nullable=False, server_default='v1'); status: Mapped[str] = mapped_column(String(30), nullable=False, server_default='ACTIVE'); created_at = _ts(False); updated_at = _ts(False)
+
+class EmailTemplate(Base):
+    __tablename__ = 'subscription_email_templates'
+    id = _id(); tenant_id = _tenant(); stage: Mapped[str] = mapped_column(String(40), nullable=False); version: Mapped[str] = mapped_column(String(40), nullable=False); subject: Mapped[str] = mapped_column(String(255), nullable=False); body = mapped_column(Text, nullable=False); allowed_variables = mapped_column(JSONB, nullable=False, server_default='[]'); status: Mapped[str] = mapped_column(String(30), nullable=False, server_default='DRAFT'); created_at = _ts(False); updated_at = _ts(False)
+    __table_args__ = (UniqueConstraint('tenant_id','stage','version',name='uq_subscription_email_template'),)

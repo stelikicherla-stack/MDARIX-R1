@@ -1,0 +1,1 @@
+Automated contract coverage exists for mapping route registration; browser row-edit evidence remains an external gate.

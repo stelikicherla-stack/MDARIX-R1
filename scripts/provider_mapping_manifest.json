@@ -1,0 +1,7 @@
+{
+  "version": "1.0",
+  "status": "DRAFT",
+  "source": "local-provider-simulators",
+  "providers": "generated from source_simulator/provider_catalog.py",
+  "one_to_one": true
+}

@@ -1,0 +1,17 @@
+"""Part 3 subscription lifecycle, reminder policy and template persistence."""
+from alembic import op
+import sqlalchemy as sa
+from sqlalchemy.dialects import postgresql
+
+revision = "y41subscriptionlifecycle"
+down_revision = "x40mappingimpact"
+branch_labels = None
+depends_on = None
+
+def upgrade():
+    op.create_table("subscription_lifecycles", sa.Column("id", postgresql.UUID(as_uuid=True), server_default=sa.text("gen_random_uuid()"), nullable=False), sa.Column("tenant_id", postgresql.UUID(as_uuid=True), nullable=False), sa.Column("plan_id", postgresql.UUID(as_uuid=True), nullable=False), sa.Column("plan_version", sa.String(40), nullable=False), sa.Column("starts_at", sa.DateTime(timezone=True), nullable=False), sa.Column("expires_at", sa.DateTime(timezone=True), nullable=False), sa.Column("grace_ends_at", sa.DateTime(timezone=True)), sa.Column("expiry_version", sa.Integer(), server_default="1", nullable=False), sa.Column("status", sa.String(40), server_default="ACTIVE", nullable=False), sa.Column("renewal_state", sa.String(40), server_default="NOT_REQUESTED", nullable=False), sa.Column("exception_expires_at", sa.DateTime(timezone=True)), sa.Column("created_at", sa.DateTime(timezone=True), nullable=False), sa.Column("updated_at", sa.DateTime(timezone=True), nullable=False), sa.ForeignKeyConstraint(["tenant_id"], ["tenants.id"]), sa.ForeignKeyConstraint(["plan_id"], ["plan_definitions.id"]), sa.PrimaryKeyConstraint("id"), sa.UniqueConstraint("tenant_id", "id", name="uq_subscription_lifecycle_tenant_id"))
+    op.create_table("subscription_reminder_policies", sa.Column("id", postgresql.UUID(as_uuid=True), server_default=sa.text("gen_random_uuid()"), nullable=False), sa.Column("tenant_id", postgresql.UUID(as_uuid=True), nullable=False), sa.Column("name", sa.String(120), nullable=False), sa.Column("thresholds", postgresql.JSONB(), server_default="[60,30,7]", nullable=False), sa.Column("timezone", sa.String(80), server_default="UTC", nullable=False), sa.Column("recipient_types", postgresql.JSONB(), server_default='["CUSTOMER_ADMIN"]', nullable=False), sa.Column("version", sa.String(40), server_default="v1", nullable=False), sa.Column("status", sa.String(30), server_default="ACTIVE", nullable=False), sa.Column("created_at", sa.DateTime(timezone=True), nullable=False), sa.Column("updated_at", sa.DateTime(timezone=True), nullable=False), sa.ForeignKeyConstraint(["tenant_id"], ["tenants.id"]), sa.PrimaryKeyConstraint("id"))
+    op.create_table("subscription_email_templates", sa.Column("id", postgresql.UUID(as_uuid=True), server_default=sa.text("gen_random_uuid()"), nullable=False), sa.Column("tenant_id", postgresql.UUID(as_uuid=True), nullable=False), sa.Column("stage", sa.String(40), nullable=False), sa.Column("version", sa.String(40), nullable=False), sa.Column("subject", sa.String(255), nullable=False), sa.Column("body", sa.Text(), nullable=False), sa.Column("allowed_variables", postgresql.JSONB(), server_default="[]", nullable=False), sa.Column("status", sa.String(30), server_default="DRAFT", nullable=False), sa.Column("created_at", sa.DateTime(timezone=True), nullable=False), sa.Column("updated_at", sa.DateTime(timezone=True), nullable=False), sa.ForeignKeyConstraint(["tenant_id"], ["tenants.id"]), sa.PrimaryKeyConstraint("id"), sa.UniqueConstraint("tenant_id", "stage", "version", name="uq_subscription_email_template"))
+
+def downgrade():
+    op.drop_table("subscription_email_templates"); op.drop_table("subscription_reminder_policies"); op.drop_table("subscription_lifecycles")

@@ -1,0 +1,1 @@
+Automated coverage: lifecycle routes, immutable release rules, comparison and impact-history contracts.

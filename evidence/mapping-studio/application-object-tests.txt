@@ -1,0 +1,1 @@
+Automated coverage: test_mapping_studio_stage4.py application/object catalog contract.

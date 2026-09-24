@@ -21,6 +21,51 @@ services:
       timeout: 5s
       retries: 10
 
+  trackwise-simulator-db:
+    image: postgres:16
+    environment: {POSTGRES_DB: trackwise, POSTGRES_USER: provider, POSTGRES_PASSWORD: provider}
+    volumes: [trackwise_data:/var/lib/postgresql/data]
+    healthcheck: {test: ["CMD-SHELL", "pg_isready -U provider -d trackwise"], interval: 5s, timeout: 5s, retries: 10}
+  plm-simulator-db:
+    image: postgres:16
+    environment: {POSTGRES_DB: plm, POSTGRES_USER: provider, POSTGRES_PASSWORD: provider}
+    volumes: [plm_data:/var/lib/postgresql/data]
+    healthcheck: {test: ["CMD-SHELL", "pg_isready -U provider -d plm"], interval: 5s, timeout: 5s, retries: 10}
+  erp-simulator-db:
+    image: postgres:16
+    environment: {POSTGRES_DB: erp, POSTGRES_USER: provider, POSTGRES_PASSWORD: provider}
+    volumes: [erp_data:/var/lib/postgresql/data]
+    healthcheck: {test: ["CMD-SHELL", "pg_isready -U provider -d erp"], interval: 5s, timeout: 5s, retries: 10}
+  supplier-simulator-db:
+    image: postgres:16
+    environment: {POSTGRES_DB: supplier, POSTGRES_USER: provider, POSTGRES_PASSWORD: provider}
+    volumes: [supplier_data:/var/lib/postgresql/data]
+    healthcheck: {test: ["CMD-SHELL", "pg_isready -U provider -d supplier"], interval: 5s, timeout: 5s, retries: 10}
+  trackwise-simulator:
+    build: {context: ., dockerfile: source_simulator/Dockerfile}
+    environment: {SIMULATOR_PROVIDER: TRACKWISE, SIMULATOR_DATABASE_URL: postgresql+pg8000://provider:provider@trackwise-simulator-db:5432/trackwise}
+    depends_on: {trackwise-simulator-db: {condition: service_healthy}}
+    ports: ["8101:8099"]
+  plm-simulator:
+    build: {context: ., dockerfile: source_simulator/Dockerfile}
+    environment: {SIMULATOR_PROVIDER: PLM, SIMULATOR_DATABASE_URL: postgresql+pg8000://provider:provider@plm-simulator-db:5432/plm}
+    depends_on: {plm-simulator-db: {condition: service_healthy}}
+    ports: ["8102:8099"]
+  erp-simulator:
+    build: {context: ., dockerfile: source_simulator/Dockerfile}
+    environment: {SIMULATOR_PROVIDER: ERP, SIMULATOR_DATABASE_URL: postgresql+pg8000://provider:provider@erp-simulator-db:5432/erp}
+    depends_on: {erp-simulator-db: {condition: service_healthy}}
+    ports: ["8103:8099"]
+  supplier-simulator:
+    build: {context: ., dockerfile: source_simulator/Dockerfile}
+    environment: {SIMULATOR_PROVIDER: SUPPLIER, SIMULATOR_DATABASE_URL: postgresql+pg8000://provider:provider@supplier-simulator-db:5432/supplier}
+    depends_on: {supplier-simulator-db: {condition: service_healthy}}
+    ports: ["8104:8099"]
+
 volumes:
   mdarix_postgres_data:
     name: mdarix-r1-postgres-data
+  trackwise_data:
+  plm_data:
+  erp_data:
+  supplier_data:

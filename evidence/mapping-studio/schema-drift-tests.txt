@@ -1,0 +1,1 @@
+Automated coverage: new, removed, type, required/nullable and enum drift are surfaced without auto-activation.

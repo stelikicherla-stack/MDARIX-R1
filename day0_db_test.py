@@ -6,7 +6,7 @@ load_dotenv()
 
 conn = pg8000.connect(
     host="localhost",
-    port=5433,
+    port=int(os.environ.get("POSTGRES_PORT", "5433")),
     database=os.environ["POSTGRES_DB"],
     user=os.environ["POSTGRES_USER"],
     password=os.environ["POSTGRES_PASSWORD"],

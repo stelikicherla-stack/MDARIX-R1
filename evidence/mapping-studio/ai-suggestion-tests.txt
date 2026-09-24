@@ -1,0 +1,1 @@
+Automated coverage: suggestions are labelled AI_SUGGESTION_NOT_ACTIVE and require human decision.

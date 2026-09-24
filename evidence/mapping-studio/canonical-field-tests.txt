@@ -1,0 +1,1 @@
+Automated coverage: canonical fields expose required, mapping, reference and protection metadata.

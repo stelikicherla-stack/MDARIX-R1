@@ -1,0 +1,1 @@
+Frontend TypeScript/Vite production build is the available local frontend gate; browser E2E requires browser execution.

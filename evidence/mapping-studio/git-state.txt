@@ -1,0 +1,2 @@
+Capture with: git status --short; git rev-parse HEAD; git rev-parse origin/main
+No secrets or tokens belong in this file.

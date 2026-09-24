@@ -1,0 +1,2 @@
+Expected: migration chain reaches head and x40_mapping_impact_history is present.
+Live database execution remains environment-dependent.

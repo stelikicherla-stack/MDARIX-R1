@@ -1,0 +1,2 @@
+Capture migration/database checks with approved local commands only.
+Do not export passwords, tokens, connector configuration secrets, or customer-sensitive records.

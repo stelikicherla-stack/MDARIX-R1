@@ -5,7 +5,7 @@ from fastapi import Depends, HTTPException, Request
 from sqlalchemy.orm import Session
 from auth.service import auth_service
 from backend.app.db.session import get_db
-from backend.app.db.models.foundation import AuthUser, TenantMembership
+from backend.app.db.models.foundation import AuthUser, TenantMembership, RoleAssignment, RoleDefinition
 from backend.app.db.models.stage2 import AuthSession
 from auth.durable import hash_token
 from datetime import datetime, timezone
@@ -41,7 +41,15 @@ def get_request_context(request: Request, db: Session = Depends(get_db)) -> Auth
             # production deployments.
             return AuthenticatedRequestContext(str(legacy['user_id']), token, str(legacy['tenant_id']), None, legacy.get('active_role') or 'Viewer', None, (), None, {}, request.headers.get('X-Correlation-ID') or str(uuid4()))
         membership = db.query(TenantMembership).filter(TenantMembership.user_id == user.id, TenantMembership.tenant_id == user.tenant_id, TenantMembership.status == 'ACTIVE').first()
-        return AuthenticatedRequestContext(str(user.id), token, str(user.tenant_id), str(membership.id) if membership else None, user.role, None, (), None, {}, request.headers.get('X-Correlation-ID') or str(uuid4()))
+        role_id = None
+        role_name = user.role
+        assignment = db.query(RoleAssignment).filter(RoleAssignment.tenant_id == user.tenant_id, RoleAssignment.user_id == user.id, RoleAssignment.status == 'ACTIVE').first()
+        if assignment is not None and hasattr(assignment, 'role_id'):
+            role_id = str(assignment.role_id)
+            role_row = db.query(RoleDefinition).filter(RoleDefinition.tenant_id == user.tenant_id, RoleDefinition.id == assignment.role_id, RoleDefinition.status == 'ACTIVE').first()
+            if role_row is not None:
+                role_name = role_row.name
+        return AuthenticatedRequestContext(str(user.id), token, str(user.tenant_id), str(membership.id) if membership else None, role_id or role_name, None, (), None, {}, request.headers.get('X-Correlation-ID') or str(uuid4()))
     durable.last_seen_at = datetime.now(timezone.utc)
     if hasattr(db, 'commit'):
         db.commit()

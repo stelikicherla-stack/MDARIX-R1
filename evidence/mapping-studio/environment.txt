@@ -1,0 +1,3 @@
+Stage 4 evidence package generated from the local MDARIX R1 workspace.
+Secrets and provider credentials intentionally omitted.
+Python executable and external infrastructure status must be captured by the operator at execution time.

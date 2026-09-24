@@ -1,1 +1,1 @@
-"""Configuration-driven integration gateway primitives."""
+"""Provider integration orchestration helpers."""

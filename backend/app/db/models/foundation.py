@@ -800,6 +800,13 @@ class TenantMappingOverride(Base):
     created_at = tz(False); updated_at = tz(False)
     __table_args__ = (ForeignKeyConstraint(["tenant_id", "mapping_version_id"], ["tenant_mapping_versions.tenant_id", "tenant_mapping_versions.id"]), UniqueConstraint("tenant_id", "mapping_version_id", "field_name", name="uq_tenant_mapping_override"))
 
+class MappingImpactHistory(Base):
+    __tablename__ = "mapping_impact_history"
+    id = uuid_pk(); tenant_id = tenant_fk(); master_mapping_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), nullable=False)
+    from_version: Mapped[str | None] = mapped_column(String(40)); to_version: Mapped[str] = mapped_column(String(40), nullable=False)
+    impact: Mapped[dict] = mapped_column(JSONB, nullable=False, server_default="{}"); created_at = tz(False)
+    __table_args__ = (ForeignKeyConstraint(["tenant_id"], ["tenants.id"]), ForeignKeyConstraint(["master_mapping_id"], ["master_mappings.id"]))
+
 
 Index("ix_products_tenant_product_identifier", Product.tenant_id, Product.product_identifier)
 Index("ix_product_versions_tenant_product", ProductVersion.tenant_id, ProductVersion.product_id)

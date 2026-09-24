@@ -1,0 +1,1 @@
+Automated coverage: required coverage, duplicate target, protected target, transform, type, enum, policy and circular-reference validation.

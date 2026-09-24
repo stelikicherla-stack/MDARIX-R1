@@ -1,0 +1,1 @@
+Automated coverage: source fields are catalog-driven and include grouping/schema metadata.

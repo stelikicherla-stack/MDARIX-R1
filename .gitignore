@@ -11,6 +11,7 @@ build/
 .vscode/
 .idea/
 *.log
+source-simulator.db
 mdarix-r1-day0-backup.sql
 infrastructure/database/backups/*.sql
 infrastructure/database/backups/*.dump

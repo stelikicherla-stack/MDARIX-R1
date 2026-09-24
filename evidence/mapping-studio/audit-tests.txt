@@ -1,0 +1,1 @@
+High-impact mapping actions use the enterprise audit framework; live database audit-row evidence must be captured in the target environment.

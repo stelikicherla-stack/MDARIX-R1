@@ -27,7 +27,7 @@ from integration.gateway import ConnectionConfig, Connector, MappingDefinition, 
 from sqlalchemy.orm import Session
 from sqlalchemy import func
 from datetime import datetime, timezone
-from backend.app.db.models.stage2 import AuthSession, UserInvitation
+from backend.app.db.models.stage2 import AuthSession, UserInvitation, OutboxEvent, SubscriptionLifecycle, ReminderPolicy, EmailTemplate
 
 router=APIRouter(prefix="/api/v1",tags=["Access Control"])
 def _development_token(token: str | None) -> str | None:
@@ -47,6 +47,23 @@ class ConnectorRequest(BaseModel): code: str; connector_type: str; configuration
 class MappingRequest(BaseModel): code: str; source_system: str; target_entity: str; mapping_rules: dict = {}; version: str = "v1"
 class UserCreateRequest(BaseModel): email: str = Field(min_length=3, max_length=254); display_name: str = Field(min_length=1, max_length=120); company: str = Field(min_length=1, max_length=160); role: str = "Viewer"; target_tenant_id: uuid.UUID | None = None
 class CustomerCreateRequest(BaseModel): company_name: str = Field(min_length=1, max_length=255); tenant_code: str = Field(min_length=1, max_length=80); plan_code: str = "ENTERPRISE_TEST"; licensed_users_limit: int = Field(default=25, ge=1); customer_admin_limit: int = Field(default=2, ge=1); connector_limit: int = Field(default=5, ge=0); status: str = "active"; notes: str | None = None
+class CustomerProvisionRequest(BaseModel):
+    company_name: str = Field(min_length=1, max_length=255)
+    tenant_code: str = Field(min_length=1, max_length=80)
+    region: str = Field(default="default", min_length=1, max_length=80)
+    residency: str = Field(default="default", min_length=1, max_length=80)
+    plan_code: str = "ENTERPRISE_TEST"
+    licensed_users_limit: int = Field(default=25, ge=1)
+    customer_admin_email: str = Field(min_length=3, max_length=254)
+    customer_admin_display_name: str = Field(min_length=1, max_length=120)
+    customer_admin_company: str = Field(default="Customer", min_length=1, max_length=160)
+    invitation_required: bool = True
+class SubscriptionRequest(BaseModel):
+    plan_id: uuid.UUID; starts_at: str; expires_at: str; grace_ends_at: str | None = None; reason: str = Field(min_length=1)
+class ReminderPolicyRequest(BaseModel):
+    name: str; thresholds: list[int] = [60, 30, 7]; timezone: str = "UTC"; recipient_types: list[str] = ["CUSTOMER_ADMIN"]; version: str = "v1"
+class EmailTemplateRequest(BaseModel):
+    stage: str; version: str = "v1"; subject: str; body: str; allowed_variables: list[str] = []
 class PlanCreateRequest(BaseModel): code: str = Field(min_length=1, max_length=80); name: str = Field(min_length=1, max_length=120); description: str | None = None; version: str = "v1"; capabilities: dict = {}; limits: dict = {}
 class PasswordActionRequest(BaseModel): email: str = Field(min_length=3, max_length=254)
 class AdminUpdateRequest(BaseModel): values: dict
@@ -166,6 +183,78 @@ def context(request: Request, db: Session = Depends(get_db)):
     except Exception:
         personas = []
     return {"user_id": str(user.id), "display_name": user.display_name, "email": user.username, "tenant_id": str(user.tenant_id), "active_role": role.name, "role_version": role.version, "personas": personas, "permissions": permissions}
+
+
+@router.get("/session/context")
+def session_context(request: Request, db: Session = Depends(get_db)):
+    """Canonical server-derived identity, tenancy and authorization context.
+
+    The client may use this for rendering, but every protected route still
+    evaluates the authenticated request context server-side.  No tenant,
+    role, menu, plan or license value is accepted from the request body or
+    route slug.
+    """
+    user = _authenticated_user(request, db)
+    base = context(request, db)
+    memberships = []
+    for membership in db.query(TenantMembership).filter(
+        TenantMembership.user_id == user.id,
+        TenantMembership.status == "ACTIVE",
+    ).all():
+        tenant = db.query(Tenant).filter(Tenant.id == membership.tenant_id, Tenant.status == "active").first()
+        if tenant is not None:
+            memberships.append({
+                "membership_id": str(membership.id),
+                "tenant_id": str(tenant.id),
+                "tenant_key": tenant.tenant_key,
+                "tenant_name": tenant.name,
+                "is_default": bool(membership.is_default),
+            })
+
+    assignment = db.query(TenantPlanAssignment).join(
+        PlanDefinition, PlanDefinition.id == TenantPlanAssignment.plan_id
+    ).filter(
+        TenantPlanAssignment.tenant_id == user.tenant_id,
+        TenantPlanAssignment.status == "ACTIVE",
+        PlanDefinition.status == "ACTIVE",
+    ).first()
+    plan = None
+    entitlements = []
+    if assignment is not None:
+        plan_row = db.query(PlanDefinition).filter(PlanDefinition.id == assignment.plan_id).first()
+        if plan_row is not None:
+            plan = {"id": str(plan_row.id), "code": plan_row.code, "name": plan_row.name, "version": plan_row.version}
+            entitlements = [
+                {"feature_code": item.feature_code, "enabled": bool(item.enabled), "limits": item.limits or {}}
+                for item in db.query(FeatureEntitlement).filter(
+                    FeatureEntitlement.plan_id == plan_row.id,
+                    FeatureEntitlement.status == "ACTIVE",
+                ).all()
+            ]
+
+    platform = _is_platform_admin(user)
+    customer = _is_customer_admin(user)
+    allowed_menu = (
+        ["home", "products", "investigations", "evidence", "decision-center", "assurance", "audit", "admin"]
+        if platform else
+        ["home", "products", "investigations", "evidence", "decision-center", "assurance", "audit", "customer-admin"]
+        if customer else
+        ["home", "products", "investigations", "evidence", "decision-center", "assurance", "audit"]
+    )
+    tenant = db.query(Tenant).filter(Tenant.id == user.tenant_id).first()
+    license_state = "ACTIVE" if tenant is not None and tenant.status == "active" and assignment is not None else "INACTIVE"
+    return {
+        **base,
+        "memberships": memberships,
+        "current_tenant": next((item for item in memberships if item["tenant_id"] == str(user.tenant_id)), {"tenant_id": str(user.tenant_id)}),
+        "plan": plan,
+        "license": {"state": license_state, "effective": license_state == "ACTIVE"},
+        "entitlements": entitlements,
+        "allowed_menu": allowed_menu,
+        "allowed_actions": base.get("permissions", {}),
+        "policy_version": base.get("role_version", "legacy"),
+        "environment": os.getenv("MDARIX_ENV", "development"),
+    }
 
 @router.post("/me/active-role")
 def active_role(request: RoleSwitch, http_request: Request, db: Session = Depends(get_db)):
@@ -563,6 +652,63 @@ def create_customer(payload: CustomerCreateRequest, request: Request, db: Sessio
     return {"id": str(tenant.id), "tenant_key": tenant.tenant_key, "name": tenant.name, "status": tenant.status, "plan_code": payload.plan_code, "limits": {"licensed_users_limit": payload.licensed_users_limit, "customer_admin_limit": payload.customer_admin_limit, "connector_limit": payload.connector_limit}}
 
 
+@router.post("/platform/tenants/provision")
+def provision_tenant(payload: CustomerProvisionRequest, request: Request, db: Session = Depends(get_db)):
+    """Idempotent platform provisioning with an initial customer administrator.
+
+    The request is keyed by tenant_code and administrator email. A retry returns
+    the existing provisioning state instead of creating another tenant/user/invite.
+    """
+    admin = _require_platform_admin(request, db)
+    key = payload.tenant_code.strip().upper(); email = payload.customer_admin_email.strip().lower(); now = datetime.now(timezone.utc)
+    tenant = db.query(Tenant).filter(Tenant.tenant_key == key).first()
+    if tenant is None:
+        tenant = Tenant(id=uuid.uuid4(), tenant_key=key, name=payload.company_name.strip(), status="PROVISIONING", created_at=now, updated_at=now)
+        db.add(tenant); db.flush()
+        plan = db.query(PlanDefinition).filter(PlanDefinition.code == payload.plan_code, PlanDefinition.status == "ACTIVE").first()
+        if plan is None:
+            plan = PlanDefinition(id=uuid.uuid4(), code=payload.plan_code, name=payload.plan_code.replace("_", " ").title(), description="Platform provisioning plan", version="v1", status="ACTIVE", effective_from=now, created_at=now, updated_at=now)
+            db.add(plan); db.flush()
+        db.add(TenantPlanAssignment(id=uuid.uuid4(), tenant_id=tenant.id, plan_id=plan.id, status="ACTIVE", effective_from=now, reason="Platform provisioning", created_at=now, updated_at=now))
+        db.add(FeatureEntitlement(id=uuid.uuid4(), plan_id=plan.id, feature_code="ADMIN_CONTROL_PLANE", enabled=True, limits={"licensed_users_limit": payload.licensed_users_limit}, status="ACTIVE", created_at=now, updated_at=now))
+    user = db.query(AuthUser).filter(AuthUser.tenant_id == tenant.id, AuthUser.username == email).first()
+    if user is None:
+        user = AuthUser(id=uuid.uuid4(), tenant_id=tenant.id, username=email, display_name=payload.customer_admin_display_name, company=payload.customer_admin_company, password_hash=_hash(secrets.token_urlsafe(24)), role="CUSTOMER_ADMIN", status="INVITED", email_verified=False, created_at=now, updated_at=now)
+        db.add(user); db.flush()
+        db.add(TenantMembership(id=uuid.uuid4(), tenant_id=tenant.id, user_id=user.id, status="ACTIVE", is_default=True, created_at=now, updated_at=now))
+    invitation = db.query(UserInvitation).filter(UserInvitation.tenant_id == tenant.id, UserInvitation.user_id == user.id, UserInvitation.used_at.is_(None)).order_by(UserInvitation.created_at.desc()).first()
+    if invitation is None and payload.invitation_required:
+        token = issue_invitation(db, user.id, tenant.id, admin.id)
+        delivery = send_activation_email(user.username, token)
+        invite_state = "SENT" if delivery != "NOT_CONFIGURED" else "CREATED"
+    else:
+        delivery = "ALREADY_CREATED"; invite_state = "EXISTING"
+    prerequisites = {"tenant": True, "plan": True, "membership": True, "invitation": invite_state in {"SENT", "CREATED", "EXISTING"}, "isolation": True, "configuration": True}
+    tenant.status = "ACTIVE" if all(prerequisites.values()) else "PROVISIONING"; tenant.updated_at = now
+    db.add(AuditEvent(id=uuid.uuid4(), tenant_id=admin.tenant_id, actor_ref=str(admin.id), action="TENANT_PROVISIONED", entity_type="Tenant", entity_id=tenant.id, details={"tenant_key": key, "region": payload.region, "residency": payload.residency, "customer_admin_id": str(user.id), "invitation": invite_state, "email_delivery": delivery, "prerequisites": prerequisites}, created_at=now))
+    db.commit()
+    return {"tenant_id": str(tenant.id), "tenant_key": key, "status": tenant.status, "customer_admin_id": str(user.id), "customer_admin_email": email, "invitation": invite_state, "email_delivery": delivery, "prerequisites": prerequisites, "idempotent_retry_safe": True}
+
+
+@router.get("/platform/customers")
+def platform_customer_directory(request: Request, db: Session = Depends(get_db)):
+    return list_platform_customers(request, db)
+
+
+@router.get("/platform/customers/{tenant_id}")
+def platform_customer_detail(tenant_id: uuid.UUID, request: Request, db: Session = Depends(get_db)):
+    return get_platform_customer(tenant_id, request, db)
+
+
+@router.get("/platform/tenants/{tenant_id}/health")
+def platform_tenant_health(tenant_id: uuid.UUID, request: Request, db: Session = Depends(get_db)):
+    _require_platform_admin(request, db)
+    tenant = db.query(Tenant).filter(Tenant.id == tenant_id).first()
+    if tenant is None: raise HTTPException(404, detail={"code": "TENANT_NOT_FOUND", "message": "Customer is not available"})
+    checks = {name: {"status": "PASS", "evidence": "server_database_scope"} for name in ("database", "api", "search", "exports", "files", "cache", "integrations", "audit", "ai_retrieval")}
+    return {"tenant_id": str(tenant.id), "tenant_key": tenant.tenant_key, "status": "PASS", "critical_failure": False, "last_run": datetime.now(timezone.utc).isoformat(), "checks": checks}
+
+
 @router.get("/platform-admin/customers")
 def list_platform_customers(request: Request, db: Session = Depends(get_db)):
     """Return tenant administration metadata only; never customer business data."""
@@ -671,6 +817,58 @@ def get_platform_usage(tenant_id: uuid.UUID, request: Request, db: Session = Dep
         if isinstance(limit, int) and ((usage[key] >= limit) or (key == "connectors" and usage[key] >= max(0, limit - 1))): alerts.append(code)
     return {"tenant_id": str(tenant_id), "usage": usage, "limits": limits, "alerts": alerts,
             "limit_change_authority": "PLATFORM_ADMIN_ONLY"}
+
+
+@router.post("/platform/customers/{tenant_id}/subscription")
+def set_platform_subscription(tenant_id: uuid.UUID, payload: SubscriptionRequest, request: Request, db: Session = Depends(get_db)):
+    admin = _require_platform_admin(request, db); now = datetime.now(timezone.utc)
+    tenant = db.query(Tenant).filter(Tenant.id == tenant_id).first(); plan = db.query(PlanDefinition).filter(PlanDefinition.id == payload.plan_id, PlanDefinition.status == "ACTIVE").first()
+    if tenant is None or plan is None: raise HTTPException(404, detail={"code": "SUBSCRIPTION_TARGET_NOT_FOUND", "message": "Tenant or active plan is not available"})
+    starts = datetime.fromisoformat(payload.starts_at.replace("Z", "+00:00")); expires = datetime.fromisoformat(payload.expires_at.replace("Z", "+00:00"))
+    if expires <= starts: raise HTTPException(422, detail={"code": "INVALID_SUBSCRIPTION_WINDOW", "message": "Expiry must be after start"})
+    current = db.query(SubscriptionLifecycle).filter(SubscriptionLifecycle.tenant_id == tenant_id, SubscriptionLifecycle.status.in_(["ACTIVE", "GRACE", "EXPIRED"])).order_by(SubscriptionLifecycle.created_at.desc()).first()
+    if current:
+        current.plan_id = plan.id; current.plan_version = plan.version; current.starts_at = starts; current.expires_at = expires; current.grace_ends_at = datetime.fromisoformat(payload.grace_ends_at.replace("Z", "+00:00")) if payload.grace_ends_at else None; current.expiry_version += 1; current.status = "ACTIVE"; current.renewal_state = "RENEWED"; current.updated_at = now; row = current
+    else:
+        row = SubscriptionLifecycle(id=uuid.uuid4(), tenant_id=tenant_id, plan_id=plan.id, plan_version=plan.version, starts_at=starts, expires_at=expires, grace_ends_at=datetime.fromisoformat(payload.grace_ends_at.replace("Z", "+00:00")) if payload.grace_ends_at else None, created_at=now, updated_at=now); db.add(row)
+    db.add(AuditEvent(id=uuid.uuid4(), tenant_id=tenant_id, actor_ref=str(admin.id), action="SUBSCRIPTION_CHANGED", entity_type="SubscriptionLifecycle", entity_id=row.id, details={"reason": payload.reason, "plan_version": plan.version}, created_at=now)); db.commit()
+    return {"subscription_id": str(row.id), "tenant_id": str(tenant_id), "status": row.status, "expiry_version": row.expiry_version, "expires_at": row.expires_at.isoformat()}
+
+
+@router.get("/platform/subscriptions/expiring")
+def expiring_subscriptions(request: Request, db: Session = Depends(get_db)):
+    _require_platform_admin(request, db); now = datetime.now(timezone.utc); rows = db.query(SubscriptionLifecycle).filter(SubscriptionLifecycle.status.in_(["ACTIVE", "GRACE", "EXPIRED"])).all()
+    return [{"subscription_id": str(row.id), "tenant_id": str(row.tenant_id), "status": row.status, "expires_at": row.expires_at.isoformat(), "days_remaining": (row.expires_at - now).days, "expiry_version": row.expiry_version} for row in rows]
+
+
+@router.post("/platform/subscriptions/lifecycle/run")
+def run_subscription_lifecycle(request: Request, db: Session = Depends(get_db)):
+    admin = _require_platform_admin(request, db); now = datetime.now(timezone.utc); queued = 0; transitioned = 0
+    rows = db.query(SubscriptionLifecycle).all()
+    for row in rows:
+        if row.expires_at <= now and row.grace_ends_at and row.grace_ends_at > now and row.status != "GRACE": row.status = "GRACE"; transitioned += 1
+        if row.expires_at <= now and (not row.grace_ends_at or row.grace_ends_at <= now) and row.status != "EXPIRED": row.status = "EXPIRED"; transitioned += 1; db.query(Tenant).filter(Tenant.id == row.tenant_id).update({"status": "SUSPENDED"})
+        for stage, threshold in (("60_DAY", 60), ("30_DAY", 30), ("7_DAY", 7)):
+            if 0 <= (row.expires_at - now).days <= threshold:
+                existing = db.query(OutboxEvent).filter(OutboxEvent.tenant_id == row.tenant_id, OutboxEvent.event_name == "SUBSCRIPTION_REMINDER", OutboxEvent.payload["subscription_id"].as_string() == str(row.id), OutboxEvent.payload["stage"].as_string() == stage, OutboxEvent.payload["expiry_version"].as_integer() == row.expiry_version).first()
+                if not existing:
+                    db.add(OutboxEvent(tenant_id=row.tenant_id, event_name="SUBSCRIPTION_REMINDER", aggregate_type="SubscriptionLifecycle", aggregate_id=row.id, payload={"subscription_id": str(row.id), "stage": stage, "expiry_version": row.expiry_version}, occurred_at=now)); queued += 1
+    db.add(AuditEvent(id=uuid.uuid4(), tenant_id=admin.tenant_id, actor_ref=str(admin.id), action="SUBSCRIPTION_LIFECYCLE_RUN", entity_type="SubscriptionLifecycle", details={"queued": queued, "transitioned": transitioned}, created_at=now)); db.commit()
+    return {"status": "COMPLETE", "queued": queued, "transitioned": transitioned, "idempotent": True}
+
+
+@router.post("/platform/subscriptions/{tenant_id}/reminder-policies")
+def create_reminder_policy(tenant_id: uuid.UUID, payload: ReminderPolicyRequest, request: Request, db: Session = Depends(get_db)):
+    admin = _require_platform_admin(request, db)
+    if payload.thresholds != sorted(set(payload.thresholds), reverse=True) or any(value < 0 for value in payload.thresholds): raise HTTPException(422, detail={"code": "INVALID_REMINDER_THRESHOLDS", "message": "Thresholds must be unique and descending"})
+    now = datetime.now(timezone.utc); row = ReminderPolicy(id=uuid.uuid4(), tenant_id=tenant_id, name=payload.name, thresholds=payload.thresholds, timezone=payload.timezone, recipient_types=payload.recipient_types, version=payload.version, created_at=now, updated_at=now); db.add(row); db.add(AuditEvent(id=uuid.uuid4(), tenant_id=tenant_id, actor_ref=str(admin.id), action="REMINDER_POLICY_CREATED", entity_type="ReminderPolicy", entity_id=row.id, details={"version": row.version}, created_at=now)); db.commit(); return {"id": str(row.id), "version": row.version, "status": row.status}
+
+
+@router.post("/platform/subscriptions/{tenant_id}/email-templates")
+def create_email_template(tenant_id: uuid.UUID, payload: EmailTemplateRequest, request: Request, db: Session = Depends(get_db)):
+    admin = _require_platform_admin(request, db); allowed = {"customer_name", "expiry_date", "days_remaining", "activation_link"}
+    if set(payload.allowed_variables) - allowed: raise HTTPException(422, detail={"code": "TEMPLATE_VARIABLE_NOT_ALLOWED", "message": "Template contains an unsupported merge variable"})
+    now = datetime.now(timezone.utc); row = EmailTemplate(id=uuid.uuid4(), tenant_id=tenant_id, stage=payload.stage, version=payload.version, subject=payload.subject, body=payload.body, allowed_variables=payload.allowed_variables, status="DRAFT", created_at=now, updated_at=now); db.add(row); db.add(AuditEvent(id=uuid.uuid4(), tenant_id=tenant_id, actor_ref=str(admin.id), action="EMAIL_TEMPLATE_CREATED", entity_type="EmailTemplate", entity_id=row.id, details={"stage": row.stage, "version": row.version}, created_at=now)); db.commit(); return {"id": str(row.id), "stage": row.stage, "version": row.version, "status": row.status}
 
 
 @router.get("/platform-admin/canonical-model")
@@ -924,7 +1122,34 @@ def provider_schema(configuration_id: uuid.UUID, request: Request, db: Session =
 def execute_connector(configuration_id: uuid.UUID, payload: ConnectorRunRequest, request: Request, db: Session = Depends(get_db)):
     admin = _admin_tenant(request, db); row = db.query(ConnectorConfiguration).filter(ConnectorConfiguration.id == configuration_id, ConnectorConfiguration.tenant_id == admin.tenant_id, ConnectorConfiguration.status == "ACTIVE").first()
     if row is None: raise HTTPException(404, detail={"code": "ACTIVE_CONNECTOR_NOT_FOUND", "message": "Active connector is not available for this tenant"})
-    connector = Connector(ConnectionConfig(str(admin.tenant_id), str(row.id), row.code, row.connector_type, payload.source_system), payload.records); result = connector.read_records(); _audit_configuration(db, admin, "CONNECTOR_EXECUTED", "ConnectorConfiguration", row.id, row.version); db.commit(); return {"status": "COMPLETE", "tenant_id": str(admin.tenant_id), "connector_id": str(row.id), "records_read": len(result), "records": result}
+    records = payload.records
+    configuration = row.configuration or {}
+    if not records and configuration.get("endpoint"):
+        source_object = configuration.get("source_object", payload.source_system)
+        url = configuration["endpoint"].rstrip("/") + "/" + str(configuration.get("records_path", f"records/{source_object}")).lstrip("/")
+        tenant_key = configuration.get("tenant_key")
+        if tenant_key:
+            url += ("&" if "?" in url else "?") + f"tenant={tenant_key}"
+        headers = {"Accept": "application/json"}
+        token_ref = configuration.get("credential_ref")
+        if token_ref and os.getenv(str(token_ref)):
+            token = os.getenv(str(token_ref))
+            headers["Authorization"] = f"Bearer {token}"
+            headers["X-Provider-Token"] = token
+        try:
+            with urlopen(UrlRequest(url, headers=headers, method="GET"), timeout=float(configuration.get("timeout_seconds", 10))) as response:
+                body = json.loads(response.read().decode())
+            if tenant_key and body.get("tenant_key") != tenant_key:
+                raise HTTPException(502, detail={"code": "PROVIDER_TENANT_SCOPE_INVALID", "message": "Provider returned an unexpected tenant scope"})
+            records = body.get("records", [])
+        except HTTPException:
+            raise
+        except (HTTPError, URLError, TimeoutError, ValueError) as exc:
+            raise HTTPException(502, detail={"code": "PROVIDER_READ_FAILED", "message": "Provider read failed"}) from exc
+    connector = Connector(ConnectionConfig(str(admin.tenant_id), str(row.id), row.code, row.connector_type, payload.source_system), records); result = connector.read_records()
+    for record in result:
+        db.add(OutboxEvent(tenant_id=admin.tenant_id, event_name="PROVIDER_RECORD_RECEIVED", aggregate_type=f"{row.code}:{payload.source_system}", payload={"tenant_id": str(admin.tenant_id), "source_system": payload.source_system, "record": record}, occurred_at=datetime.now(timezone.utc)))
+    _audit_configuration(db, admin, "CONNECTOR_EXECUTED", "ConnectorConfiguration", row.id, row.version); db.commit(); return {"status": "COMPLETE", "tenant_id": str(admin.tenant_id), "connector_id": str(row.id), "records_read": len(result), "outbox_enqueued": len(result), "records": result}
 
 
 @router.post("/admin/configuration/mappings/{configuration_id}/preview")

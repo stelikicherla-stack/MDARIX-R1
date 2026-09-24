@@ -1,0 +1,1 @@
+Automated coverage: dry-run is a no-write preview contract.
