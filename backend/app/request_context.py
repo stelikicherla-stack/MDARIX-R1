@@ -9,6 +9,16 @@ from backend.app.db.models.foundation import AuthUser, TenantMembership, RoleAss
 from backend.app.db.models.stage2 import AuthSession
 from auth.durable import hash_token
 from datetime import datetime, timezone
+from sqlalchemy import text
+
+
+def set_database_tenant_context(db: Session, tenant_id: str) -> None:
+    """Bind the current transaction to the authenticated tenant for RLS.
+
+    SET LOCAL is transaction-scoped, so a pooled connection cannot retain a
+    previous tenant after the request completes.
+    """
+    db.execute(text("select set_config('app.tenant_id', :tenant_id, true)"), {"tenant_id": str(tenant_id)})
 
 @dataclass(frozen=True)
 class AuthenticatedRequestContext:
@@ -36,6 +46,7 @@ def get_request_context(request: Request, db: Session = Depends(get_db)) -> Auth
             raise HTTPException(401, detail={'code':'UNAUTHENTICATED','message':'Authentication required'})
         try:
             legacy_user_id = UUID(str(legacy['user_id']))
+            set_database_tenant_context(db, str(legacy['tenant_id']))
             user = db.query(AuthUser).filter(AuthUser.id == legacy_user_id, AuthUser.tenant_id == legacy['tenant_id'], AuthUser.status == 'ACTIVE').first()
         except (ValueError, TypeError):
             user = db.query(AuthUser).filter(AuthUser.username == str(legacy['user_id']).lower(), AuthUser.tenant_id == legacy['tenant_id'], AuthUser.status == 'ACTIVE').first()
@@ -57,6 +68,7 @@ def get_request_context(request: Request, db: Session = Depends(get_db)) -> Auth
                 role_name = role_row.name
         return AuthenticatedRequestContext(str(user.id), token, str(user.tenant_id), str(membership.id) if membership else None, role_id or role_name, None, (), None, {}, request.headers.get('X-Correlation-ID') or str(uuid4()))
     durable.last_seen_at = datetime.now(timezone.utc)
+    set_database_tenant_context(db, str(durable.tenant_id))
     if hasattr(db, 'commit'):
         db.commit()
     user_id, tenant_id = str(durable.user_id), str(durable.tenant_id)

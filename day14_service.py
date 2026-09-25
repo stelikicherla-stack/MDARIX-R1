@@ -27,6 +27,10 @@ class Day14Service:
     def chains(self,db,request:FailureChainRequest):
         if request.tenant_id is None: raise Day14Error("TENANT_REQUIRED","tenant_id is required")
         hs,cs=self._inputs(db,request); us=ControlledUnknownsRadar().generate(hs,cs); started=time.time(); result=ControlledFailureChain().generate(hs,us); execution=None
+        from genai.grounding import advisory, build_authorized_context
+        grounded=build_authorized_context(db,tenant_id=request.tenant_id,investigation_id=request.investigation_id,temporal_mode=request.temporal_mode,as_of=request.as_of)
+        live_advisory=advisory(workflow="FAILURE_CHAIN",deterministic_result=result.model_dump(mode="json"),grounded_context=grounded)
+        result=result.model_copy(update={"provenance":{**result.provenance,"live_provider_advisory":live_advisory}})
         if request.persist:
             row=record_ai_execution(db=db,tenant_id=request.tenant_id,investigation_id=request.investigation_id,provider=F_PROVIDER,model_name=F_MODEL,model_version="1.0",prompt_template_version="R1-Day14-FailureChain-v1",orchestration_version=F_VERSION,context_refs={"context_snapshot_id":result.context_snapshot_id,"context_snapshot_version":result.context_snapshot_version,"source_hypothesis_set_id":str(hs.hypothesis_set_id),"source_unknown_set_id":str(us.unknown_set_id)},evidence_refs={"chain_ids":[str(c.chain_id) for c in result.chains]},structured_input=request.model_dump(mode="json"),structured_output=result.model_dump(mode="json"),validation_status="COMPLETED",latency_ms=int((time.time()-started)*1000),requestor_ref="MDARIX-Failure-Chain"); db.commit(); execution=row.id
         return FailureChainResponse(failure_chain_set=result,persisted=request.persist,ai_execution_id=execution)

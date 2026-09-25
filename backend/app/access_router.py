@@ -2,6 +2,9 @@ import uuid
 import secrets
 import os
 import json
+import ipaddress
+import socket
+from urllib.parse import urlparse, urlunparse
 from urllib.request import Request as UrlRequest, urlopen
 from urllib.error import URLError, HTTPError
 from datetime import datetime, timezone
@@ -19,7 +22,7 @@ from backend.app.db.models.foundation import (
     RolePermissionSet, PermissionSetDefinition, TenantMembership,
     FeatureEntitlement, PlanDefinition, Tenant, TenantPlanAssignment, Product, ProductVersion,
     ApprovalAuthority, SegregationOfDutiesPolicy, ConnectorConfiguration, MappingConfiguration, AuditEvent, Decision,
-    MasterMapping, TenantMappingVersion, TenantMappingOverride,
+    MasterMapping, TenantMappingVersion, TenantMappingOverride, Investigation,
 )
 from access_control.personas import R1_PERSONAS as PERSONAS, get_persona
 from access_control.configuration_safety import safe_configuration
@@ -69,6 +72,8 @@ class PasswordActionRequest(BaseModel): email: str = Field(min_length=3, max_len
 class AdminUpdateRequest(BaseModel): values: dict
 class ProductRequest(BaseModel): product_identifier: str; name: str; description: str | None = None; product_family: str | None = None; manufacturer_context: str | None = None
 class ProductVersionRequest(BaseModel): product_id: uuid.UUID; version_identifier: str; description: str | None = None; release_timestamp: str | None = None
+class PlatformProductRequest(BaseModel): tenant_id: uuid.UUID; product_identifier: str; name: str; description: str | None = None; product_family: str | None = None; manufacturer_context: str | None = None
+class PlatformProductVersionRequest(BaseModel): tenant_id: uuid.UUID; product_id: uuid.UUID; version_identifier: str; description: str | None = None; release_timestamp: str | None = None
 class MasterMappingRequest(BaseModel): code: str; source_system: str; target_entity: str; definition: dict = {}
 class MappingVersionRequest(BaseModel): master_mapping_id: uuid.UUID; version: str; rules: dict = {}; effective_from: str | None = None
 class MappingOverrideRequest(BaseModel): mapping_version_id: uuid.UUID; field_name: str; override_rule: dict = {}
@@ -250,6 +255,8 @@ def session_context(request: Request, db: Session = Depends(get_db)):
         "plan": plan,
         "license": {"state": license_state, "effective": license_state == "ACTIVE"},
         "entitlements": entitlements,
+        "branding": {"name": tenant.name if tenant is not None else "MDARIX", "logo_url": None, "theme": "mdarix-teal"},
+        "feature_toggles": {item["feature_code"]: item["enabled"] for item in entitlements},
         "allowed_menu": allowed_menu,
         "allowed_actions": base.get("permissions", {}),
         "policy_version": base.get("role_version", "legacy"),
@@ -277,6 +284,44 @@ def _admin_tenant(request: Request, db: Session) -> AuthUser:
 
 def _audit_configuration(db, admin, action, entity_type, entity_id, version):
     db.add(AuditEvent(id=uuid.uuid4(), tenant_id=admin.tenant_id, actor_ref=str(admin.id), action=action, entity_type=entity_type, entity_id=entity_id, details={"version": version, "source": "ADMIN_CONTROL_PLANE"}, created_at=datetime.now(timezone.utc)))
+
+
+def _safe_provider_url(endpoint: str, path: str, *, timeout: float = 10.0) -> str:
+    """Build a provider URL and reject unsafe destinations before any network I/O."""
+    parsed = urlparse(str(endpoint))
+    if parsed.scheme not in {"http", "https"} or not parsed.hostname or parsed.username or parsed.password:
+        raise ValueError("CONNECTOR_ENDPOINT_INVALID")
+    if not 0 < timeout <= 60:
+        raise ValueError("CONNECTOR_TIMEOUT_INVALID")
+    host = parsed.hostname.lower().rstrip(".")
+    development = os.getenv("MDARIX_ENV", "development").lower() == "development"
+    try:
+        addresses = {ipaddress.ip_address(host)}
+    except ValueError:
+        try:
+            addresses = {ipaddress.ip_address(item[4][0]) for item in socket.getaddrinfo(host, parsed.port or (443 if parsed.scheme == "https" else 80), type=socket.SOCK_STREAM)}
+        except OSError as exc:
+            # Local contract tests and simulator stubs may intentionally use
+            # non-DNS names. They are never accepted by staging/production.
+            if not development:
+                raise ValueError("CONNECTOR_HOST_UNRESOLVABLE") from exc
+            addresses = set()
+    if not development and any(address.is_private or address.is_loopback or address.is_link_local or address.is_reserved or address.is_multicast for address in addresses):
+        raise ValueError("CONNECTOR_PRIVATE_DESTINATION_BLOCKED")
+    safe_path = "/" + str(path or "health").lstrip("/")
+    return urlunparse((parsed.scheme, parsed.netloc, safe_path, "", parsed.query, ""))
+
+
+def _connector_credential(configuration: dict, *, allow_header: bool = True) -> str | None:
+    ref = configuration.get("credential_ref")
+    if ref is None:
+        return None
+    if not isinstance(ref, str) or not ref.replace("_", "").isalnum() or len(ref) > 120:
+        raise ValueError("CONNECTOR_CREDENTIAL_REF_INVALID")
+    token = os.getenv(ref)
+    if token and allow_header:
+        return token
+    return token
 
 def _active_plan_limits(db: Session, tenant_id: uuid.UUID) -> dict:
     row = db.query(TenantPlanAssignment).join(PlanDefinition, PlanDefinition.id == TenantPlanAssignment.plan_id).filter(
@@ -556,6 +601,25 @@ def admin_health_summary(request: Request, db: Session = Depends(get_db)):
         if count:
             alerts.append({"code": code, "label": label, "count": count, "severity": severity})
     return {"tenant_id": str(tenant_id), "status": "ATTENTION_REQUIRED" if alerts else "HEALTHY", "metrics": {"connector_failures": connector_failures, "pending_approvals": pending_approvals, "pending_invitations": pending_invitations, "invitation_failures": invitation_failures, "security_events": security_events, "mapping_issues": mapping_issues, "recent_audit_events": len(recent)}, "alerts": alerts, "recent_audit": [{"action": row.action, "entity_type": row.entity_type, "created_at": row.created_at} for row in recent[:10]]}
+
+
+@router.get("/admin/tenant-dashboard")
+def tenant_dashboard(request: Request, db: Session = Depends(get_db)):
+    """Return the authenticated tenant's complete dashboard projection.
+
+    The tenant is derived exclusively from the durable authenticated request
+    context.  No tenant id, tenant slug, or client-provided filter is accepted.
+    This keeps dashboard cards, alerts, and counts consistent with API policy.
+    """
+    admin = _admin_tenant(request, db)
+    tenant_id = admin.tenant_id
+    health = admin_health_summary(request, db)
+    users = db.query(AuthUser).filter(AuthUser.tenant_id == tenant_id).count()
+    active_users = db.query(AuthUser).filter(AuthUser.tenant_id == tenant_id, AuthUser.status == "ACTIVE").count()
+    products = db.query(Product).filter(Product.tenant_id == tenant_id).count()
+    investigations = db.query(Investigation).filter_by(tenant_id=tenant_id).count()
+    connectors = db.query(ConnectorConfiguration).filter(ConnectorConfiguration.tenant_id == tenant_id).count()
+    return {"tenant": {"id": str(tenant_id), "name": admin.company or admin.display_name or "Authenticated tenant", "environment": os.getenv("MDARIX_ENV", "development")}, "metrics": {"users": users, "active_users": active_users, "products": products, "investigations": investigations, "connectors": connectors, **health["metrics"]}, "health": {"status": health["status"], "alerts": health["alerts"], "recent_audit": health["recent_audit"]}, "scope": {"tenant_scoped": True, "server_derived": True}}
 
 
 @router.get("/admin/identity/users")
@@ -1089,16 +1153,20 @@ def _provider_get(row: ConnectorConfiguration, path_key: str):
     endpoint = configuration.get("endpoint")
     if not endpoint:
         return {"status": "NOT_CONFIGURED", "reason": "CONNECTOR_ENDPOINT_MISSING", "connector_id": str(row.id)}
-    url = endpoint.rstrip("/") + "/" + str(configuration.get(path_key, "health")).lstrip("/")
-    headers = {"Accept": "application/json"}
-    token_ref = configuration.get("credential_ref")
-    if token_ref:
-        token = os.getenv(str(token_ref))
-        if token:
-            headers["Authorization"] = f"Bearer {token}"
+    timeout = float(configuration.get("timeout_seconds", 5))
     try:
-        with urlopen(UrlRequest(url, headers=headers, method="GET"), timeout=float(configuration.get("timeout_seconds", 5))) as response:
-            payload = response.read(1_000_000).decode("utf-8")
+        url = _safe_provider_url(endpoint, configuration.get(path_key, "health"), timeout=timeout)
+        token = _connector_credential(configuration)
+    except ValueError as exc:
+        return {"status": "INVALID_CONFIGURATION", "reason": str(exc), "connector_id": str(row.id)}
+    headers = {"Accept": "application/json"}
+    if token:
+        headers["Authorization"] = f"Bearer {token}"
+    try:
+        with urlopen(UrlRequest(url, headers=headers, method="GET"), timeout=timeout) as response:
+            payload = response.read(1_000_001).decode("utf-8")
+            if len(payload) > 1_000_000:
+                return {"status": "FAILED", "reason": "PROVIDER_RESPONSE_TOO_LARGE"}
             return {"status": "HEALTHY", "http_status": response.status, "payload": json.loads(payload) if payload else {}}
     except HTTPError as exc:
         return {"status": "FAILED", "http_status": exc.code, "reason": "PROVIDER_HTTP_ERROR"}
@@ -1126,19 +1194,25 @@ def execute_connector(configuration_id: uuid.UUID, payload: ConnectorRunRequest,
     configuration = row.configuration or {}
     if not records and configuration.get("endpoint"):
         source_object = configuration.get("source_object", payload.source_system)
-        url = configuration["endpoint"].rstrip("/") + "/" + str(configuration.get("records_path", f"records/{source_object}")).lstrip("/")
+        timeout = float(configuration.get("timeout_seconds", 10))
+        try:
+            url = _safe_provider_url(configuration["endpoint"], configuration.get("records_path", f"records/{source_object}"), timeout=timeout)
+            token = _connector_credential(configuration)
+        except ValueError as exc:
+            raise HTTPException(422, detail={"code": str(exc), "message": "Connector endpoint configuration is not safe or valid"}) from exc
         tenant_key = configuration.get("tenant_key")
         if tenant_key:
             url += ("&" if "?" in url else "?") + f"tenant={tenant_key}"
         headers = {"Accept": "application/json"}
-        token_ref = configuration.get("credential_ref")
-        if token_ref and os.getenv(str(token_ref)):
-            token = os.getenv(str(token_ref))
+        if token:
             headers["Authorization"] = f"Bearer {token}"
             headers["X-Provider-Token"] = token
         try:
-            with urlopen(UrlRequest(url, headers=headers, method="GET"), timeout=float(configuration.get("timeout_seconds", 10))) as response:
-                body = json.loads(response.read().decode())
+            with urlopen(UrlRequest(url, headers=headers, method="GET"), timeout=timeout) as response:
+                raw = response.read(5_000_001)
+                if len(raw) > 5_000_000:
+                    raise HTTPException(502, detail={"code": "PROVIDER_RESPONSE_TOO_LARGE", "message": "Provider response exceeds the configured safety limit"})
+                body = json.loads(raw.decode())
             if tenant_key and body.get("tenant_key") != tenant_key:
                 raise HTTPException(502, detail={"code": "PROVIDER_TENANT_SCOPE_INVALID", "message": "Provider returned an unexpected tenant scope"})
             records = body.get("records", [])
@@ -1150,6 +1224,64 @@ def execute_connector(configuration_id: uuid.UUID, payload: ConnectorRunRequest,
     for record in result:
         db.add(OutboxEvent(tenant_id=admin.tenant_id, event_name="PROVIDER_RECORD_RECEIVED", aggregate_type=f"{row.code}:{payload.source_system}", payload={"tenant_id": str(admin.tenant_id), "source_system": payload.source_system, "record": record}, occurred_at=datetime.now(timezone.utc)))
     _audit_configuration(db, admin, "CONNECTOR_EXECUTED", "ConnectorConfiguration", row.id, row.version); db.commit(); return {"status": "COMPLETE", "tenant_id": str(admin.tenant_id), "connector_id": str(row.id), "records_read": len(result), "outbox_enqueued": len(result), "records": result}
+
+
+def _safe_connector_summary(row: ConnectorConfiguration) -> dict:
+    configuration = row.configuration or {}
+    return {"id": str(row.id), "code": row.code, "connector_type": row.connector_type, "version": row.version,
+            "status": row.status, "endpoint": configuration.get("endpoint"),
+            "health_path": configuration.get("health_path", "health"),
+            "schema_path": configuration.get("schema_path", "schema"),
+            "records_path": configuration.get("records_path"),
+            "credential_configured": bool(configuration.get("credential_ref") and os.getenv(str(configuration.get("credential_ref")))),
+            "credential_ref": configuration.get("credential_ref"), "mapping_version": configuration.get("mapping_version"),
+            "tenant_key": configuration.get("tenant_key")}
+
+
+@router.get("/platform/product-configuration/{tenant_id}")
+def platform_product_configuration(tenant_id: uuid.UUID, request: Request, db: Session = Depends(get_db)):
+    """Platform-only product, version, connector and mapping configuration view.
+
+    Secrets are never returned; tenant_id is selected only after platform authorization.
+    """
+    _require_platform_admin(request, db)
+    tenant = db.query(Tenant).filter(Tenant.id == tenant_id).first()
+    if tenant is None:
+        raise HTTPException(404, detail={"code": "TENANT_NOT_FOUND", "message": "Customer is not available"})
+    products = db.query(Product).filter(Product.tenant_id == tenant_id).order_by(Product.name).all()
+    versions = db.query(ProductVersion).filter(ProductVersion.tenant_id == tenant_id).order_by(ProductVersion.version_identifier).all()
+    connectors = db.query(ConnectorConfiguration).filter(ConnectorConfiguration.tenant_id == tenant_id).order_by(ConnectorConfiguration.code).all()
+    mappings = db.query(TenantMappingVersion).filter(TenantMappingVersion.tenant_id == tenant_id).order_by(TenantMappingVersion.created_at.desc()).all()
+    return {"tenant": {"id": str(tenant.id), "tenant_key": tenant.tenant_key, "name": tenant.name, "status": tenant.status},
+            "products": [{"id": str(item.id), "identifier": item.product_identifier, "name": item.name, "status": item.lifecycle_status, "family": item.product_family} for item in products],
+            "versions": [{"id": str(item.id), "product_id": str(item.product_id), "identifier": item.version_identifier, "status": item.lifecycle_status, "release_timestamp": item.release_timestamp.isoformat() if item.release_timestamp else None} for item in versions],
+            "connectors": [_safe_connector_summary(item) for item in connectors],
+            "mapping_versions": [{"id": str(item.id), "master_mapping_id": str(item.master_mapping_id), "version": item.version, "status": item.status, "rules": item.rules} for item in mappings]}
+
+
+@router.post("/platform/product-configuration/products")
+def platform_create_product(payload: PlatformProductRequest, request: Request, db: Session = Depends(get_db)):
+    admin = _require_platform_admin(request, db)
+    tenant = db.query(Tenant).filter(Tenant.id == payload.tenant_id).first()
+    if tenant is None: raise HTTPException(404, detail={"code": "TENANT_NOT_FOUND", "message": "Customer is not available"})
+    if db.query(Product).filter(Product.tenant_id == payload.tenant_id, Product.product_identifier == payload.product_identifier).first():
+        raise HTTPException(409, detail={"code": "PRODUCT_EXISTS", "message": "Product identifier already exists for this tenant"})
+    now = datetime.now(timezone.utc); row = Product(id=uuid.uuid4(), tenant_id=payload.tenant_id, product_identifier=payload.product_identifier, name=payload.name, description=payload.description, product_family=payload.product_family, manufacturer_context=payload.manufacturer_context, lifecycle_status="active", created_at=now, updated_at=now)
+    db.add(row); _audit_configuration(db, admin, "PLATFORM_PRODUCT_CREATED", "Product", row.id, "v1"); db.commit()
+    return {"id": str(row.id), "tenant_id": str(payload.tenant_id), "product_identifier": row.product_identifier, "name": row.name, "status": row.lifecycle_status}
+
+
+@router.post("/platform/product-configuration/product-versions")
+def platform_create_product_version(payload: PlatformProductVersionRequest, request: Request, db: Session = Depends(get_db)):
+    admin = _require_platform_admin(request, db)
+    product = db.query(Product).filter(Product.id == payload.product_id, Product.tenant_id == payload.tenant_id).first()
+    if product is None: raise HTTPException(404, detail={"code": "PRODUCT_NOT_FOUND", "message": "Product is not available for this tenant"})
+    if db.query(ProductVersion).filter(ProductVersion.tenant_id == payload.tenant_id, ProductVersion.product_id == product.id, ProductVersion.version_identifier == payload.version_identifier).first():
+        raise HTTPException(409, detail={"code": "PRODUCT_VERSION_EXISTS", "message": "ProductVersion already exists"})
+    now = datetime.now(timezone.utc); release = datetime.fromisoformat(payload.release_timestamp.replace("Z", "+00:00")) if payload.release_timestamp else None
+    row = ProductVersion(id=uuid.uuid4(), tenant_id=payload.tenant_id, product_id=product.id, version_identifier=payload.version_identifier, description=payload.description, lifecycle_status="active", release_timestamp=release, created_at=now, updated_at=now)
+    db.add(row); _audit_configuration(db, admin, "PLATFORM_PRODUCT_VERSION_CREATED", "ProductVersion", row.id, "v1"); db.commit()
+    return {"id": str(row.id), "tenant_id": str(payload.tenant_id), "product_id": str(row.product_id), "version_identifier": row.version_identifier, "status": row.lifecycle_status}
 
 
 @router.post("/admin/configuration/mappings/{configuration_id}/preview")

@@ -22,6 +22,10 @@ class ChallengerService:
             try: hs=self.hypothesis_service.generate(db,HypothesisSetRequest(tenant_id=request.tenant_id,investigation_id=request.investigation_id,temporal_mode=request.temporal_mode,as_of=request.as_of,persist=True)).hypothesis_set
             except HypothesisEngineError as e: raise ChallengerError(e.code,e.message) from e
         started=time.time(); result=self.engine.generate(hs,request.user_question); persisted=False; execution_id=None
+        from genai.grounding import advisory, build_authorized_context
+        grounded=build_authorized_context(db,tenant_id=request.tenant_id,investigation_id=request.investigation_id,temporal_mode=request.temporal_mode,as_of=request.as_of)
+        live_advisory=advisory(workflow="AI_CHALLENGER",deterministic_result=result.model_dump(mode="json"),grounded_context=grounded,question=request.user_question)
+        result=result.model_copy(update={"provenance":{**result.provenance,"live_provider_advisory":live_advisory}})
         if request.persist:
             row=record_ai_execution(db=db,tenant_id=request.tenant_id,investigation_id=request.investigation_id,provider=PROVIDER,model_name=MODEL,model_version="1.0",prompt_template_version="R1-Day13-Challenger-v1",orchestration_version=ORCHESTRATION_VERSION,context_refs={"context_snapshot_id":result.context_snapshot_id,"context_snapshot_version":result.context_snapshot_version,"source_hypothesis_set_id":str(hs.hypothesis_set_id)},evidence_refs={"challenge_ids":[str(c.challenge_id) for c in result.challenges],"source_anchor_count":sum(len(c.evidence_references) for c in result.challenges)},structured_input=request.model_dump(mode="json"),structured_output=result.model_dump(mode="json"),validation_status="COMPLETED",latency_ms=int((time.time()-started)*1000),requestor_ref="MDARIX-AI-Challenger"); db.commit(); persisted=True; execution_id=row.id
         return ChallengeResponse(challenge_set=result,persisted=persisted,ai_execution_id=execution_id)

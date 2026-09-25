@@ -16,6 +16,15 @@ class AuthSession(Base):
     expires_at = _ts(False); revoked_at = _ts(); created_at = _ts(False); last_seen_at = _ts(False)
     __table_args__ = (UniqueConstraint('tenant_id','id',name='uq_auth_sessions_tenant_id'),)
 
+class LoginThrottle(Base):
+    """Durable per-identifier lockout state shared by all app instances."""
+    __tablename__ = 'login_throttles'
+    identifier: Mapped[str] = mapped_column(String(254), primary_key=True)
+    failure_count: Mapped[int] = mapped_column(Integer, nullable=False, server_default='0')
+    locked_until = _ts()
+    last_failure_at = _ts()
+    updated_at = _ts(False)
+
 class UserInvitation(Base):
     __tablename__ = 'user_invitations'
     id = _id(); user_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), nullable=False); tenant_id = _tenant()

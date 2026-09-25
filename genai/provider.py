@@ -7,13 +7,17 @@ summary is returned for human review.
 from __future__ import annotations
 import json, os, re, time
 from dataclasses import dataclass
-from urllib import request
+from urllib import error as urlerror, request
+import logging
 
 CONFIG_VERSION = "genai-config-1"
 PROMPT_VERSION = "mdarix-safe-prompt-1"
 GROQ_BASE_URL = "https://api.groq.com/openai/v1/chat/completions"
 GROQ_DEFAULT_MODEL = "openai/gpt-oss-20b"
+OLLAMA_BASE_URL = "http://127.0.0.1:11434/v1/chat/completions"
+OLLAMA_DEFAULT_MODEL = "llama3.2"
 SENSITIVE = re.compile(r"(?i)(password|token|secret|cookie|authorization|api[_-]?key|credential)\s*[:=]\s*[^,;\n]+")
+logger = logging.getLogger(__name__)
 
 class GenAIUnavailable(RuntimeError): pass
 
@@ -39,19 +43,21 @@ class GenAIProvider:
     def __init__(self, *, base_url=None, api_key=None, model=None, timeout_seconds=None, max_retries=None, max_input_tokens=None, max_output_tokens=None, cost_per_1k_tokens=None):
         self.provider_name = os.getenv("MDARIX_GENAI_PROVIDER", "controlled").strip().lower()
         configured_base_url = base_url or os.getenv("MDARIX_GENAI_BASE_URL")
-        self.base_url = configured_base_url or (GROQ_BASE_URL if self.provider_name == "groq" else None)
+        self.base_url = configured_base_url or (GROQ_BASE_URL if self.provider_name == "groq" else OLLAMA_BASE_URL if self.provider_name == "ollama" else None)
         self.api_key = api_key or os.getenv("MDARIX_GENAI_API_KEY")
-        default_model = GROQ_DEFAULT_MODEL if self.provider_name == "groq" else "mdarix-controlled"
+        default_model = GROQ_DEFAULT_MODEL if self.provider_name == "groq" else OLLAMA_DEFAULT_MODEL if self.provider_name == "ollama" else "mdarix-controlled"
         self.model = model or os.getenv("MDARIX_GENAI_MODEL", default_model)
         self.model_version = os.getenv("MDARIX_GENAI_MODEL_VERSION", "unconfigured")
-        self.timeout = int(timeout_seconds or os.getenv("MDARIX_GENAI_TIMEOUT_SECONDS", "20"))
+        default_timeout = "120" if self.provider_name == "ollama" else "20"
+        self.timeout = int(timeout_seconds or os.getenv("MDARIX_GENAI_TIMEOUT_SECONDS", default_timeout))
         self.retries = int(max_retries if max_retries is not None else os.getenv("MDARIX_GENAI_MAX_RETRIES", "2"))
         self.max_input = int(max_input_tokens or os.getenv("MDARIX_GENAI_MAX_INPUT_TOKENS", "4000"))
         self.max_output = int(max_output_tokens or os.getenv("MDARIX_GENAI_MAX_OUTPUT_TOKENS", "1000"))
         self.cost_per_1k = float(cost_per_1k_tokens or os.getenv("MDARIX_GENAI_COST_PER_1K_TOKENS", "0"))
 
     def health(self):
-        return {"configured": bool(self.base_url and self.api_key), "provider": self.provider_name if self.base_url else "controlled", "model": self.model, "configuration_version": CONFIG_VERSION, "human_review_required": True, "hidden_chain_of_thought_persisted": False}
+        configured = bool(self.base_url and (self.api_key or self.provider_name == "ollama"))
+        return {"configured": configured, "provider": self.provider_name if self.base_url else "controlled", "model": self.model, "configuration_version": CONFIG_VERSION, "human_review_required": True, "hidden_chain_of_thought_persisted": False}
 
     @staticmethod
     def audit_details(result: GenAIResult) -> dict:
@@ -67,9 +73,9 @@ class GenAIProvider:
         input_tokens = max(1, (len(safe_prompt) + len(json.dumps(safe_context, default=str))) // 4)
         if input_tokens > self.max_input: raise GenAIUnavailable("GENAI_INPUT_TOKEN_LIMIT")
         started = time.monotonic()
-        if not self.base_url or not self.api_key:
+        if not self.base_url or (not self.api_key and self.provider_name != "ollama"):
             return GenAIResult("controlled", self.model, CONFIG_VERSION, {"status": "PROVIDER_NOT_CONFIGURED", "answer": None, "limitations": ["Live GenAI provider is not configured."], "human_review_required": True, "causality_state": "NOT_ESTABLISHED"}, input_tokens, 0, 0.0, int((time.monotonic()-started)*1000))
-        if self.provider_name == "groq":
+        if self.provider_name in {"groq", "ollama"}:
             payload = json.dumps({
                 "model": self.model,
                 "messages": [{"role": "user", "content": safe_prompt + "\n\nAuthorized context:\n" + json.dumps(safe_context, default=str)}],
@@ -85,13 +91,14 @@ class GenAIProvider:
                     self.base_url,
                     data=payload,
                     headers={
-                        "Authorization": f"Bearer {self.api_key}",
                         "Content-Type": "application/json",
                         "User-Agent": "MDARIX-R1/1.0",
                     },
                 )
+                if self.api_key:
+                    req.add_header("Authorization", f"Bearer {self.api_key}")
                 with request.urlopen(req, timeout=self.timeout) as response: raw = json.loads(response.read())
-                if self.provider_name == "groq":
+                if self.provider_name in {"groq", "ollama"}:
                     answer = ((raw.get("choices") or [{}])[0].get("message") or {}).get("content")
                     usage = raw.get("usage") or {}
                     output_tokens = int(usage.get("completion_tokens") or max(1, len(str(answer or "")) // 4))
@@ -101,5 +108,12 @@ class GenAIProvider:
                     output_tokens = min(self.max_output, max(1, len(str(answer or "")) // 4))
                 output = {"answer": answer, "limitations": ["Provider output requires human review."], "human_review_required": True, "causality_state": "NOT_ESTABLISHED"}
                 return GenAIResult(self.provider_name if self.provider_name != "controlled" else "external", self.model, self.model_version, output, input_tokens, output_tokens, ((input_tokens+output_tokens)/1000)*self.cost_per_1k, int((time.monotonic()-started)*1000))
-            except Exception as exc: error = exc; time.sleep(min(2 ** attempt, 4))
+            except Exception as exc:
+                error = exc
+                status = exc.code if isinstance(exc, urlerror.HTTPError) else None
+                logger.warning(
+                    "GenAI provider attempt failed provider=%s model=%s attempt=%s status=%s error=%s",
+                    self.provider_name, self.model, attempt + 1, status, type(exc).__name__,
+                )
+                time.sleep(min(2 ** attempt, 4))
         raise GenAIUnavailable(f"GENAI_PROVIDER_UNAVAILABLE: {type(error).__name__}")

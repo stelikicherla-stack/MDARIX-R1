@@ -3,7 +3,7 @@ import type { AppView } from "./router";
 export const AUTH_ENDPOINTS = { session: "/api/v1/auth/session", signin: "/api/v1/auth/signin", signout: "/api/v1/auth/signout" } as const;
 
 export const PLATFORM_ADMIN_VIEWS: readonly AppView[] = [
-  "admin", "admin-stage2", "admin-subscriptions", "admin-mapping",
+  "admin", "admin-stage2", "admin-product-configuration", "admin-subscriptions", "admin-mapping",
   "admin-customers", "admin-create-customer", "admin-customer-360",
   "admin-manage", "admin-audit",
 ];

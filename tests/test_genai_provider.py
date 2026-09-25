@@ -48,6 +48,7 @@ def test_groq_mode_uses_chat_completions_contract(monkeypatch):
     monkeypatch.setenv("MDARIX_GENAI_PROVIDER", "groq")
     monkeypatch.setenv("MDARIX_GENAI_API_KEY", "test-key")
     monkeypatch.setenv("MDARIX_GENAI_MODEL", "llama-3.3-70b-versatile")
+    monkeypatch.setenv("MDARIX_GENAI_TIMEOUT_SECONDS", "20")
     monkeypatch.setattr(provider_module.request, "urlopen", fake_urlopen)
 
     result = provider_module.GenAIProvider(max_retries=0).complete("Summarize the evidence", {"status": "open"})

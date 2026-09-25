@@ -1,0 +1,7 @@
+import Link from "next/link";
+
+export default async function PublicRoute({ params }: { params: Promise<{ slug: string[] }> }) {
+  const { slug } = await params;
+  const label = (slug.at(-1) ?? "platform").replaceAll("-", " ").replace(/\b\w/g, (c) => c.toUpperCase());
+  return <main><header className="site-header"><Link className="brand" href="/">MDARIX <span>Product lifecycle intelligence</span></Link><nav><Link href="/platform">Platform</Link><Link href="/solutions">Solutions</Link><Link href="/product-lifecycle">Product lifecycle</Link><Link href="/trust">Trust</Link><Link href="/resources">Resources</Link></nav><div className="actions"><Link href="/signin">Login</Link><Link className="button" href="/request-demo">Request demo</Link></div></header><section className="hero compact"><div><p className="eyebrow">MDARIX platform</p><h1>{label}</h1><p className="lede">Understand product context, evidence, uncertainty and governed decisions in one connected medical-device lifecycle workflow.</p><Link className="button" href="/request-demo">Request a demo</Link></div><div className="hero-visual"><div className="visual-title">Evidence-first workflow</div><div className="flow">{["Context", "Signal", "Evidence", "Review", "Decision"].map((item) => <div className="flow-card" key={item}><b>{item}</b><small>Traceable and tenant-scoped</small></div>)}</div></div></section><footer className="footer"><strong>MDARIX</strong><Link href="/">Back to home</Link></footer></main>;
+}

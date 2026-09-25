@@ -37,7 +37,7 @@ def test_provider_adapter_uses_server_credential_reference_and_sanitizes_respons
     result = _provider_get(row, "health_path")
     assert result["status"] == "HEALTHY"
     assert captured == {
-        "url": "https://provider.invalid/api/health",
+        "url": "https://provider.invalid/health",
         "authorization": "Bearer do-not-return",
         "timeout": 3.0,
     }

@@ -10,7 +10,7 @@ from sqlalchemy.orm import Session
 from datetime import datetime, timezone
 from auth.durable import persist_session, revoke_session, issue_reset, consume
 from auth.durable import hash_token
-from backend.app.db.models.stage2 import AuthSession
+from backend.app.db.models.stage2 import AuthSession, LoginThrottle
 router=APIRouter(prefix="/api/v1/auth",tags=["Authentication"])
 class Signup(BaseModel): email:str=Field(min_length=3,max_length=254); password: str=Field(min_length=12,max_length=128); display_name:str=Field(min_length=1,max_length=120); organization:str=Field(min_length=1,max_length=160)
 class Signin(BaseModel): email:str; password:str
@@ -51,14 +51,38 @@ def verify(data:Verify, db:Session=Depends(get_db)):
 @router.post('/signin')
 def signin(data:Signin,response:Response,db:Session=Depends(get_db)):
  try:
-  row=db.query(AuthUser).filter(AuthUser.username==data.email.strip().lower()).first()
+  identifier=data.email.strip().lower(); now=datetime.now(timezone.utc)
+  throttle_query=db.query(LoginThrottle).filter(LoginThrottle.identifier==identifier)
+  throttle=throttle_query.with_for_update().first() if hasattr(throttle_query, 'with_for_update') else throttle_query.first()
+  if throttle is not None and not hasattr(throttle, 'failure_count'):
+   throttle = None
+  if throttle and throttle.locked_until and throttle.locked_until > now:
+   raise HTTPException(429,detail={"code":"ACCOUNT_TEMPORARILY_LOCKED","message":"Too many failed sign-in attempts. Try again later."})
+  row=db.query(AuthUser).filter(AuthUser.username==identifier).first()
   if not row: raise ValueError("INVALID_CREDENTIALS")
   token=auth_service.signin_persisted(data.email,data.password,user_id=row.id,display_name=row.display_name,tenant_id=row.tenant_id,password_hash=row.password_hash,role=row.role,status=row.status,email_verified=row.email_verified)
+  if throttle:
+   throttle.failure_count=0; throttle.locked_until=None; throttle.last_failure_at=None; throttle.updated_at=now
+  if hasattr(db, 'commit'):
+   db.commit()
   persist_session(db, token, row.id, row.tenant_id)
   is_development = os.getenv('MDARIX_ENV','development').lower() == 'development'
   secure_cookie = True if not is_development else os.getenv('MDARIX_COOKIE_SECURE','false').lower() == 'true'
   response.set_cookie('mdarix_session',token,httponly=True,samesite='lax',secure=secure_cookie,max_age=3600); return auth_service.context(token)
- except ValueError as e: raise HTTPException(401,detail={"code":"INVALID_CREDENTIALS","message":"Invalid credentials."}) from e
+ except ValueError as e:
+  identifier=data.email.strip().lower(); now=datetime.now(timezone.utc)
+  throttle_query=db.query(LoginThrottle).filter(LoginThrottle.identifier==identifier)
+  throttle=throttle_query.with_for_update().first() if hasattr(throttle_query, 'with_for_update') else throttle_query.first()
+  if throttle is not None and not hasattr(throttle, 'failure_count'):
+   throttle = None
+  if throttle is None:
+   throttle=LoginThrottle(identifier=identifier,failure_count=0,updated_at=now); db.add(throttle)
+  throttle.failure_count += 1; throttle.last_failure_at=now; throttle.updated_at=now
+  if throttle.failure_count >= 5:
+   from datetime import timedelta
+   throttle.locked_until=now+timedelta(minutes=15)
+  db.commit()
+  raise HTTPException(401,detail={"code":"INVALID_CREDENTIALS","message":"Invalid credentials."}) from e
 @router.post('/signout')
 def signout(request:Request,response:Response,db:Session=Depends(get_db)):
  token=request.cookies.get('mdarix_session');

@@ -13,6 +13,7 @@ import { SubscriptionAdministration } from "./features/stage2/SubscriptionAdmini
 import { allowedViewsForRole, isCustomerAdminRole, isPlatformAdminRole } from "./app/navigationPolicy";
 import { requestJson } from "./app/apiClient";
 import { AppErrorBoundary } from "./app/ErrorBoundary";
+import { PlatformProductConfiguration } from "./features/stage2/PlatformProductConfiguration";
 
 type Product = {
   id: string;
@@ -188,7 +189,7 @@ function PrivateApplicationGate() {
 }
 
 function PrivateApplication() {
-  const [securityContext, setSecurityContext] = useState<{display_name:string; active_role:string|null; tenant_id?:string; personas?:Array<{code:string;label:string}>; allowed_menu?:string[]; environment?:string} | null>(null);
+  const [securityContext, setSecurityContext] = useState<{display_name:string; active_role:string|null; tenant_id?:string; personas?:Array<{code:string;label:string}>; allowed_menu?:string[]; environment?:string; memberships?:Array<{tenant_id:string;tenant_key:string;tenant_name:string;is_default:boolean}>; current_tenant?:{tenant_id:string;tenant_name?:string}; entitlements?:Array<{feature_code:string;enabled:boolean;limits?:Record<string,unknown>}>} | null>(null);
   const [products, setProducts] = useState<Product[]>([]);
   const [selectedProduct, setSelectedProduct] = useState<string>("");
   const [version, setVersion] = useState<string>("D");
@@ -201,7 +202,7 @@ function PrivateApplication() {
   const [investigations, setInvestigations] = useState<InvestigationSummary[]>([]);
   const [investigationsLoading, setInvestigationsLoading] = useState(false);
 
-  useEffect(() => { api<{display_name:string; active_role:string|null; tenant_id?:string; personas?:Array<{code:string;label:string}>; allowed_menu?:string[]; environment?:string}>("/api/v1/session/context").then(setSecurityContext).catch(() => setSecurityContext(null)); }, []);
+  useEffect(() => { api<any>("/api/v1/session/context").then((value) => { setSecurityContext(value); const tenant = value.current_tenant?.tenant_name ?? "MDARIX"; document.title = `${tenant} · MDARIX`; document.documentElement.style.setProperty("--tenant-accent", "#087b73"); }).catch(() => setSecurityContext(null)); }, []);
   useEffect(() => { const onPopState = () => setActiveView(viewFromPath(window.location.pathname)); window.addEventListener("popstate", onPopState); return () => window.removeEventListener("popstate", onPopState); }, []);
   const changeView = (view: AppView) => { setActiveView(view); navigateTo(view); };
 
@@ -244,8 +245,10 @@ function PrivateApplication() {
     if (isCustomerAdmin && activeView !== "customer-admin") changeView("customer-admin");
   }, [isPlatformAdmin, isCustomerAdmin]);
 
+  const switchTenant = async (tenantId: string) => { if (!tenantId || tenantId === securityContext?.tenant_id) return; try { await requestJson<{status:string;tenant_id:string}>("/api/v1/me/tenant-context", { method: "POST", body: JSON.stringify({ tenant_id: tenantId }) }); sessionStorage.clear(); window.location.reload(); } catch (reason) { setError(reason instanceof Error ? reason.message : "Tenant switch failed"); } };
   const contextToolbar = <div className="toolbar">
     {securityContext && <span className="context-summary" aria-label="Authenticated user and active role">{securityContext.display_name} | {securityContext.active_role ?? "No active role"}</span>}
+    {securityContext?.memberships && securityContext.memberships.length > 1 && <select aria-label="Active tenant" value={securityContext.tenant_id ?? ""} onChange={(event) => void switchTenant(event.target.value)}>{securityContext.memberships.map((membership) => <option key={membership.tenant_id} value={membership.tenant_id}>{membership.tenant_name} · {membership.tenant_key}</option>)}</select>}
     <button className="secondary-link" onClick={() => changeView("ask")}>Ask MDARIX</button><select value={selectedProduct} onChange={(e) => setSelectedProduct(e.target.value)} aria-label="Product">
       {products.map((product) => <option key={product.id} value={product.id}>{product.name}</option>)}
     </select>
@@ -267,12 +270,13 @@ function PrivateApplication() {
   return (
     <div className="app-shell">
       <aside className="side-nav">
-        <div className="brand-block"><div className="brand">MDARIX</div><span>Product Lifecycle Intelligence</span></div>
+        <div className="brand-block"><div className="brand">{securityContext?.current_tenant?.tenant_name ?? "MDARIX"}</div><span>Product Lifecycle Intelligence · {securityContext?.environment ?? "environment"}</span></div>
         <nav>
           {isPlatformAdmin ? <>
             <p className="nav-section-label">Administrator control plane</p>
             <button className={`nav-link ${activeView === "admin" ? "active" : ""}`} onClick={() => changeView("admin")}>Administration <small>Identity, access &amp; configuration</small></button>
             <button className={`nav-link ${activeView === "admin-stage2" ? "active" : ""}`} onClick={() => changeView("admin-stage2")}>Plans &amp; Integrations <small>Subscriptions, connectors &amp; mappings</small></button>
+            <button className={`nav-link ${activeView === "admin-product-configuration" ? "active" : ""}`} onClick={() => changeView("admin-product-configuration")}>Product Configuration <small>Products, versions, APIs &amp; mappings</small></button>
             <button className={`nav-link ${activeView === "admin-subscriptions" ? "active" : ""}`} onClick={() => changeView("admin-subscriptions")}>Subscriptions &amp; Notifications <small>Expiry, reminders &amp; templates</small></button>
             <button className={`nav-link ${activeView === "admin-mapping" ? "active" : ""}`} onClick={() => changeView("admin-mapping")}>Mapping Studio <small>Catalog, versions, dry run &amp; drift</small></button>
             <button className={`nav-link ${activeView === "admin-customers" ? "active" : ""}`} onClick={() => changeView("admin-customers")}>Customers / Tenants <small>Search and review customers</small></button>
@@ -303,7 +307,7 @@ function PrivateApplication() {
       </aside>
       <main>
         <button className="logout-control" onClick={async () => { await requestJson("/api/v1/auth/signout", { method: "POST", retries: 0 }).catch(() => undefined); window.location.replace("/signin"); }} aria-label="Sign out of MDARIX">Logout</button>
-        {!['customer-admin', 'admin', 'admin-stage2', 'admin-subscriptions', 'admin-mapping', 'admin-customers', 'admin-create-customer', 'admin-customer-360', 'admin-manage', 'admin-audit'].includes(activeView) && <header className={`topbar ${activeView === "home" ? "home-topbar" : ""}`}>
+        {!['customer-admin', 'admin', 'admin-stage2', 'admin-product-configuration', 'admin-subscriptions', 'admin-mapping', 'admin-customers', 'admin-create-customer', 'admin-customer-360', 'admin-manage', 'admin-audit'].includes(activeView) && <header className={`topbar ${activeView === "home" ? "home-topbar" : ""}`}>
           {activeView === "home" && contextToolbar}
           <div>
             <p className="eyebrow">{activeView === "home" ? "Intelligence workspace" : "Persistent workflow context"}</p>
@@ -327,6 +331,7 @@ function PrivateApplication() {
         {activeView === "customer-admin" && <CustomerAdminHome securityContext={securityContext} products={products} investigations={investigations} onNavigate={changeView} />}
         {isPlatformAdmin && activeView === "admin" && <AdministratorControlPlane securityContext={securityContext} onNavigate={changeView} />}
         {activeView === "admin-stage2" && <Stage2AdminControlPlane />}
+        {isPlatformAdmin && activeView === "admin-product-configuration" && <PlatformProductConfiguration />}
         {activeView === "admin-subscriptions" && <SubscriptionAdministration />}
         {activeView === "admin-mapping" && <MappingStudio />}
         {activeView === "admin-customers" && <PlatformCustomers onNavigate={changeView} />}
@@ -335,8 +340,17 @@ function PrivateApplication() {
         {activeView === "admin-manage" && <CustomerAdminManagement />}
         {activeView === "admin-audit" && <PlatformAdministrationAudit />}
       </main>
+      <ConsentBanner />
     </div>
   );
+}
+
+function ConsentBanner() {
+  const [visible, setVisible] = useState(false);
+  useEffect(() => { setVisible(localStorage.getItem("mdarix-compliance-consent") !== "accepted"); }, []);
+  if (!visible) return null;
+  const accept = () => { localStorage.setItem("mdarix-compliance-consent", "accepted"); setVisible(false); };
+  return <section className="consent-banner" role="dialog" aria-label="Privacy and compliance consent"><div><strong>Privacy and compliance notice</strong><p>MDARIX uses essential session storage and tenant-scoped audit records to operate this workspace. Review your organization’s GDPR/HIPAA obligations before entering regulated data.</p></div><div className="consent-actions"><button className="secondary-action" onClick={() => setVisible(false)}>Dismiss</button><button className="primary-action" onClick={accept}>Acknowledge</button></div></section>;
 }
 
 function CustomerAdminHome({ securityContext, products, investigations, onNavigate }: { securityContext: { display_name: string; active_role: string | null; tenant_id?: string } | null; products: Product[]; investigations: InvestigationSummary[]; onNavigate: (view: AppView) => void }) {
@@ -344,6 +358,7 @@ function CustomerAdminHome({ securityContext, products, investigations, onNaviga
   const [records, setRecords] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [dashboard, setDashboard] = useState<any>(null);
   useEffect(() => {
     const selectSection = (event: Event) => setSection((event as CustomEvent<string>).detail);
     window.addEventListener("customer-admin-section", selectSection);
@@ -369,6 +384,7 @@ function CustomerAdminHome({ securityContext, products, investigations, onNaviga
       else setRecords(value.items ?? value.entitlements ?? []);
     }).catch((reason) => { setRecords([]); setError(reason instanceof Error ? reason.message : "Unable to load tenant data"); }).finally(() => setLoading(false));
   }, [section]);
+  useEffect(() => { api<any>("/api/v1/admin/tenant-dashboard").then(setDashboard).catch(() => setDashboard(null)); }, []);
   const sections = [
     ["Overview", ["Tenant overview", "Customer health", "Recent activity"]],
     ["Organization", ["Organization profile", "Region & data residency"]],
@@ -385,7 +401,7 @@ function CustomerAdminHome({ securityContext, products, investigations, onNaviga
     <section className="customer-admin-hero"><div><p className="eyebrow">Customer administration</p><h1>{securityContext?.display_name ?? "Customer administrator"}</h1><p>Tenant-scoped administration for organization identity, users, roles, configuration, integrations, security, and audit evidence.</p></div><div className="customer-admin-identity"><strong>{securityContext?.active_role ?? "CUSTOMER_ADMIN"}</strong><span>Authenticated tenant</span><code>{securityContext?.tenant_id ?? "Unavailable"}</code><small>Tenant context is server-derived and cannot be changed here.</small></div></section>
     <div className="customer-admin-layout"><aside className="customer-admin-menu"><p className="eyebrow">Customer administration</p>{sections.map(([name]) => <button key={name} className={section === name ? "selected" : ""} onClick={() => setSection(name)}>{name}</button>)}</aside><main className="customer-admin-workspace"><section className="customer-admin-section-head"><div><span className="eyebrow">{section}</span><h2>{selectedSection[0]}</h2><p>All records and actions are limited to the authenticated tenant.</p></div><span className="tenant-boundary">Tenant-scoped</span></section>{loading && <p className="state-panel">Loading server-derived tenant data…</p>}{error && <p className="field-error" role="alert">{error}</p>}{!loading && !error && <div className="customer-admin-subsections">{selectedSection[1].map((item) => <article key={item}><strong>{item}</strong><p>{section === "Users" ? "Manage users, invitations, status, persona and seat use within this tenant." : section === "Roles & Access" ? "Review roles, personas, field/action policies and effective access. Deny wins." : section === "Configuration" ? "Review mappings, overrides and versioned customer configuration without changing master history." : section === "Integrations" ? "Review tenant connector configuration and health state." : section === "Security" ? "Review tenant sessions, MFA/SSO policy and security context." : section === "Audit" ? "Review immutable tenant-scoped administrative activity." : "View the current tenant-scoped configuration and status."}</p><button className="secondary-link" onClick={() => setSection(section)}>{records.length ? `${records.length} records loaded` : "No records currently require action"}</button></article>)}</div>}{!loading && !error && records.length > 0 && <section className="panel customer-admin-records"><div className="section-title">Server results</div>{records.slice(0, 20).map((record, index) => <article className="customer-admin-record" key={String(record.id ?? record.code ?? record.action ?? index)}><strong>{String(record.display_name ?? record.name ?? record.code ?? record.label ?? record.action ?? "Tenant record")}</strong><span>{String(record.email ?? record.status ?? record.severity ?? record.entity_type ?? "Tenant-scoped")}</span><small>{String(record.tenant_id ?? securityContext?.tenant_id ?? "Authenticated tenant")}</small></article>)}</section>}</main></div>
     <section className="customer-admin-journey"><span className="eyebrow">Customer investigation journey</span><div><strong>Product context</strong><i>→</i><strong>Signals</strong><i>→</i><strong>Evidence</strong><i>→</i><strong>Review</strong><i>→</i><strong>Decision</strong></div><p>Tenant scope is applied to every request. Customer Administrators cannot select, view, or operate on another tenant.</p></section>
-    <div className="home-insight-grid customer-admin-metrics"><article><span className="eyebrow">Products</span><strong>{products.length}</strong><p>Products available in this tenant</p><button className="secondary-link" onClick={() => onNavigate("products")}>Open Products</button></article><article><span className="eyebrow">Investigations</span><strong>{investigations.length}</strong><p>Tenant-scoped investigation workspaces</p><button className="secondary-link" onClick={() => onNavigate("investigations")}>Open Investigations</button></article><article><span className="eyebrow">Access boundary</span><strong>Protected</strong><p>Platform administration and cross-tenant access are not available</p></article></div>
+    <div className="home-insight-grid customer-admin-metrics"><article><span className="eyebrow">Products</span><strong>{dashboard?.metrics?.products ?? products.length}</strong><p>Products available in this tenant</p><button className="secondary-link" onClick={() => onNavigate("products")}>Open Products</button></article><article><span className="eyebrow">Investigations</span><strong>{dashboard?.metrics?.investigations ?? investigations.length}</strong><p>Tenant-scoped investigation workspaces</p><button className="secondary-link" onClick={() => onNavigate("investigations")}>Open Investigations</button></article><article><span className="eyebrow">Users</span><strong>{dashboard?.metrics?.active_users ?? "—"}</strong><p>Active users within the authenticated tenant</p></article><article><span className="eyebrow">Requires attention</span><strong>{dashboard?.health?.alerts?.length ?? "—"}</strong><p>{dashboard?.health?.status === "ATTENTION_REQUIRED" ? "Tenant actions require review" : "No active tenant alerts"}</p></article></div>
   </div>;
 }
 

@@ -66,6 +66,10 @@ class EvidenceGroundedInvestigatorService:
             analysis_mode=request.analysis_mode,
         )
         analysis = self._validate_analysis(analysis)
+        from genai.grounding import advisory, build_authorized_context
+        grounded = build_authorized_context(db, tenant_id=request.tenant_id, investigation_id=request.investigation_id, temporal_mode=request.temporal_mode, as_of=request.as_of)
+        ai_advisory = advisory(workflow="INVESTIGATION_SYNTHESIS", deterministic_result=analysis.model_dump(mode="json"), grounded_context=grounded, question=request.investigator_question)
+        analysis = analysis.model_copy(update={"model_provenance": {**analysis.model_provenance, "live_provider_advisory": ai_advisory}})
         persisted = False
         ai_execution_id = None
 

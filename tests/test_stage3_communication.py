@@ -6,6 +6,7 @@ from communication.email.resend_provider import ResendProvider
 
 
 def test_resend_health_never_exposes_secret(monkeypatch):
+    monkeypatch.delenv("RESEND_VERIFIED_DOMAIN", raising=False)
     monkeypatch.setenv("RESEND_API_KEY", "secret-value")
     monkeypatch.setenv("RESEND_FROM_EMAIL", "sender@example.test")
     result = ResendProvider().health()

@@ -80,6 +80,10 @@ class CompetingHypothesisService:
                 },
             }
         )
+        from genai.grounding import advisory, build_authorized_context
+        grounded = build_authorized_context(db, tenant_id=request.tenant_id, investigation_id=request.investigation_id, temporal_mode=request.temporal_mode, as_of=request.as_of)
+        ai_advisory = advisory(workflow="COMPETING_HYPOTHESES", deterministic_result=hypothesis_set.model_dump(mode="json"), grounded_context=grounded, question=request.investigator_question)
+        hypothesis_set = hypothesis_set.model_copy(update={"provenance": {**hypothesis_set.provenance, "live_provider_advisory": ai_advisory}})
 
         ai_execution_id = None
         persisted = False

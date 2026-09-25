@@ -35,8 +35,20 @@ def create_interaction(payload: InteractionRequest, db: Session = Depends(get_db
     from genai.provider import GenAIProvider, GenAIUnavailable
     provider = GenAIProvider()
     try:
-        result = provider.complete(payload.prompt, {"page_context": payload.page_context, "temporal_mode": payload.temporal_mode})
+        grounded = {"page_context": payload.page_context, "temporal_mode": payload.temporal_mode, "context_policy_version": "R1-GROUNDED-AI-CONTEXT-v1"}
+        if payload.investigation_id:
+            from genai.grounding import build_authorized_context
+            grounded = build_authorized_context(
+                db, tenant_id=uuid.UUID(ctx.tenant_id), investigation_id=payload.investigation_id,
+                product_version_id=payload.product_version_id, temporal_mode=payload.temporal_mode,
+                as_of=payload.temporal_cutoff,
+            )
+        result = provider.complete(payload.prompt, grounded)
         response["provider_output"] = result.output
+        if payload.investigation_id:
+            from genai.grounding import source_provenance
+            response["sources_provenance"] = source_provenance(grounded)
+        response["grounding"] = {"policy_version": grounded.get("policy_version") or grounded.get("context_policy_version"), "tenant_scope_enforced": bool(payload.investigation_id), "field_policy": grounded.get("field_policy", "SERVER_ALLOWLIST_FAIL_CLOSED")}
         response["limitations"] = result.output.get("limitations", [])
         provenance = {"provider": result.provider, "model": result.model, "model_version": result.model_version, "configuration_version": "genai-config-1", "human_review_required": True, "hidden_chain_of_thought_persisted": False, "audit": provider.audit_details(result)}
     except GenAIUnavailable as exc:
