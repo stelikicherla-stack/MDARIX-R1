@@ -7,6 +7,13 @@ from starlette.requests import Request
 from backend.app import access_router
 
 
+@pytest.fixture(autouse=True)
+def explicit_legacy_test_mode(monkeypatch):
+    """These unit tests exercise the legacy compatibility path explicitly."""
+    monkeypatch.setenv("MDARIX_ENV", "development")
+    monkeypatch.setenv("MDARIX_ALLOW_LEGACY_AUTH_FALLBACK", "true")
+
+
 def request_with_cookie(token: str = "") -> Request:
     headers = [(b"cookie", f"mdarix_session={token}".encode())] if token else []
     return Request({"type": "http", "method": "GET", "path": "/api/v1/me/context", "headers": headers, "query_string": b""})

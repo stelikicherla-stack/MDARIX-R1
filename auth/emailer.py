@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import os
 import smtplib
+from email.utils import parseaddr
 from email.message import EmailMessage
 from dotenv import load_dotenv
 
@@ -24,6 +25,7 @@ def smtp_configuration_status() -> dict[str, object]:
         "present": {name: bool(value) for name, value in required.items()},
         "port_present": bool(os.getenv("MDARIX_SMTP_PORT")),
         "app_url_present": bool(os.getenv("MDARIX_APP_URL")),
+        "sender_domain_verified": bool(os.getenv("MDARIX_SMTP_VERIFIED_DOMAIN")) and parseaddr(required["sender"] or "")[1].endswith("@" + os.getenv("MDARIX_SMTP_VERIFIED_DOMAIN", "")),
     }
 
 
@@ -39,6 +41,9 @@ def _send_link_email(recipient: str, token: str, *, subject: str, path: str, int
     sender = os.getenv("MDARIX_SMTP_FROM")
     if not all((host, username, password, sender)):
         return "NOT_CONFIGURED"
+    verified_domain = os.getenv("MDARIX_SMTP_VERIFIED_DOMAIN")
+    if verified_domain and not parseaddr(sender)[1].endswith("@" + verified_domain):
+        raise EmailDeliveryError("SMTP sender domain is not verified")
 
     app_url = os.getenv("MDARIX_APP_URL", "http://127.0.0.1:5178")
     message = EmailMessage()

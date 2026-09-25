@@ -38,7 +38,15 @@ from backend.app.request_context import AuthenticatedRequestContext, get_request
 from graph.schemas import GraphResponse, HealthResponse, RelationshipDetail
 from graph.service import GraphError, RealityGraphService
 
-app = FastAPI(title="MDARIX R1 API", version="0.8.0")
+_production_like = os.getenv("MDARIX_ENV", "development").lower() in {"production", "staging"}
+_docs_enabled = os.getenv("MDARIX_ENABLE_API_DOCS", "false").lower() == "true"
+app = FastAPI(
+    title="MDARIX R1 API",
+    version="0.8.0",
+    docs_url="/docs" if _docs_enabled and not _production_like else None,
+    redoc_url="/redoc" if _docs_enabled and not _production_like else None,
+    openapi_url="/openapi.json" if _docs_enabled and not _production_like else None,
+)
 
 @app.middleware("http")
 async def enforce_cookie_csrf(request: Request, call_next):

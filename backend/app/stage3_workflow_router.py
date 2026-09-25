@@ -1,4 +1,5 @@
 import uuid
+from pathlib import Path
 from datetime import datetime, timezone
 from fastapi import APIRouter, Depends, Header, HTTPException, Request, UploadFile, File, Response
 from pydantic import BaseModel, Field
@@ -31,7 +32,18 @@ ALLOWED_ATTACHMENT_TYPES = {"application/pdf", "text/plain", "text/csv", "image/
 def create_interaction(payload: InteractionRequest, db: Session = Depends(get_db), ctx: AuthenticatedRequestContext = Depends(get_request_context)):
     now = NOW(); session = AIInteractionSession(id=uuid.uuid4(), tenant_id=ctx.tenant_id, user_id=ctx.user_id, page_context=payload.page_context, correlation_id=ctx.correlation_id, created_at=now, updated_at=now); db.add(session); db.flush()
     response = {"what_is_known": [], "relevant_evidence": [], "what_may_be_related": [], "contradictions": [], "unknowns": [], "missing_evidence": [], "limitations": ["No live model execution was requested by this endpoint."], "suggested_next_questions": [], "suggested_next_actions": [], "sources_provenance": [], "human_review_required": True}
-    row = AIInteraction(id=uuid.uuid4(), tenant_id=ctx.tenant_id, session_id=session.id, user_id=ctx.user_id, product_id=payload.product_id, product_version_id=payload.product_version_id, investigation_id=payload.investigation_id, user_prompt=payload.prompt, normalized_intent="STRUCTURED_ASK", temporal_mode=payload.temporal_mode, temporal_cutoff=payload.temporal_cutoff, response=response, provenance={"provider":"controlled-foundation"}, correlation_id=ctx.correlation_id, created_at=now); db.add(row); db.commit()
+    from genai.provider import GenAIProvider, GenAIUnavailable
+    provider = GenAIProvider()
+    try:
+        result = provider.complete(payload.prompt, {"page_context": payload.page_context, "temporal_mode": payload.temporal_mode})
+        response["provider_output"] = result.output
+        response["limitations"] = result.output.get("limitations", [])
+        provenance = {"provider": result.provider, "model": result.model, "model_version": result.model_version, "configuration_version": "genai-config-1", "human_review_required": True, "hidden_chain_of_thought_persisted": False, "audit": provider.audit_details(result)}
+    except GenAIUnavailable as exc:
+        response["limitations"] = ["GenAI provider is temporarily unavailable; deterministic review output retained."]
+        provenance = {"provider": "unavailable", "error_state": type(exc).__name__, "human_review_required": True, "hidden_chain_of_thought_persisted": False}
+    row = AIInteraction(id=uuid.uuid4(), tenant_id=ctx.tenant_id, session_id=session.id, user_id=ctx.user_id, product_id=payload.product_id, product_version_id=payload.product_version_id, investigation_id=payload.investigation_id, user_prompt=payload.prompt, normalized_intent="STRUCTURED_ASK", temporal_mode=payload.temporal_mode, temporal_cutoff=payload.temporal_cutoff, response=response, provenance=provenance, correlation_id=ctx.correlation_id, created_at=now); db.add(row)
+    db.add(AuditEvent(id=uuid.uuid4(), tenant_id=ctx.tenant_id, actor_ref=ctx.user_id, action="GENAI_EXECUTION_RECORDED", entity_type="AIInteraction", entity_id=row.id, details={"provider": provenance.get("provider"), "model": provenance.get("model"), "human_review_required": True, "hidden_chain_of_thought_persisted": False}, created_at=now)); db.commit()
     return {"interaction_id": str(row.id), "session_id": str(session.id), "status": "READY_FOR_REVIEW", "response": response}
 
 @router.post("/interactions/{interaction_id}/feedback")
@@ -119,8 +131,41 @@ def stage3_provider_health(ctx: AuthenticatedRequestContext = Depends(get_reques
     from communication.email.resend_provider import ResendProvider
     return {"tenant_id":ctx.tenant_id, **ResendProvider().health()}
 
+@router.get("/genai-health")
+def stage3_genai_health(ctx: AuthenticatedRequestContext = Depends(get_request_context)):
+    from genai.provider import GenAIProvider
+    return {"tenant_id": ctx.tenant_id, **GenAIProvider().health()}
+
 @router.post("/reports/{report_code}")
-def generate_report(report_code: str, output_format: str = "JSON", ctx: AuthenticatedRequestContext = Depends(get_request_context)):
+def generate_report(report_code: str, output_format: str = "JSON", db: Session = Depends(get_db), ctx: AuthenticatedRequestContext = Depends(get_request_context)):
     from reports.service import generate_report as build_report
     try: return build_report(report_code.upper(), ctx.tenant_id, output_format=output_format, context={"correlation_id":ctx.correlation_id})
     except ValueError as exc: raise HTTPException(400, detail={"code":str(exc),"message":"Report type is not supported"})
+
+@router.post("/reports/{report_code}/jobs")
+def queue_report(report_code: str, output_format: str = "PDF", db: Session = Depends(get_db), ctx: AuthenticatedRequestContext = Depends(get_request_context)):
+    from reports.service import submit_report_job
+    try:
+        job = submit_report_job(report_code.upper(), ctx.tenant_id, actor_id=ctx.user_id, output_format=output_format)
+    except ValueError as exc:
+        raise HTTPException(400, detail={"code": str(exc), "message": "Report type or format is not supported"}) from exc
+    db.add(AuditEvent(id=uuid.uuid4(), tenant_id=ctx.tenant_id, actor_ref=ctx.user_id, action="REPORT_GENERATION_QUEUED", entity_type="ReportJob", entity_id=uuid.UUID(job["id"]), details={"report_code": report_code.upper(), "format": job["format"], "report_version": job["report_version"]}, created_at=NOW())); db.commit()
+    return {key: value for key, value in job.items() if key not in {"context", "hidden_fields"}}
+
+@router.get("/reports/jobs/{job_id}")
+def report_job(job_id: uuid.UUID, db: Session = Depends(get_db), ctx: AuthenticatedRequestContext = Depends(get_request_context)):
+    from reports.service import get_report_job
+    try: job = get_report_job(str(job_id), ctx.tenant_id)
+    except ValueError as exc: raise HTTPException(404, detail={"code": "REPORT_JOB_NOT_FOUND", "message": "Report job is not available"}) from exc
+    return {key: value for key, value in job.items() if key not in {"context", "hidden_fields"}}
+
+@router.get("/reports/jobs/{job_id}/download")
+def download_report(job_id: uuid.UUID, db: Session = Depends(get_db), ctx: AuthenticatedRequestContext = Depends(get_request_context)):
+    from reports.service import get_report_job
+    try: job = get_report_job(str(job_id), ctx.tenant_id)
+    except ValueError as exc: raise HTTPException(404, detail={"code": "REPORT_JOB_NOT_FOUND", "message": "Report job is not available"}) from exc
+    if job.get("status") != "READY": raise HTTPException(409, detail={"code": "REPORT_NOT_READY", "message": "Report is not ready for download"})
+    try: content = Path(job["path"]).read_bytes()
+    except OSError as exc: raise HTTPException(404, detail={"code": "REPORT_FILE_NOT_FOUND", "message": "Report file is no longer available"}) from exc
+    db.add(AuditEvent(id=uuid.uuid4(), tenant_id=ctx.tenant_id, actor_ref=ctx.user_id, action="REPORT_DOWNLOADED", entity_type="ReportJob", entity_id=job_id, details={"format": job["format"], "report_version": job["report_version"]}, created_at=NOW())); db.commit()
+    return Response(content=content, media_type=job["content_type"], headers={"Content-Disposition": f'attachment; filename="mdarix-report-{job_id}.{job["format"].lower()}"'})

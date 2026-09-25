@@ -10,6 +10,9 @@ import { Stage2AdminControlPlane } from "./features/stage2/Stage2AdminControlPla
 import { AskMdarixPage } from "./features/ask/AskMdarixPage";
 import { MappingStudio } from "./features/stage2/MappingStudio";
 import { SubscriptionAdministration } from "./features/stage2/SubscriptionAdministration";
+import { allowedViewsForRole, isCustomerAdminRole, isPlatformAdminRole } from "./app/navigationPolicy";
+import { requestJson } from "./app/apiClient";
+import { AppErrorBoundary } from "./app/ErrorBoundary";
 
 type Product = {
   id: string;
@@ -158,11 +161,7 @@ type DecisionContext = {
   decision_options: string[];
 };
 
-const api = async <T,>(path: string): Promise<T> => {
-  const response = await fetch(path);
-  if (!response.ok) throw new Error(`${response.status} ${response.statusText}`);
-  return response.json();
-};
+const api = <T,>(path: string) => requestJson<T>(path);
 
 function fmt(value?: string | null) {
   if (!value) return "Not recorded";
@@ -182,7 +181,7 @@ function App() {
 
 function PrivateApplicationGate() {
   const [state,setState]=useState<"CHECKING"|"AUTHORIZED"|"DENIED">("CHECKING");
-  useEffect(()=>{fetch("/api/v1/auth/session").then(response=>setState(response.ok?"AUTHORIZED":"DENIED")).catch(()=>setState("DENIED"))},[]);
+  useEffect(()=>{requestJson("/api/v1/auth/session", { retries: 0, timeoutMs: 10000 }).then(()=>setState("AUTHORIZED")).catch(()=>setState("DENIED"))},[]);
   useEffect(()=>{if(state==="DENIED")window.location.replace(`/signin?returnTo=${encodeURIComponent(window.location.pathname)}`)},[state]);
   if(state!=="AUTHORIZED")return <div className="auth-shell"><div className="auth-card"><span className="eyebrow">MDARIX secure application</span><h1>{state==="CHECKING"?"Checking your session…":"Sign in required"}</h1><p>Customer application routes require an authenticated session.</p></div></div>;
   return <PrivateApplication />;
@@ -237,11 +236,11 @@ function PrivateApplication() {
 
   const selected = useMemo(() => products.find((p) => p.id === selectedProduct), [products, selectedProduct]);
   const activeRole = securityContext?.active_role?.trim().toUpperCase();
-  const isPlatformAdmin = Boolean(activeRole && ["ADMIN", "ADMINISTRATOR", "MDARIX ADMINISTRATOR", "PLATFORM ADMIN", "PLATFORM_ADMIN"].includes(activeRole));
-  const isCustomerAdmin = activeRole === "CUSTOMER ADMIN" || activeRole === "CUSTOMER_ADMIN";
+  const isPlatformAdmin = isPlatformAdminRole(activeRole);
+  const isCustomerAdmin = isCustomerAdminRole(activeRole);
 
   useEffect(() => {
-    if (isPlatformAdmin && !["admin", "admin-stage2", "admin-subscriptions", "admin-mapping", "admin-customers", "admin-create-customer", "admin-customer-360", "admin-manage", "admin-audit"].includes(activeView)) changeView("admin");
+    if (isPlatformAdmin && !allowedViewsForRole(activeRole)?.includes(activeView)) changeView("admin");
     if (isCustomerAdmin && activeView !== "customer-admin") changeView("customer-admin");
   }, [isPlatformAdmin, isCustomerAdmin]);
 
@@ -303,7 +302,7 @@ function PrivateApplication() {
         <div className="side-nav-footer"><p>Evidence before inference.<br/>Authorized humans decide.</p></div>
       </aside>
       <main>
-        <button className="logout-control" onClick={async () => { await fetch("/api/v1/auth/signout", { method: "POST" }); window.location.replace("/signin"); }} aria-label="Sign out of MDARIX">Logout</button>
+        <button className="logout-control" onClick={async () => { await requestJson("/api/v1/auth/signout", { method: "POST", retries: 0 }).catch(() => undefined); window.location.replace("/signin"); }} aria-label="Sign out of MDARIX">Logout</button>
         {!['customer-admin', 'admin', 'admin-stage2', 'admin-subscriptions', 'admin-mapping', 'admin-customers', 'admin-create-customer', 'admin-customer-360', 'admin-manage', 'admin-audit'].includes(activeView) && <header className={`topbar ${activeView === "home" ? "home-topbar" : ""}`}>
           {activeView === "home" && contextToolbar}
           <div>
@@ -1097,4 +1096,4 @@ function DenseTable({ rows, columns }: { rows: Array<Record<string, string | nul
   );
 }
 
-createRoot(document.getElementById("root")!).render(<App />);
+createRoot(document.getElementById("root")!).render(<AppErrorBoundary><App /></AppErrorBoundary>);

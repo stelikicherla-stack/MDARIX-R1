@@ -30,6 +30,15 @@ class PasswordResetRequest(Base):
     expires_at = _ts(False); used_at = _ts(); created_at = _ts(False); created_by: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True))
     __table_args__ = (Index('ix_password_reset_user','tenant_id','user_id'),)
 
+class OnboardingRequest(Base):
+    """Public signup intent; it never creates a tenant or active identity."""
+    __tablename__ = 'onboarding_requests'
+    id = _id(); email: Mapped[str] = mapped_column(String(254), nullable=False, unique=True)
+    display_name: Mapped[str] = mapped_column(String(120), nullable=False)
+    organization: Mapped[str] = mapped_column(String(160), nullable=False)
+    status: Mapped[str] = mapped_column(String(40), nullable=False, server_default='PENDING_REVIEW')
+    created_at = _ts(False); updated_at = _ts(False)
+
 class AuthenticationEvent(Base):
     __tablename__ = 'authentication_events'
     id = _id(); tenant_id = mapped_column(UUID(as_uuid=True), ForeignKey('tenants.id'))

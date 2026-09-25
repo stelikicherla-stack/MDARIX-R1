@@ -19,10 +19,16 @@ def get_request_context(request: Request, db: Session = Depends(get_db)) -> Auth
     if not token: raise HTTPException(401, detail={'code':'UNAUTHENTICATED','message':'Authentication required'})
     durable = db.query(AuthSession).filter(AuthSession.session_hash == hash_token(token), AuthSession.revoked_at.is_(None), AuthSession.expires_at > datetime.now(timezone.utc)).first()
     if durable is None or not hasattr(durable, 'user_id'):
-        # Test/dev clients created before durable sessions existed may still use
-        # the in-process signer. Never permit this compatibility path outside
-        # development; production remains durable-session-only.
-        if __import__('os').getenv('MDARIX_ENV', 'development').lower() != 'development':
+        # Legacy in-process sessions are a narrowly scoped test compatibility
+        # path. They are disabled by default, including in development, and
+        # can only be enabled explicitly for legacy unit tests. This prevents
+        # an accidental environment mismatch from weakening authentication.
+        import os
+        legacy_fallback = (
+            os.getenv('MDARIX_ENV', 'development').lower() == 'development'
+            and os.getenv('MDARIX_ALLOW_LEGACY_AUTH_FALLBACK', '').lower() == 'true'
+        )
+        if not legacy_fallback:
             raise HTTPException(401, detail={'code':'UNAUTHENTICATED','message':'Authentication required'})
         try:
             legacy = auth_service.context(token)

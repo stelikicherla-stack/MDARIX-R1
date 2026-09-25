@@ -9,4 +9,5 @@ export default defineConfig({
       "/health": "http://127.0.0.1:8007"
     }
   }
+  ,test: { exclude: ["e2e/**", "node_modules/**"] }
 });

@@ -1,5 +1,6 @@
 import json
 import os
+from email.utils import parseaddr
 from urllib.request import Request, urlopen
 from .provider import EmailMessage
 
@@ -13,13 +14,20 @@ class ResendProvider:
         self.reply_to = reply_to or os.getenv("RESEND_REPLY_TO")
 
     def health(self) -> dict[str, object]:
-        return {"provider": "resend", "configured": bool(self.api_key and self.sender),
+        sender_domain = parseaddr(self.sender or "")[1].split("@")[-1] if "@" in parseaddr(self.sender or "")[1] else ""
+        verified_domain = os.getenv("RESEND_VERIFIED_DOMAIN", "")
+        return {"provider": "resend", "configured": bool(self.api_key and self.sender and (not verified_domain or sender_domain == verified_domain)),
                 "api_key_present": bool(self.api_key), "sender_present": bool(self.sender),
-                "reply_to_present": bool(self.reply_to)}
+                "reply_to_present": bool(self.reply_to), "sender_domain": sender_domain,
+                "verified_domain_configured": bool(verified_domain), "sender_domain_verified": bool(sender_domain and (not verified_domain or sender_domain == verified_domain))}
 
     def send(self, message: EmailMessage) -> str:
         if not self.api_key or not self.sender:
             raise RuntimeError("RESEND_NOT_CONFIGURED")
+        verified_domain = os.getenv("RESEND_VERIFIED_DOMAIN")
+        sender_domain = parseaddr(self.sender)[1].split("@")[-1] if "@" in parseaddr(self.sender)[1] else ""
+        if verified_domain and sender_domain != verified_domain:
+            raise RuntimeError("RESEND_SENDER_DOMAIN_NOT_VERIFIED")
         payload = {"from": self.sender, "to": [message.recipient], "subject": message.subject, "text": message.text}
         reply_to = message.reply_to or self.reply_to
         if reply_to:

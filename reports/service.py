@@ -1,16 +1,97 @@
+"""Tenant-scoped, policy-aware report generation.
+
+Large reports are represented as jobs so an API request never has to hold a
+large rendering operation open.  The in-process queue is suitable locally;
+deployments should call ``run_pending_jobs`` from the outbox/worker process.
+"""
+from __future__ import annotations
+
+import csv
+import io
+import json
+import os
+import tempfile
+import threading
+import uuid
 from datetime import datetime, timezone
-import csv, io
+from pathlib import Path
 
-REPORTS = {"PRODUCT_INTELLIGENCE":"Product Intelligence Report","COMPLAINT_TREND":"Complaint Trend Report","SIGNAL_ASSESSMENT":"Signal Assessment Report","INVESTIGATION":"Investigation Report","EVIDENCE_PROVENANCE":"Evidence & Provenance Report","DECISION_BRIEF":"Decision Brief","AI_ASSURANCE":"AI Assurance Report","AUDIT_APPROVAL":"Audit & Approval Report"}
+REPORTS = {"PRODUCT_INTELLIGENCE":"Product Intelligence Report", "COMPLAINT_TREND":"Complaint Trend Report", "SIGNAL_ASSESSMENT":"Signal Assessment Report", "INVESTIGATION":"Investigation Report", "EVIDENCE_PROVENANCE":"Evidence & Provenance Report", "DECISION_BRIEF":"Decision Brief", "AI_ASSURANCE":"AI Assurance Report", "AUDIT_APPROVAL":"Audit & Approval Report"}
+REPORT_VERSION = "1.0"
+_jobs: dict[str, dict] = {}
+_lock = threading.RLock()
 
-def generate_report(code: str, tenant_id: str, *, context: dict | None = None, output_format: str = "JSON") -> dict:
+
+def _safe_data(value, hidden: set[str]):
+    if isinstance(value, dict):
+        return {k: _safe_data(v, hidden) for k, v in value.items() if k not in hidden}
+    if isinstance(value, list):
+        return [_safe_data(v, hidden) for v in value]
+    return value
+
+
+def _pdf_escape(value: str) -> str:
+    return value.replace("\\", "\\\\").replace("(", "[").replace(")", "]")
+
+
+def _render_pdf(data: dict, watermark: str) -> bytes:
+    lines = [f"MDARIX {data['title']}", f"Report version: {data['report_version']}", f"Tenant: {data['tenant_id']}", f"Generated: {data['generated_at']}", f"WATERMARK: {watermark}"]
+    lines.extend(f"{key}: {value}" for key, value in data.items() if key not in {"context", "tenant_id"})
+    stream = "BT /F1 9 Tf 40 760 Td " + " ".join(f"({_pdf_escape(line)}) Tj 0 -14 Td" for line in lines) + " ET"
+    return (f"%PDF-1.4\n1 0 obj<< /Type /Catalog /Pages 2 0 R>>endobj\n2 0 obj<< /Type /Pages /Kids [3 0 R] /Count 1>>endobj\n3 0 obj<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources<< /Font<< /F1 4 0 R>>>> /Contents 5 0 R>>endobj\n4 0 obj<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica>>endobj\n5 0 obj<< /Length {len(stream.encode())}>>stream\n{stream}\nendstream endobj\ntrailer<< /Root 1 0 R>>\n%%EOF").encode("latin-1")
+
+
+def generate_report(code: str, tenant_id: str, *, context: dict | None = None, output_format: str = "JSON", hidden_fields: set[str] | None = None, watermark: str | None = None) -> dict:
     if code not in REPORTS: raise ValueError("REPORT_TYPE_NOT_SUPPORTED")
     fmt = output_format.upper()
     if fmt not in {"JSON", "CSV", "PDF"}: raise ValueError("REPORT_FORMAT_NOT_SUPPORTED")
-    generated = datetime.now(timezone.utc).isoformat(); data = {"report_type": code, "title": REPORTS[code], "tenant_id": tenant_id, "status": "READY_FOR_REVIEW", "generated_at": generated, "context": context or {}, "limitations": ["Report is a governed summary; it does not establish causality or replace human approval."], "human_review_required": True}
+    generated = datetime.now(timezone.utc).isoformat()
+    data = {"report_type": code, "title": REPORTS[code], "tenant_id": str(tenant_id), "report_version": REPORT_VERSION, "status": "READY_FOR_REVIEW", "generated_at": generated, "context": _safe_data(context or {}, hidden_fields or set()), "limitations": ["Report is a governed summary; it does not establish causality or replace human approval."], "human_review_required": True}
+    data["watermark"] = watermark or f"MDARIX CONTROLLED COPY · {tenant_id} · v{REPORT_VERSION}"
     if fmt == "CSV":
-        out = io.StringIO(); writer = csv.writer(out); writer.writerow(["field", "value"]); [writer.writerow([key, str(value)]) for key, value in data.items()]; data["content_type"] = "text/csv"; data["content"] = out.getvalue()
+        out = io.StringIO(); writer = csv.writer(out); writer.writerow(["field", "value"])
+        for key, value in data.items(): writer.writerow([key, json.dumps(value, default=str) if isinstance(value, (dict, list)) else str(value)])
+        data["content_type"], data["content"] = "text/csv", out.getvalue()
     elif fmt == "PDF":
-        text = f"MDARIX {REPORTS[code]} | tenant={tenant_id} | status=READY_FOR_REVIEW"
-        stream = f"BT /F1 10 Tf 40 760 Td ({text.replace('(', '[').replace(')', ']')}) Tj ET"; pdf = f"%PDF-1.4\n1 0 obj<< /Type /Catalog /Pages 2 0 R>>endobj\n2 0 obj<< /Type /Pages /Kids [3 0 R] /Count 1>>endobj\n3 0 obj<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources<< /Font<< /F1 4 0 R>>>> /Contents 5 0 R>>endobj\n4 0 obj<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica>>endobj\n5 0 obj<< /Length {len(stream.encode())}>>stream\n{stream}\nendstream endobj\ntrailer<< /Root 1 0 R>>\n%%EOF"; data["content_type"] = "application/pdf"; data["content"] = pdf.encode("latin-1").hex()
-    data["format"] = fmt; return data
+        data["content_type"], data["content"] = "application/pdf", _render_pdf(data, data["watermark"])
+    data["format"] = fmt
+    return data
+
+
+def submit_report_job(code: str, tenant_id: str, *, actor_id: str, output_format: str = "PDF", context: dict | None = None, hidden_fields: set[str] | None = None) -> dict:
+    job_id = str(uuid.uuid4())
+    with _lock:
+        _jobs[job_id] = {"id": job_id, "tenant_id": str(tenant_id), "actor_id": str(actor_id), "code": code, "format": output_format.upper(), "context": context or {}, "hidden_fields": hidden_fields or set(), "status": "QUEUED", "attempts": 0, "created_at": datetime.now(timezone.utc).isoformat()}
+    return run_report_job(job_id)
+
+
+def run_report_job(job_id: str, *, max_attempts: int = 3) -> dict:
+    with _lock:
+        job = _jobs.get(job_id)
+        if not job: raise ValueError("REPORT_JOB_NOT_FOUND")
+        if job["status"] == "READY": return job
+        job["status"] = "RUNNING"
+    for attempt in range(job["attempts"] + 1, max_attempts + 1):
+        try:
+            result = generate_report(job["code"], job["tenant_id"], context=job["context"], output_format=job["format"], hidden_fields=job["hidden_fields"])
+            # Keep generated bytes tenant-isolated and outside the source tree.
+            directory = Path(os.getenv("MDARIX_REPORT_TEMP_ROOT", tempfile.gettempdir())) / "mdarix-reports" / job["tenant_id"]
+            directory.mkdir(parents=True, exist_ok=True)
+            suffix = {"PDF": ".pdf", "CSV": ".csv", "JSON": ".json"}[job["format"]]
+            path = directory / f"{job_id}{suffix}"
+            payload = result["content"] if isinstance(result.get("content"), (bytes, str)) else json.dumps(result, default=str)
+            path.write_bytes(payload if isinstance(payload, bytes) else payload.encode())
+            with _lock:
+                job.update({"status": "READY", "attempts": attempt, "path": str(path), "content_type": result["content_type"] if "content_type" in result else "application/json", "report_version": REPORT_VERSION})
+            return job
+        except Exception as exc:
+            with _lock: job.update({"attempts": attempt, "last_error": type(exc).__name__})
+    with _lock: job["status"] = "FAILED"
+    return job
+
+
+def get_report_job(job_id: str, tenant_id: str) -> dict:
+    with _lock:
+        job = _jobs.get(job_id)
+        if not job or job["tenant_id"] != str(tenant_id): raise ValueError("REPORT_JOB_NOT_FOUND")
+        return dict(job)

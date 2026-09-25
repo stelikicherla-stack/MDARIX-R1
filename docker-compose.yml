@@ -21,6 +21,24 @@ services:
       timeout: 5s
       retries: 10
 
+  mdarix-outbox-worker:
+    build: {context: ., dockerfile: Dockerfile.worker}
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: 5432
+      MDARIX_OUTBOX_INTERVAL_SECONDS: ${MDARIX_OUTBOX_INTERVAL_SECONDS:-5}
+      MDARIX_OUTBOX_BATCH_SIZE: ${MDARIX_OUTBOX_BATCH_SIZE:-50}
+      MDARIX_OUTBOX_MAX_ATTEMPTS: ${MDARIX_OUTBOX_MAX_ATTEMPTS:-5}
+      MDARIX_OUTBOX_PUBLISHER: ${MDARIX_OUTBOX_PUBLISHER:-noop}
+      MDARIX_OUTBOX_ALERT_WEBHOOK: ${MDARIX_OUTBOX_ALERT_WEBHOOK:-}
+      MDARIX_OUTBOX_ALERT_TIMEOUT_SECONDS: ${MDARIX_OUTBOX_ALERT_TIMEOUT_SECONDS:-5}
+    depends_on:
+      postgres: {condition: service_healthy}
+
   trackwise-simulator-db:
     image: postgres:16
     environment: {POSTGRES_DB: trackwise, POSTGRES_USER: provider, POSTGRES_PASSWORD: provider}

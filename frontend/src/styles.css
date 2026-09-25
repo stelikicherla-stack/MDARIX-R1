@@ -1298,7 +1298,71 @@ th {
   line-height: 1;
 }
 
+/* Public website: stable left brand, navigation, and right-side actions. */
+.public-shell .public-header { display:flex; align-items:center; gap:clamp(18px,3vw,46px); padding:0 clamp(22px,4vw,64px); }
+.public-shell .public-header > .brand { flex:0 0 auto; margin-right:clamp(8px,2vw,24px); }
+.public-shell .public-header nav { flex:1 1 auto; display:flex; align-items:center; justify-content:flex-start; gap:clamp(2px,1vw,12px); min-width:0; }
+.public-shell .public-header .public-actions { flex:0 0 auto; margin-left:auto; white-space:nowrap; }
+.public-shell .public-hero { display:grid; grid-template-columns:minmax(0,1fr) minmax(360px,.9fr); gap:clamp(28px,6vw,84px); align-items:center; max-width:none; padding:96px clamp(28px,7vw,110px) 80px; }
+.public-shell .public-hero::after { display:none !important; }
+.public-shell .medtech-hero-visual { position:relative; z-index:1; margin:0; overflow:hidden; border:1px solid #cbdfe0; border-radius:24px; background:#fff; box-shadow:0 20px 55px rgba(16,42,59,.14); }
+.public-shell .medtech-hero-visual img { display:block; width:100%; height:320px; object-fit:cover; }
+.public-shell .medtech-hero-visual figcaption { padding:13px 16px; color:var(--site-muted); background:#fff; font-size:13px; font-weight:700; }
+@media (max-width:980px) { .public-shell .public-hero { grid-template-columns:1fr; padding:78px 28px 64px; } .public-shell .medtech-hero-visual { max-width:760px; } .public-shell .public-header { padding:14px 22px; } }
+@media (max-width:620px) { .public-shell .public-hero { width:100%; margin:0; padding:62px 20px 52px; } .public-shell .medtech-hero-visual img { height:220px; } }
+.public-shell .medtech-home-grid { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:22px; padding:0 clamp(22px,6vw,90px) 80px; }
+.public-shell .medtech-home-grid article { display:grid; gap:24px; padding:28px; border:1px solid var(--site-line); border-radius:22px; background:#fff; box-shadow:0 16px 42px rgba(16,42,59,.07); }
+.public-shell .medtech-home-grid h2 { margin:12px 0; font-size:clamp(25px,2.5vw,36px); line-height:1.08; letter-spacing:-.035em; }
+.public-shell .medtech-home-grid p { color:var(--site-muted); line-height:1.65; }
+.public-shell .medtech-home-grid img { width:100%; height:190px; object-fit:cover; border-radius:14px; background:#f4faf8; }
+@media (max-width:980px) { .public-shell .medtech-home-grid { grid-template-columns:1fr; } .public-shell .medtech-home-grid article { grid-template-columns:1fr 1fr; align-items:center; } }
+@media (max-width:620px) { .public-shell .medtech-home-grid { padding:0 20px 56px; } .public-shell .medtech-home-grid article { grid-template-columns:1fr; } }
+/* Product 360 keeps its detailed capability content but omits the generic upper banner. */
+html[data-public-path="/platform/product-360"] .public-shell .public-hero { display:none; }
+html[data-public-path="/platform/product-360"] .public-shell .capability-visual { min-height:340px; background:#f1f8fa url('/medtech-product-360-hero.png') center/cover no-repeat; }
+html[data-public-path="/platform/product-360"] .public-shell .capability-visual::after { display:none; }
+html[data-public-path="/platform/product-360"] .public-shell .capability-visual::before { display:none; }
+html[data-public-path="/platform/product-360"] .public-shell .capability-visual .visual-node { display:none; }
+/* Product Reality Graph uses a dedicated connected-context visual and omits the generic hero frame. */
+html[data-public-path="/platform/reality-graph"] .public-shell .public-hero { display:none; }
+html[data-public-path="/platform/reality-graph"] .public-shell .capability-visual { min-height:340px; background:#eef8f6 url('/medtech-product-reality-graph-hero.png') center/cover no-repeat; }
+html[data-public-path="/platform/reality-graph"] .public-shell .capability-visual::after,
+html[data-public-path="/platform/reality-graph"] .public-shell .capability-visual::before,
+html[data-public-path="/platform/reality-graph"] .public-shell .capability-visual .visual-node { display:none; }
+/* Product Version uses a dedicated original medical-device release visual. */
+html[data-public-path="/platform/product-version"] .public-shell .public-hero { display:none; }
+html[data-public-path="/platform/product-version"] .public-shell .capability-visual { min-height:340px; background:#f1f8fa url('/medtech-product-versioning.png') center/cover no-repeat; }
+html[data-public-path="/platform/product-version"] .public-shell .capability-visual::after,
+html[data-public-path="/platform/product-version"] .public-shell .capability-visual::before,
+html[data-public-path="/platform/product-version"] .public-shell .capability-visual .visual-node { display:none; }
+/* Timeline Intelligence uses an original temporal-investigation visual. */
+html[data-public-path="/platform/timeline"] .public-shell .public-hero { display:none; }
+html[data-public-path="/platform/timeline"] .public-shell .capability-visual { min-height:340px; background:#f1f8fa url('/medtech-timeline-intelligence.png') center/cover no-repeat; }
+html[data-public-path="/platform/timeline"] .public-shell .capability-visual::after,
+html[data-public-path="/platform/timeline"] .public-shell .capability-visual::before,
+html[data-public-path="/platform/timeline"] .public-shell .capability-visual .visual-node { display:none; }
+/* Ask MDARIX uses a dedicated governed-assistant visual. */
+html[data-public-path="/platform/ask-mdarix"] .public-shell .public-hero { display:none; }
+html[data-public-path="/platform/ask-mdarix"] .public-shell .capability-visual { min-height:340px; background:#f1f8fa url('/medtech-ask-mdarix.png') center/cover no-repeat; }
+html[data-public-path="/platform/ask-mdarix"] .public-shell .capability-visual::after,
+html[data-public-path="/platform/ask-mdarix"] .public-shell .capability-visual::before,
+html[data-public-path="/platform/ask-mdarix"] .public-shell .capability-visual .visual-node { display:none; }
+
 @media (max-width: 620px) {
   .public-shell .public-header > .brand,
   .auth-shell > .brand { font-size: 26px !important; }
 }
+
+.public-shell .product360-story { margin:0 clamp(22px,6vw,90px) 80px; padding:clamp(28px,4vw,54px); border:1px solid var(--site-line); border-radius:24px; background:linear-gradient(135deg,#fff,#f2f8f6); box-shadow:0 18px 50px rgba(16,42,59,.08); }
+.public-shell .product360-story-heading { max-width:800px; }
+.public-shell .product360-story h2 { margin:12px 0 16px; max-width:760px; font-size:clamp(30px,4vw,52px); line-height:1.04; letter-spacing:-.045em; }
+.public-shell .product360-story-heading p { max-width:740px; color:var(--site-muted); line-height:1.7; font-size:17px; }
+.public-shell .product360-use-grid { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:14px; margin-top:32px; }
+.public-shell .product360-use-grid article { min-height:210px; padding:22px; border:1px solid var(--site-line); border-radius:16px; background:#fff; }
+.public-shell .product360-use-grid article > span { display:inline-grid; place-items:center; width:34px; height:34px; border-radius:50%; background:#dff2ed; color:#0d706b; font-weight:800; }
+.public-shell .product360-use-grid h3 { margin:22px 0 10px; font-size:19px; line-height:1.15; }
+.public-shell .product360-use-grid p { margin:0; color:var(--site-muted); line-height:1.55; }
+.public-shell .product360-boundary { display:flex; flex-wrap:wrap; gap:12px 18px; align-items:baseline; margin-top:26px; padding-top:22px; border-top:1px solid var(--site-line); color:var(--site-muted); line-height:1.5; }
+.public-shell .product360-boundary strong { color:var(--site-ink); }
+@media (max-width:980px) { .public-shell .product360-use-grid { grid-template-columns:repeat(2,minmax(0,1fr)); } }
+@media (max-width:620px) { .public-shell .product360-story { margin:0 20px 56px; padding:26px 20px; } .public-shell .product360-use-grid { grid-template-columns:1fr; } .public-shell .product360-boundary { display:grid; } }

@@ -7,10 +7,11 @@ import uuid
 from datetime import datetime, timezone
 from fastapi.testclient import TestClient
 
-from auth.service import LocalAuthService, auth_service
+from auth.service import LocalAuthService, auth_service, _hash
+from auth.durable import persist_session
 from backend.app.main import app
 from backend.app.db.session import SessionLocal
-from backend.app.db.models.foundation import ApprovalAuthority, Decision, FeatureEntitlement, Investigation, SignedApprovalRecord, Tenant
+from backend.app.db.models.foundation import ApprovalAuthority, AuthUser, Decision, FeatureEntitlement, Investigation, SignedApprovalRecord, Tenant, TenantMembership
 
 
 def account():
@@ -68,7 +69,18 @@ def _client(email, tenant_id):
     auth_service.accounts[email].tenant_id=str(tenant_id)
     auth_service.verify_email(created["development_token"])
     token=auth_service.signin(email,"Correct current password 123")
-    client=TestClient(app); client.cookies.set("mdarix_session",token); return client
+    db = SessionLocal()
+    now = datetime.now(timezone.utc)
+    # The governance fixture grants approval authority to the synthetic
+    # Viewer role; keep the persisted identity aligned with that fixture.
+    user = AuthUser(id=uuid.uuid4(), tenant_id=tenant_id, username=email, display_name=email.split("@")[0], company="Day23", password_hash=_hash("Correct current password 123"), role="Viewer", status="ACTIVE", email_verified=True, created_at=now, updated_at=now)
+    db.add(user); db.flush()
+    db.add(TenantMembership(id=uuid.uuid4(), tenant_id=tenant_id, user_id=user.id, status="ACTIVE", is_default=True, created_at=now, updated_at=now))
+    db.commit()
+    persisted_user_id = str(user.id)
+    persist_session(db, token, user.id, tenant_id)
+    db.close()
+    client=TestClient(app); client.cookies.set("mdarix_session",token); client.test_user_id = persisted_user_id; return client
 
 
 def _decision(db, tenant_id, investigation, creator):
@@ -87,7 +99,7 @@ def test_api_signing_security_matrix():
         signed=approver_client.post(f"/api/v1/governance/decisions/{first.id}/sign",json={"decision":"APPROVE","remarks":"Reviewed","password":"Correct current password 123","object_version":version}); assert signed.status_code==200
         replay=approver_client.post(f"/api/v1/governance/decisions/{first.id}/sign",json={"decision":"APPROVE","remarks":"Reviewed","password":"Correct current password 123","object_version":version}); assert replay.status_code==409
         db.expire_all(); assert db.query(SignedApprovalRecord).filter_by(object_id=first.id).count()==1
-        own=_decision(db,tenant.id,investigation,creator); ids.append(own.id); own_result=creator_client.post(f"/api/v1/governance/decisions/{own.id}/sign",json={"decision":"APPROVE","remarks":"Self","password":"Correct current password 123","object_version":own.updated_at.isoformat()}); assert own_result.status_code==403 and own_result.json()["detail"]["code"]=="SOD_DENIED"
+        own=_decision(db,tenant.id,investigation,creator_client.test_user_id); ids.append(own.id); own_result=creator_client.post(f"/api/v1/governance/decisions/{own.id}/sign",json={"decision":"APPROVE","remarks":"Self","password":"Correct current password 123","object_version":own.updated_at.isoformat()}); assert own_result.status_code==403 and own_result.json()["detail"]["code"]=="SOD_DENIED"
         stale=_decision(db,tenant.id,investigation,creator); ids.append(stale.id); stale_version=stale.updated_at.isoformat(); changed=approver_client.post(f"/api/v1/governance/decisions/{stale.id}/material-change",json={"change_summary":"Material conclusion updated","expected_updated_at":stale_version}); assert changed.status_code==200
         stale_sign=approver_client.post(f"/api/v1/governance/decisions/{stale.id}/sign",json={"decision":"REJECT","remarks":"Old version","password":"Correct current password 123","object_version":stale_version}); assert stale_sign.status_code==409
         db.expire_all(); assert db.query(SignedApprovalRecord).filter_by(object_id=stale.id).count()==0

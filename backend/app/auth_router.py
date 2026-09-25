@@ -4,7 +4,8 @@ from pydantic import BaseModel, Field
 from auth.service import auth_service, _hash
 from auth.emailer import send_password_reset_email, send_verification_email
 from backend.app.db.session import get_db
-from backend.app.db.models.foundation import AuthUser, Tenant, TenantMembership
+from backend.app.db.models.foundation import AuthUser, TenantMembership
+from backend.app.db.models.stage2 import OnboardingRequest
 from sqlalchemy.orm import Session
 from datetime import datetime, timezone
 from auth.durable import persist_session, revoke_session, issue_reset, consume
@@ -19,22 +20,27 @@ class Reset(BaseModel): token:str; password:str=Field(min_length=12,max_length=1
 def fail(exc): return HTTPException(400,detail={"code":str(exc),"message":"Request could not be completed"})
 def _development_token(token: str | None) -> str | None:
     return token if os.getenv("MDARIX_ENV", "development").lower() == "development" else None
+def _legacy_compat_enabled() -> bool:
+    """Allow in-process compatibility only for explicitly enabled local tests."""
+    return (
+        os.getenv("MDARIX_ENV", "development").lower() == "development"
+        and os.getenv("MDARIX_ALLOW_LEGACY_AUTH_FALLBACK", "").lower() == "true"
+    )
 @router.post('/signup')
 def signup(data:Signup, db:Session=Depends(get_db)):
  try:
-  if db.query(AuthUser).filter(AuthUser.username==data.email.lower()).first(): raise ValueError("ACCOUNT_EXISTS")
-  result=auth_service.signup(data.email,data.password,data.display_name,data.organization); account=auth_service.accounts[data.email.lower()]; now=datetime.now(timezone.utc)
-  user_id=__import__('uuid').uuid4()
-  tenant_key=("customer-"+"-".join(data.organization.lower().split()))[:60]+"-"+__import__('secrets').token_hex(6)
-  tenant=Tenant(id=__import__('uuid').uuid4(),tenant_key=tenant_key,name=data.organization.strip()[:255],status="active",created_at=now,updated_at=now)
-  db.add(tenant); db.flush(); account.tenant_id=str(tenant.id)
-  user=AuthUser(id=user_id,tenant_id=tenant.id,username=account.email,display_name=account.display_name,company=data.organization,password_hash=account.password_hash,role=account.role,status=account.status,email_verified=False,created_at=now,updated_at=now)
-  db.add(user); db.flush(); db.add(TenantMembership(id=__import__('uuid').uuid4(),tenant_id=tenant.id,user_id=user.id,status="ACTIVE",is_default=True,created_at=now,updated_at=now)); db.commit()
-  result["email_delivery"] = send_verification_email(account.email, result["development_token"])
-  return result
+  email = data.email.strip().lower()
+  if db.query(AuthUser).filter(AuthUser.username == email).first():
+   raise ValueError("ACCOUNT_EXISTS")
+  existing = db.query(OnboardingRequest).filter(OnboardingRequest.email == email).first()
+  if existing:
+   return {"status": "ONBOARDING_REQUEST_ACCEPTED", "request_id": str(existing.id), "request_status": existing.status}
+  now = datetime.now(timezone.utc)
+  request = OnboardingRequest(id=__import__('uuid').uuid4(), email=email, display_name=data.display_name.strip(), organization=data.organization.strip(), status="PENDING_REVIEW", created_at=now, updated_at=now)
+  db.add(request); db.commit()
+  return {"status": "ONBOARDING_REQUEST_ACCEPTED", "request_id": str(request.id), "request_status": request.status, "tenant_created": False, "next_step": "A Platform Administrator must provision the tenant and invite the initial Customer Administrator."}
  except ValueError as e: raise fail(e)
- except Exception as e: db.rollback(); raise HTTPException(400,detail={"code":"ACCOUNT_CREATE_FAILED","message":"Account could not be created. Check company, email, and password requirements."}) from e
- except ValueError as e: raise fail(e)
+ except Exception as e: db.rollback(); raise HTTPException(400,detail={"code":"ONBOARDING_REQUEST_FAILED","message":"The onboarding request could not be recorded."}) from e
 @router.post('/verify-email')
 def verify(data:Verify, db:Session=Depends(get_db)):
  try:
@@ -85,6 +91,8 @@ def reset(data:Reset, db:Session=Depends(get_db)):
   db.commit()
   return {"status":"PASSWORD_RESET"}
  except ValueError:
+  if not _legacy_compat_enabled():
+   raise fail("INVALID_RESET")
   try:return auth_service.reset(data.token,data.password)
   except ValueError as e: raise fail(e)
 
