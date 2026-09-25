@@ -12,7 +12,7 @@ from urllib import request
 CONFIG_VERSION = "genai-config-1"
 PROMPT_VERSION = "mdarix-safe-prompt-1"
 GROQ_BASE_URL = "https://api.groq.com/openai/v1/chat/completions"
-GROQ_DEFAULT_MODEL = "llama-3.3-70b-versatile"
+GROQ_DEFAULT_MODEL = "openai/gpt-oss-20b"
 SENSITIVE = re.compile(r"(?i)(password|token|secret|cookie|authorization|api[_-]?key|credential)\s*[:=]\s*[^,;\n]+")
 
 class GenAIUnavailable(RuntimeError): pass
@@ -81,7 +81,15 @@ class GenAIProvider:
         error = None
         for attempt in range(self.retries + 1):
             try:
-                req = request.Request(self.base_url, data=payload, headers={"Authorization": f"Bearer {self.api_key}", "Content-Type": "application/json"})
+                req = request.Request(
+                    self.base_url,
+                    data=payload,
+                    headers={
+                        "Authorization": f"Bearer {self.api_key}",
+                        "Content-Type": "application/json",
+                        "User-Agent": "MDARIX-R1/1.0",
+                    },
+                )
                 with request.urlopen(req, timeout=self.timeout) as response: raw = json.loads(response.read())
                 if self.provider_name == "groq":
                     answer = ((raw.get("choices") or [{}])[0].get("message") or {}).get("content")
