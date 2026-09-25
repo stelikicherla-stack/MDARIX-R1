@@ -77,14 +77,14 @@ class ScenarioService:
             "provenance": {"derived": True, "ground_truth_used": False, "tenant_id": str(tenant_id), "temporal_mode": request.temporal_mode},
             "human_review_required": True,
         }
-        from genai.grounding import advisory
-        grounded = {
-            "policy_version": "R1-GROUNDED-AI-CONTEXT-v1", "tenant_scope_enforced": True,
-            "field_policy": "SERVER_ALLOWLIST_FAIL_CLOSED", "investigation": baseline.get("investigation", {}),
-            "product_context": baseline.get("product_context", {}), "temporal_context": baseline.get("temporal_context", {}),
-            "evidence_context": evidence, "relationship_context": baseline.get("relationship_context", {}),
-            "limitations": baseline.get("limitations", []),
-        }
+        from genai.grounding import advisory, build_authorized_context
+        # Rebuild the provider context through the single server-side allowlist
+        # so scenarios cannot bypass field filtering or temporal scoping.
+        grounded = build_authorized_context(
+            db, tenant_id=tenant_id, investigation_id=investigation_id,
+            product_version_id=request.product_version_id,
+            temporal_mode=request.temporal_mode, as_of=request.as_of,
+        )
         result["ai_advisory"] = advisory(workflow="SCENARIO_COMPARISON", deterministic_result=result, grounded_context=grounded, question=request.question)
         now = datetime.now(timezone.utc)
         execution = AIExecution(

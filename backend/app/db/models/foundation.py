@@ -434,6 +434,12 @@ class AuditEvent(Base):
     entity_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True))
     correlation_id: Mapped[str | None] = mapped_column(String(120))
     details: Mapped[dict | None] = mapped_column(JSONB)
+    source_ip: Mapped[str | None] = mapped_column(String(64))
+    user_agent: Mapped[str | None] = mapped_column(String(512))
+    reason: Mapped[str | None] = mapped_column(Text)
+    old_values: Mapped[dict | None] = mapped_column(JSONB)
+    new_values: Mapped[dict | None] = mapped_column(JSONB)
+    retention_until = tz(True)
     created_at = tz(False)
 
 
@@ -502,7 +508,7 @@ class ReleaseAssuranceResult(Base):
 
 class AuthUser(Base):
     __tablename__ = "auth_users"
-    id = uuid_pk(); tenant_id = tenant_fk(); username: Mapped[str] = mapped_column(String(254), nullable=False); display_name: Mapped[str] = mapped_column(String(120), nullable=False); company: Mapped[str] = mapped_column(String(160), nullable=False); password_hash: Mapped[str] = mapped_column(Text, nullable=False); role: Mapped[str] = mapped_column(String(120), nullable=False, server_default="Viewer"); status: Mapped[str] = mapped_column(String(40), nullable=False, server_default="PENDING_VERIFICATION"); email_verified: Mapped[bool] = mapped_column(nullable=False, server_default="false"); created_at = tz(False); updated_at = tz(False)
+    id = uuid_pk(); tenant_id = tenant_fk(); username: Mapped[str] = mapped_column(String(254), nullable=False); display_name: Mapped[str] = mapped_column(String(120), nullable=False); company: Mapped[str] = mapped_column(String(160), nullable=False); password_hash: Mapped[str] = mapped_column(Text, nullable=False); role: Mapped[str] = mapped_column(String(120), nullable=False, server_default="Viewer"); status: Mapped[str] = mapped_column(String(40), nullable=False, server_default="PENDING_VERIFICATION"); email_verified: Mapped[bool] = mapped_column(nullable=False, server_default="false"); mfa_required: Mapped[bool] = mapped_column(nullable=False, server_default="false"); mfa_enrolled_at = tz(True); password_changed_at = tz(True); password_expires_at = tz(True); created_at = tz(False); updated_at = tz(False)
     __table_args__ = (UniqueConstraint("tenant_id", "username", name="uq_auth_users_tenant_username"), UniqueConstraint("tenant_id", "id", name="uq_auth_users_tenant_id_id"),)
 
 class TenantMembership(Base):

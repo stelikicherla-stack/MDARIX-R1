@@ -134,6 +134,23 @@ class ObjectStorageService:
         self._audit("OBJECT_SIGNED_URL_CREATED", str(tenant_id), expected, expires_at=expires)
         return "local://object?" + urlencode({"key": expected, "expires": expires, "signature": signature})
 
+    def verify_signed_url(self, tenant_id: str, signed_url: str) -> str:
+        """Validate a development signed URL and return its tenant-scoped key."""
+        if self.provider != "local" or not signed_url.startswith("local://object?"):
+            raise StorageError("SIGNED_URL_VERIFICATION_UNSUPPORTED")
+        from urllib.parse import parse_qs, urlparse
+        query = parse_qs(urlparse(signed_url).query)
+        key = query.get("key", [""])[0]
+        expires = int(query.get("expires", ["0"])[0])
+        signature = query.get("signature", [""])[0]
+        expected = self._assert_tenant_key(tenant_id, key)
+        if expires < int(time.time()) or not self.signing_secret:
+            raise StorageError("SIGNED_URL_EXPIRED")
+        expected_signature = hmac.new(self.signing_secret.encode(), f"{expected}:{expires}".encode(), hashlib.sha256).hexdigest()
+        if not hmac.compare_digest(signature, expected_signature):
+            raise StorageError("INVALID_SIGNED_URL")
+        return expected
+
     def delete_expired(self, *, now: datetime | None = None) -> int:
         """Delete locally retained objects; S3 lifecycle rules handle production retention."""
         if self.provider != "local":

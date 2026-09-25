@@ -4,12 +4,14 @@ These endpoints deliberately return governed summaries and catalogs. They do
 not invent conclusions or move business data into the browser; all results
 are scoped by the authenticated request context.
 """
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Query
+from decimal import Decimal, InvalidOperation
 from sqlalchemy import text
 from sqlalchemy.orm import Session
 
 from backend.app.db.session import get_db
 from backend.app.request_context import AuthenticatedRequestContext, get_request_context
+from backend.app.db.models.foundation import AIExecution
 
 router = APIRouter(prefix="/api/v1", tags=["Stage 3 Experience"])
 
@@ -155,3 +157,36 @@ def agent_catalog(ctx: AuthenticatedRequestContext = Depends(get_request_context
 @router.get("/ai/assurance/summary")
 def assurance_summary(ctx: AuthenticatedRequestContext = Depends(get_request_context)):
     return {"tenant_id": ctx.tenant_id, "metrics": {"total_executions": 0, "pass": 0, "pass_with_limitations": 0, "blocked": 0}, "guardrails": {"tenant_scope": "ENFORCED", "causality_restraint": "ENFORCED", "human_review": "REQUIRED"}, "limitations": ["Execution metrics are populated from persisted AIExecution records when present."]}
+
+def _execution_cost(row: AIExecution) -> Decimal:
+    payload = row.structured_output or {}
+    audit = payload.get("audit", {}) if isinstance(payload, dict) else {}
+    if isinstance(payload, dict) and isinstance(payload.get("provenance"), dict):
+        audit = payload["provenance"].get("audit", audit)
+    try: return Decimal(str(audit.get("estimated_cost", 0)))
+    except (InvalidOperation, TypeError): return Decimal("0")
+
+@router.get("/analytics/ai/provider-monitoring")
+def ai_provider_monitoring(db: Session = Depends(get_db), ctx: AuthenticatedRequestContext = Depends(get_request_context)):
+    """Tenant-scoped operational view for provider health and persisted executions."""
+    rows = db.query(AIExecution).filter(AIExecution.tenant_id == ctx.tenant_id).order_by(AIExecution.execution_timestamp.desc()).limit(1000).all()
+    failures = [row for row in rows if row.error_state or str(row.validation_status or "").upper() in {"FAILED", "BLOCKED"}]
+    latencies = [row.latency_ms for row in rows if row.latency_ms is not None]
+    by_provider = {}
+    for row in rows:
+        item = by_provider.setdefault(row.provider, {"executions": 0, "failures": 0, "estimated_cost": Decimal("0")})
+        item["executions"] += 1; item["failures"] += int(row in failures); item["estimated_cost"] += _execution_cost(row)
+    return {"tenant_id": ctx.tenant_id, "status": "DEGRADED" if failures else "HEALTHY", "metrics": {"executions": len(rows), "failures": len(failures), "failure_rate": round(len(failures) / len(rows), 4) if rows else 0, "p95_latency_ms": sorted(latencies)[max(0, int(len(latencies) * .95) - 1)] if latencies else None}, "providers": [{**item, "estimated_cost": str(item["estimated_cost"])} for item in ({"provider": key, **value} for key, value in by_provider.items())], "alert": bool(failures), "limitations": ["Metrics are tenant-scoped persisted execution telemetry; external provider monitoring remains deployment-specific."]}
+
+@router.get("/analytics/ai/cost-reconciliation")
+def ai_cost_reconciliation(provider_invoice_total: str | None = Query(default=None), db: Session = Depends(get_db), ctx: AuthenticatedRequestContext = Depends(get_request_context)):
+    """Reconcile persisted estimated provider cost with an supplied invoice total."""
+    rows = db.query(AIExecution).filter(AIExecution.tenant_id == ctx.tenant_id).limit(10000).all()
+    estimated = sum((_execution_cost(row) for row in rows), Decimal("0"))
+    invoice = None
+    variance = None
+    if provider_invoice_total is not None:
+        try:
+            invoice = Decimal(provider_invoice_total); variance = invoice - estimated
+        except InvalidOperation: return {"code": "INVALID_INVOICE_TOTAL", "message": "provider_invoice_total must be a decimal amount"}
+    return {"tenant_id": ctx.tenant_id, "currency": "USD", "execution_count": len(rows), "estimated_total": str(estimated), "provider_invoice_total": str(invoice) if invoice is not None else None, "variance": str(variance) if variance is not None else None, "within_tolerance": abs(variance) <= Decimal("0.01") if variance is not None else None, "status": "REQUIRES_PROVIDER_INVOICE" if invoice is None else ("RECONCILED" if abs(variance) <= Decimal("0.01") else "VARIANCE_REQUIRES_REVIEW"), "human_review_required": True}

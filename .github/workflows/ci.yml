@@ -1,8 +1,14 @@
 name: MDARIX R1 CI
 on:
+  workflow_dispatch:
   push:
     branches: [main]
   pull_request:
+permissions:
+  contents: read
+concurrency:
+  group: mdarix-r1-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 jobs:
   backend:
     runs-on: ubuntu-latest
@@ -35,6 +41,8 @@ jobs:
       - run: alembic upgrade head
       - run: python -m compileall backend auth access_control counterfactual graph scenario_intelligence
       - run: python -m pytest -q
+      - name: Validate compose configuration
+        run: docker compose config --quiet
   frontend:
     runs-on: windows-latest
     steps:
@@ -47,3 +55,39 @@ jobs:
       - run: npm.cmd --prefix frontend ci
       - run: npm.cmd --prefix frontend audit --audit-level=high
       - run: npm.cmd --prefix frontend run build
+      - name: Run frontend tests
+        run: npm.cmd --prefix frontend test -- --run
+
+  container-validation:
+    name: Container and simulator validation
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate Docker Compose definition
+        run: docker compose config --quiet
+      - name: Build simulator and worker images
+        run: docker compose build --no-cache mdarix-outbox-worker trackwise-simulator plm-simulator erp-simulator supplier-simulator
+
+  release-report:
+    name: Release evidence gate
+    runs-on: ubuntu-latest
+    needs: [backend, frontend, container-validation]
+    if: always()
+    steps:
+      - uses: actions/checkout@v4
+      - name: Enforce required CI jobs
+        shell: bash
+        run: |
+          test "${{ needs.backend.result }}" = success
+          test "${{ needs.frontend.result }}" = success
+          test "${{ needs.container-validation.result }}" = success
+      - name: Publish workflow summary
+        shell: bash
+        run: |
+          {
+            echo '## MDARIX R1 CI/CD validation'
+            echo '- Backend tests, migrations, dependency checks, and compose validation: passed'
+            echo '- Frontend tests, audit, and production build: passed'
+            echo '- Worker and simulator container builds: passed'
+            echo '- Production deployment promotion and rollback remain environment-specific gates.'
+          } >> "$GITHUB_STEP_SUMMARY"

@@ -62,4 +62,16 @@ test.describe("MDARIX browser evidence", () => {
     await expect(page.locator(":focus")).toBeVisible();
     await page.screenshot({ path: `artifacts/browser-${testInfo.project.name}-home.png`, fullPage: true });
   });
+
+  test("authenticated AI workflow surfaces grounded review state", async ({ page }, testInfo) => {
+    await signIn(page, "r1-user-01@synthetic.invalid", "Temp@1234password");
+    await page.goto("/app/ask");
+    await expect(page.locator("body")).not.toBeEmpty();
+    await expect(page.locator("body")).toContainText(/Ask MDARIX|authorized|human review/i);
+    await page.screenshot({ path: `artifacts/browser-${testInfo.project.name}-ai-ask.png`, fullPage: true });
+    await page.goto("/app/investigations");
+    await expect(page.locator("body")).not.toBeEmpty();
+    await expect(page.locator("body")).toContainText(/investigat|evidence|review/i);
+    await page.screenshot({ path: `artifacts/browser-${testInfo.project.name}-ai-investigation.png`, fullPage: true });
+  });
 });

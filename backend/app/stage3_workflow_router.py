@@ -7,7 +7,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy import func
 from backend.app.db.session import get_db
 from backend.app.db.models.stage3 import AIInteraction, AIInteractionFeedback, AIInteractionSession, ContextSnapshot, InboundEmailEvent, InboundProviderMapping, SupplierEvidenceRequest, EvidenceAttachment
-from backend.app.db.models.foundation import AuditEvent
+from backend.app.db.models.foundation import AuditEvent, SignedApprovalRecord, Decision
 from object_storage.service import ObjectStorageService
 from communication.email.service import EmailService
 from communication.email.provider import EmailMessage
@@ -151,8 +151,39 @@ def stage3_genai_health(ctx: AuthenticatedRequestContext = Depends(get_request_c
 @router.post("/reports/{report_code}")
 def generate_report(report_code: str, output_format: str = "JSON", db: Session = Depends(get_db), ctx: AuthenticatedRequestContext = Depends(get_request_context)):
     from reports.service import generate_report as build_report
-    try: return build_report(report_code.upper(), ctx.tenant_id, output_format=output_format, context={"correlation_id":ctx.correlation_id})
+    try:
+        result = build_report(report_code.upper(), ctx.tenant_id, output_format=output_format, context={"correlation_id":ctx.correlation_id})
+        db.add(AuditEvent(id=uuid.uuid4(), tenant_id=ctx.tenant_id, actor_ref=ctx.user_id, action="REPORT_GENERATED", entity_type="Report", details={"report_code": report_code.upper(), "format": result["format"], "report_version": result["report_version"]}, created_at=NOW()))
+        db.commit()
+        return result
     except ValueError as exc: raise HTTPException(400, detail={"code":str(exc),"message":"Report type is not supported"})
+
+@router.get("/compliance-report")
+def compliance_report(output_format: str = "PDF", db: Session = Depends(get_db), ctx: AuthenticatedRequestContext = Depends(get_request_context)):
+    """Generate a tenant-scoped audit and signature verification report."""
+    fmt = output_format.upper()
+    if fmt not in {"JSON", "CSV", "PDF"}:
+        raise HTTPException(400, detail={"code": "REPORT_FORMAT_NOT_SUPPORTED", "message": "Use JSON, CSV, or PDF"})
+    rows = db.query(AuditEvent).filter(AuditEvent.tenant_id == ctx.tenant_id).order_by(AuditEvent.created_at.desc()).limit(1000).all()
+    signatures = db.query(SignedApprovalRecord).filter(SignedApprovalRecord.tenant_id == ctx.tenant_id).order_by(SignedApprovalRecord.signed_at.desc()).limit(500).all()
+    signature_rows = []
+    for item in signatures:
+        material = {"decision_id": str(item.object_id), "version": item.object_version, "type": item.decision_type, "decision": item.decision, "remarks": item.remarks}
+        fingerprint = __import__("hashlib").sha256(__import__("json").dumps(material, sort_keys=True).encode()).hexdigest()
+        expected = __import__("hashlib").sha256((fingerprint + item.signer_user_id + item.object_version).encode()).hexdigest()
+        signature_rows.append({"signature_id": str(item.id), "decision": item.decision, "valid": fingerprint == item.content_fingerprint and expected == item.signature_hash and item.status == "SIGNED", "signer_role": item.signer_role, "object_version": item.object_version, "signed_at": item.signed_at})
+    context = {"audit_events": [{"action": r.action, "entity_type": r.entity_type, "entity_id": str(r.entity_id) if r.entity_id else None, "actor_ref": r.actor_ref, "correlation_id": r.correlation_id, "source_ip": r.source_ip, "user_agent": r.user_agent, "reason": r.reason, "old_values": r.old_values, "new_values": r.new_values, "created_at": r.created_at, "retention_until": r.retention_until} for r in rows], "signature_verification": signature_rows, "counts": {"audit_events": len(rows), "signatures": len(signature_rows), "valid_signatures": sum(1 for item in signature_rows if item["valid"])}}
+    from reports.service import generate_report as build_report
+    try:
+        result = build_report("AUDIT_APPROVAL", ctx.tenant_id, output_format=fmt, context=context, watermark=f"MDARIX COMPLIANCE CONTROLLED COPY · {ctx.tenant_id}")
+    except ValueError as exc:
+        raise HTTPException(400, detail={"code": str(exc), "message": "Compliance report could not be generated"}) from exc
+    now = NOW()
+    db.add(AuditEvent(id=uuid.uuid4(), tenant_id=ctx.tenant_id, actor_ref=ctx.user_id, action="COMPLIANCE_REPORT_GENERATED", entity_type="ComplianceReport", details={"format": fmt, "report_version": result["report_version"], "audit_count": len(rows), "signature_count": len(signature_rows)}, created_at=now)); db.commit()
+    if fmt == "JSON":
+        return result
+    extension = fmt.lower()
+    return Response(content=result["content"], media_type=result["content_type"], headers={"Content-Disposition": f'attachment; filename="mdarix-compliance-report-{ctx.tenant_id}.{extension}"'})
 
 @router.post("/reports/{report_code}/jobs")
 def queue_report(report_code: str, output_format: str = "PDF", db: Session = Depends(get_db), ctx: AuthenticatedRequestContext = Depends(get_request_context)):

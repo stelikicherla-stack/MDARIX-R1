@@ -21,6 +21,8 @@ def test_object_storage_is_tenant_scoped_and_can_sign_local_urls(tmp_path, monke
     result = storage.put("tenant-a", "evidence/file.txt", b"evidence")
     assert "tenant-a/" in result["object_key"]
     assert "signature=" in storage.signed_url("tenant-a", result["object_key"])
+    signed = storage.signed_url("tenant-a", result["object_key"])
+    assert storage.verify_signed_url("tenant-a", signed) == result["object_key"]
     try:
         storage.get("tenant-b", result["object_key"])
         assert False, "foreign tenant read must fail"

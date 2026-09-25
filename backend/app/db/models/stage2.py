@@ -16,6 +16,21 @@ class AuthSession(Base):
     expires_at = _ts(False); revoked_at = _ts(); created_at = _ts(False); last_seen_at = _ts(False)
     __table_args__ = (UniqueConstraint('tenant_id','id',name='uq_auth_sessions_tenant_id'),)
 
+class PasswordHistory(Base):
+    __tablename__ = 'password_history'
+    id = _id(); user_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), nullable=False); tenant_id = _tenant()
+    password_hash: Mapped[str] = mapped_column(Text, nullable=False); created_at = _ts(False)
+    __table_args__ = (Index('ix_password_history_user','tenant_id','user_id','created_at'),)
+
+class MfaChallenge(Base):
+    """Durable, single-use MFA challenge state shared by all app instances."""
+    __tablename__ = 'mfa_challenges'
+    id = _id(); user_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), nullable=False); tenant_id = _tenant()
+    code_hash: Mapped[str] = mapped_column(String(128), nullable=False)
+    purpose: Mapped[str] = mapped_column(String(60), nullable=False, server_default='SIGNATURE')
+    expires_at = _ts(False); used_at = _ts(); attempts: Mapped[int] = mapped_column(Integer, nullable=False, server_default='0'); created_at = _ts(False)
+    __table_args__ = (Index('ix_mfa_challenge_user','tenant_id','user_id','purpose','expires_at'),)
+
 class LoginThrottle(Base):
     """Durable per-identifier lockout state shared by all app instances."""
     __tablename__ = 'login_throttles'

@@ -26,12 +26,21 @@ export const APP_ROUTES: Record<AppView, string> = {
 };
 
 export function viewFromPath(pathname: string): AppView {
-  const match = (Object.entries(APP_ROUTES) as [AppView, string][]).find(([, path]) => pathname === path);
+  const normalized = pathname.split("?")[0].replace(/\/$/, "") || "/";
+  const match = (Object.entries(APP_ROUTES) as [AppView, string][]).find(([, path]) => path === normalized);
   return match?.[0] ?? "home";
 }
 
+export function routeForView(view: AppView): string {
+  return APP_ROUTES[view];
+}
+
+export function isKnownRoute(pathname: string): boolean {
+  return viewFromPath(pathname) !== "home" || pathname.split("?")[0].replace(/\/$/, "") === APP_ROUTES.home;
+}
+
 export function navigateTo(view: AppView) {
-  const path = APP_ROUTES[view];
+  const path = routeForView(view);
   if (window.location.pathname !== path) window.history.pushState({ view }, "", path);
   window.dispatchEvent(new PopStateEvent("popstate"));
 }

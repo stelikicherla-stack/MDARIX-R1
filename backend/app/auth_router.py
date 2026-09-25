@@ -1,4 +1,4 @@
-import os
+import os, hashlib, secrets
 from fastapi import APIRouter, HTTPException, Response, Request, Depends
 from pydantic import BaseModel, Field
 from auth.service import auth_service, _hash
@@ -10,13 +10,15 @@ from sqlalchemy.orm import Session
 from datetime import datetime, timezone
 from auth.durable import persist_session, revoke_session, issue_reset, consume
 from auth.durable import hash_token
-from backend.app.db.models.stage2 import AuthSession, LoginThrottle
+from backend.app.db.models.stage2 import AuthSession, LoginThrottle, PasswordHistory, MfaChallenge
+from datetime import timedelta
 router=APIRouter(prefix="/api/v1/auth",tags=["Authentication"])
 class Signup(BaseModel): email:str=Field(min_length=3,max_length=254); password: str=Field(min_length=12,max_length=128); display_name:str=Field(min_length=1,max_length=120); organization:str=Field(min_length=1,max_length=160)
 class Signin(BaseModel): email:str; password:str
 class Verify(BaseModel): token:str
 class ResetRequest(BaseModel): email:str=Field(min_length=3,max_length=254)
 class Reset(BaseModel): token:str; password:str=Field(min_length=12,max_length=128)
+class MfaCode(BaseModel): code: str = Field(min_length=6, max_length=6)
 def fail(exc): return HTTPException(400,detail={"code":str(exc),"message":"Request could not be completed"})
 def _development_token(token: str | None) -> str | None:
     return token if os.getenv("MDARIX_ENV", "development").lower() == "development" else None
@@ -26,6 +28,60 @@ def _legacy_compat_enabled() -> bool:
         os.getenv("MDARIX_ENV", "development").lower() == "development"
         and os.getenv("MDARIX_ALLOW_LEGACY_AUTH_FALLBACK", "").lower() == "true"
     )
+def _password_reuse(db, row, new_password: str) -> bool:
+    """Return true when the proposed password matches the current or last five passwords."""
+    from auth.service import _verify
+    if _verify(new_password, row.password_hash):
+        return True
+    history = db.query(PasswordHistory).filter_by(tenant_id=row.tenant_id, user_id=row.id).order_by(PasswordHistory.created_at.desc()).limit(5).all()
+    return any(_verify(new_password, item.password_hash) for item in history)
+
+def _record_password_change(db, row, password_hash: str, now: datetime) -> None:
+    db.add(PasswordHistory(id=__import__('uuid').uuid4(), tenant_id=row.tenant_id, user_id=row.id, password_hash=password_hash, created_at=now))
+    row.password_changed_at = now
+    row.password_expires_at = now + timedelta(days=int(os.getenv("MDARIX_PASSWORD_MAX_AGE_DAYS", "90")))
+
+def _mfa_hash(code: str) -> str:
+    return hashlib.sha256(code.encode("ascii")).hexdigest()
+
+@router.post('/mfa/enroll')
+def mfa_enroll(request: Request, db: Session = Depends(get_db)):
+    """Begin a durable MFA enrollment; the one-time code is never persisted."""
+    token = request.cookies.get('mdarix_session', '')
+    row = db.query(AuthSession).filter(AuthSession.session_hash == hash_token(token), AuthSession.revoked_at.is_(None)).first()
+    if not row: raise HTTPException(401, detail={"code":"UNAUTHENTICATED","message":"Authentication required"})
+    user = db.query(AuthUser).filter(AuthUser.id == row.user_id, AuthUser.tenant_id == row.tenant_id).first()
+    if not user: raise HTTPException(401, detail={"code":"UNAUTHENTICATED","message":"Authentication required"})
+    code = f"{secrets.randbelow(1000000):06d}"; now = datetime.now(timezone.utc)
+    db.query(MfaChallenge).filter(MfaChallenge.user_id == user.id, MfaChallenge.tenant_id == user.tenant_id, MfaChallenge.used_at.is_(None)).update({"used_at": now})
+    db.add(MfaChallenge(id=__import__('uuid').uuid4(), user_id=user.id, tenant_id=user.tenant_id, code_hash=_mfa_hash(code), purpose="ENROLLMENT", expires_at=now + timedelta(minutes=10), created_at=now))
+    db.commit()
+    return {"status":"MFA_ENROLLMENT_PENDING", "expires_at": now + timedelta(minutes=10), "development_code": code if os.getenv("MDARIX_ENV", "development").lower() == "development" else None}
+
+@router.post('/mfa/verify-enrollment')
+def mfa_verify_enrollment(data: MfaCode, request: Request, db: Session = Depends(get_db)):
+    token = request.cookies.get('mdarix_session', '')
+    challenge = db.query(MfaChallenge).join(AuthSession, AuthSession.user_id == MfaChallenge.user_id).filter(AuthSession.session_hash == hash_token(token), MfaChallenge.purpose == "ENROLLMENT", MfaChallenge.used_at.is_(None), MfaChallenge.expires_at > datetime.now(timezone.utc)).order_by(MfaChallenge.created_at.desc()).first()
+    if not challenge or challenge.attempts >= 5: raise HTTPException(400, detail={"code":"MFA_CHALLENGE_INVALID","message":"MFA challenge is invalid or expired"})
+    challenge.attempts += 1
+    if not secrets.compare_digest(challenge.code_hash, _mfa_hash(data.code)):
+        db.commit(); raise HTTPException(403, detail={"code":"MFA_CODE_INVALID","message":"MFA code is invalid"})
+    now = datetime.now(timezone.utc); challenge.used_at = now
+    user = db.query(AuthUser).filter(AuthUser.id == challenge.user_id, AuthUser.tenant_id == challenge.tenant_id).first(); user.mfa_required = True; user.mfa_enrolled_at = now
+    db.commit(); return {"status":"MFA_ENROLLED", "user_id": str(user.id), "enrolled_at": now}
+
+@router.post('/mfa/challenge')
+def mfa_challenge(request: Request, db: Session = Depends(get_db)):
+    """Issue a durable, single-use challenge for a governed signature."""
+    token = request.cookies.get('mdarix_session', '')
+    session = db.query(AuthSession).filter(AuthSession.session_hash == hash_token(token), AuthSession.revoked_at.is_(None), AuthSession.expires_at > datetime.now(timezone.utc)).first()
+    if not session: raise HTTPException(401, detail={"code":"UNAUTHENTICATED","message":"Authentication required"})
+    user = db.query(AuthUser).filter(AuthUser.id == session.user_id, AuthUser.tenant_id == session.tenant_id, AuthUser.status == "ACTIVE").first()
+    if not user or not user.mfa_required or not user.mfa_enrolled_at: raise HTTPException(403, detail={"code":"MFA_NOT_ENROLLED","message":"Enroll MFA before requesting a signature challenge"})
+    code = f"{secrets.randbelow(1000000):06d}"; now = datetime.now(timezone.utc)
+    db.query(MfaChallenge).filter(MfaChallenge.user_id == user.id, MfaChallenge.tenant_id == user.tenant_id, MfaChallenge.purpose == "SIGNATURE", MfaChallenge.used_at.is_(None)).update({"used_at": now})
+    db.add(MfaChallenge(id=__import__('uuid').uuid4(), user_id=user.id, tenant_id=user.tenant_id, code_hash=_mfa_hash(code), purpose="SIGNATURE", expires_at=now + timedelta(minutes=5), created_at=now)); db.commit()
+    return {"status":"MFA_CHALLENGE_ISSUED", "expires_at": now + timedelta(minutes=5), "development_code": code if os.getenv("MDARIX_ENV", "development").lower() == "development" else None}
 @router.post('/signup')
 def signup(data:Signup, db:Session=Depends(get_db)):
  try:
@@ -60,6 +116,8 @@ def signin(data:Signin,response:Response,db:Session=Depends(get_db)):
    raise HTTPException(429,detail={"code":"ACCOUNT_TEMPORARILY_LOCKED","message":"Too many failed sign-in attempts. Try again later."})
   row=db.query(AuthUser).filter(AuthUser.username==identifier).first()
   if not row: raise ValueError("INVALID_CREDENTIALS")
+  if row.password_expires_at and row.password_expires_at <= now:
+   raise HTTPException(403,detail={"code":"PASSWORD_EXPIRED","message":"Password change is required before sign-in."})
   token=auth_service.signin_persisted(data.email,data.password,user_id=row.id,display_name=row.display_name,tenant_id=row.tenant_id,password_hash=row.password_hash,role=row.role,status=row.status,email_verified=row.email_verified)
   if throttle:
    throttle.failure_count=0; throttle.locked_until=None; throttle.last_failure_at=None; throttle.updated_at=now
@@ -110,7 +168,9 @@ def reset(data:Reset, db:Session=Depends(get_db)):
   user_id=consume(db, data.token, "reset")
   row=db.query(AuthUser).filter(AuthUser.id==user_id).first()
   if row is None: raise ValueError("INVALID_RESET")
-  row.password_hash=_hash(data.password); row.status="ACTIVE"; row.email_verified=True; row.updated_at=datetime.now(timezone.utc)
+  now=datetime.now(timezone.utc)
+  if _password_reuse(db, row, data.password): raise ValueError("PASSWORD_REUSE_NOT_ALLOWED")
+  row.password_hash=_hash(data.password); row.status="ACTIVE"; row.email_verified=True; row.updated_at=now; _record_password_change(db,row,row.password_hash,now)
   db.query(TenantMembership).filter(TenantMembership.tenant_id==row.tenant_id,TenantMembership.user_id==row.id).update({"status":"ACTIVE","updated_at":datetime.now(timezone.utc)})
   db.commit()
   return {"status":"PASSWORD_RESET"}
@@ -126,7 +186,9 @@ def activate(data:Reset, db:Session=Depends(get_db)):
   user_id=consume(db, data.token, "activation")
   row=db.query(AuthUser).filter(AuthUser.id==user_id).first()
   if row is None: raise ValueError("INVALID_ACTIVATION")
-  row.password_hash=_hash(data.password); row.status="ACTIVE"; row.email_verified=True; row.updated_at=datetime.now(timezone.utc); db.commit()
+  now=datetime.now(timezone.utc)
+  if _password_reuse(db, row, data.password): raise ValueError("PASSWORD_REUSE_NOT_ALLOWED")
+  row.password_hash=_hash(data.password); row.status="ACTIVE"; row.email_verified=True; row.updated_at=now; _record_password_change(db,row,row.password_hash,now); db.commit()
   db.query(TenantMembership).filter(TenantMembership.tenant_id==row.tenant_id,TenantMembership.user_id==row.id).update({"status":"ACTIVE","updated_at":datetime.now(timezone.utc)})
   db.commit()
   return {"status":"ACTIVE","user_id":str(row.id),"email":row.username}

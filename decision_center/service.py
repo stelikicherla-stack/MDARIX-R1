@@ -90,6 +90,16 @@ class DecisionCenterService:
         context = self.context(db, tenant_id, investigation_id, request)
         recommendation = "NO_DECISION_YET" if context["readiness"]["state"] in {"INSUFFICIENT_EVIDENCE", "MATERIAL_UNKNOWNS_REMAIN", "CONTRADICTORY_EVIDENCE"} else "READY_FOR_HUMAN_DECISION"
         output = {"investigation_id": str(investigation_id), "decision_question": request.decision_question, "current_state": context["readiness"], "recommended_action": recommendation, "decision_options": context["decision_options"], "additional_evidence_needed": context["readiness"]["reasons"], "limitations": context["limitations"], "provenance": context["provenance"], "human_authority_required": True}
+        from genai.grounding import advisory as grounded_advisory, build_authorized_context
+        grounded = build_authorized_context(
+            db, tenant_id=tenant_id, investigation_id=investigation_id,
+            product_version_id=context["product_context"].get("product_version_id"),
+            temporal_mode=request.temporal_mode, as_of=request.as_of,
+        )
+        output["ai_advisory"] = grounded_advisory(
+            workflow="DECISION_CENTER_ADVISORY", deterministic_result=output,
+            grounded_context=grounded, question=request.decision_question,
+        )
         row = AIExecution(id=uuid.uuid4(), tenant_id=tenant_id, investigation_id=investigation_id, provider="mdarix-controlled-decision-advisory", model_name="mdarix-rule-grounded-advisory", model_version="1.0", prompt_template_version="R1-Day15-DecisionAdvisory-v1", orchestration_version="R1-Day15-DecisionAdvisory", context_refs={"temporal_context": context["temporal_context"]}, evidence_refs={"evidence_identifiers": [item.get("evidence_identifier") for item in context["evidence"]]}, structured_input=request.model_dump(mode="json"), structured_output=output, validation_status="COMPLETED", execution_timestamp=datetime.now(timezone.utc), requestor_ref="MDARIX-Decision-Center")
         db.add(row); db.add(AuditEvent(tenant_id=tenant_id, actor_ref="MDARIX-Decision-Center", action="DECISION_ADVISORY_CREATED", entity_type="investigation", entity_id=investigation_id, details={"ai_execution_id": str(row.id), "temporal_context": context["temporal_context"]}, created_at=datetime.now(timezone.utc))); db.commit()
         return {"advisory": output, "ai_execution_id": row.id, "context": context}

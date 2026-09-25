@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timezone
 import os
 from urllib.parse import urlparse
 
@@ -7,6 +7,7 @@ from fastapi.responses import JSONResponse
 from sqlalchemy import text
 
 from backend.app.db.session import engine
+from backend.app.db.session import SessionLocal
 from backend.app.db.session import get_db
 from backend.app.enterprise_audit import make_audit_event
 from sqlalchemy.orm import Session
@@ -35,14 +36,32 @@ from backend.app.communication_router import router as communication_router
 from backend.app.stage3_workflow_router import router as stage3_workflow_router
 from backend.app.mapping_catalog_router import router as mapping_catalog_router
 from backend.app.request_context import AuthenticatedRequestContext, get_request_context
+from auth.durable import hash_token
+from backend.app.db.models.stage2 import AuthSession
+from backend.app.db.models.foundation import AuthUser
 from graph.schemas import GraphResponse, HealthResponse, RelationshipDetail
 from graph.service import GraphError, RealityGraphService
 
 _production_like = os.getenv("MDARIX_ENV", "development").lower() in {"production", "staging"}
-_docs_enabled = os.getenv("MDARIX_ENABLE_API_DOCS", "false").lower() == "true"
+_docs_enabled = os.getenv("MDARIX_ENABLE_API_DOCS", "true" if not _production_like else "false").lower() == "true"
 app = FastAPI(
     title="MDARIX R1 API",
     version="0.8.0",
+    description=(
+        "Tenant-scoped medical-device product lifecycle, investigation, evidence, "
+        "and governed decision APIs. Authentication and tenant authorization are "
+        "enforced by the server; AI output is advisory and requires human review."
+    ),
+    contact={"name": "MDARIX Platform Engineering"},
+    openapi_tags=[
+        {"name": "Authentication", "description": "Sign-in, sessions, invitations, and password recovery."},
+        {"name": "Access Control", "description": "Tenant context, permissions, and administration."},
+        {"name": "Investigations", "description": "Tenant-scoped investigations and lifecycle context."},
+        {"name": "Evidence", "description": "Evidence, provenance, retrieval, and authorized exports."},
+        {"name": "Integration Gateway", "description": "Connector previews and provider health checks."},
+        {"name": "Communication", "description": "Provider status and verified inbound events."},
+        {"name": "Stage 3", "description": "AI advisory, reports, attachments, and workflow evidence."},
+    ],
     docs_url="/docs" if _docs_enabled and not _production_like else None,
     redoc_url="/redoc" if _docs_enabled and not _production_like else None,
     openapi_url="/openapi.json" if _docs_enabled and not _production_like else None,
@@ -62,6 +81,32 @@ async def enforce_cookie_csrf(request: Request, call_next):
         if not expected or supplied.rstrip("/") != expected:
             return JSONResponse(status_code=403, content={"detail": {"code": "CSRF_ORIGIN_DENIED", "message": "A trusted browser origin is required"}})
     return await call_next(request)
+
+
+@app.middleware("http")
+async def audit_mutating_requests(request: Request, call_next):
+    """Create a uniform request-level audit envelope for every state change.
+
+    Domain handlers continue to record detailed events; this envelope guarantees
+    that successful authenticated mutations cannot silently lack actor, origin,
+    correlation, and outcome metadata.
+    """
+    response = await call_next(request)
+    if request.method in {"GET", "HEAD", "OPTIONS"} or not request.cookies.get("mdarix_session"):
+        return response
+    db = SessionLocal()
+    try:
+        session = db.query(AuthSession).filter(AuthSession.session_hash == hash_token(request.cookies["mdarix_session"]), AuthSession.revoked_at.is_(None)).first()
+        if session:
+            user = db.query(AuthUser).filter(AuthUser.id == session.user_id, AuthUser.tenant_id == session.tenant_id).first()
+            now = datetime.now(timezone.utc)
+            db.add(make_audit_event(tenant_id=session.tenant_id, actor_ref=str(session.user_id), action="REQUEST_MUTATION_COMPLETED", entity_type="HTTP_REQUEST", correlation_id=request.headers.get("X-Correlation-ID"), details={"method": request.method, "path": request.url.path, "status_code": response.status_code}, request=request, reason=request.headers.get("X-Change-Reason"), created_at=now))
+            db.commit()
+    except Exception:
+        db.rollback()
+    finally:
+        db.close()
+    return response
 
 
 @app.middleware("http")

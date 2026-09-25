@@ -39,6 +39,24 @@ services:
     depends_on:
       postgres: {condition: service_healthy}
 
+  minio:
+    image: quay.io/minio/minio:latest
+    command: server /data --console-address ":9001"
+    restart: unless-stopped
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-mdarix-local}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-change-this-local-secret}
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    volumes:
+      - mdarix_object_storage:/data
+    healthcheck:
+      test: ["CMD", "mc", "ready", "local"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
   trackwise-simulator-db:
     image: postgres:16
     environment: {POSTGRES_DB: trackwise, POSTGRES_USER: provider, POSTGRES_PASSWORD: provider}
@@ -87,3 +105,4 @@ volumes:
   plm_data:
   erp_data:
   supplier_data:
+  mdarix_object_storage:

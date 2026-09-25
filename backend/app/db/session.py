@@ -19,7 +19,14 @@ def database_url() -> URL:
     )
 
 
-engine = create_engine(database_url(), future=True)
+engine = create_engine(
+    database_url(),
+    future=True,
+    pool_size=int(os.getenv("MDARIX_DB_POOL_SIZE", "5")),
+    max_overflow=int(os.getenv("MDARIX_DB_MAX_OVERFLOW", "10")),
+    pool_timeout=int(os.getenv("MDARIX_DB_POOL_TIMEOUT_SECONDS", "30")),
+    pool_pre_ping=True,
+)
 SessionLocal = sessionmaker(bind=engine, autoflush=False, autocommit=False, future=True)
 
 
