@@ -1,7 +1,15 @@
 {
   "config": {
+    "argv": [
+      "C:\\Program Files\\nodejs\\node.exe",
+      "C:\\Users\\user\\Srinivas\\MDARIX-R1\\frontend\\node_modules\\@playwright\\test\\cli.js",
+      "test",
+      "--project=desktop",
+      "--project=mobile"
+    ],
     "configFile": "C:\\Users\\user\\Srinivas\\MDARIX-R1\\frontend\\playwright.config.ts",
     "rootDir": "C:/Users/user/Srinivas/MDARIX-R1/frontend/e2e",
+    "failOnFlakyTests": false,
     "forbidOnly": false,
     "fullyParallel": false,
     "globalSetup": null,
@@ -14,23 +22,6 @@
       "actualWorkers": 2
     },
     "preserveOutput": "always",
-    "reporter": [
-      [
-        "list",
-        null
-      ],
-      [
-        "json",
-        {
-          "outputFile": "artifacts/browser-evidence.json"
-        }
-      ]
-    ],
-    "reportSlowTests": {
-      "max": 5,
-      "threshold": 300000
-    },
-    "quiet": false,
     "projects": [
       {
         "outputDir": "C:/Users/user/Srinivas/MDARIX-R1/frontend/test-results",
@@ -65,10 +56,28 @@
         "timeout": 30000
       }
     ],
+    "quiet": false,
+    "reporter": [
+      [
+        "list",
+        null
+      ],
+      [
+        "json",
+        {
+          "outputFile": "artifacts/browser-evidence.json"
+        }
+      ]
+    ],
+    "reportSlowTests": {
+      "max": 5,
+      "threshold": 300000
+    },
     "shard": null,
+    "tags": [],
     "updateSnapshots": "missing",
     "updateSourceMethod": "patch",
-    "version": "1.55.0",
+    "version": "1.63.0",
     "workers": 4,
     "webServer": null
   },
@@ -102,12 +111,12 @@
                       "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 5432,
+                      "duration": 3121,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-09-24T15:58:38.122Z",
+                      "startTime": "2026-09-25T19:57:37.187Z",
                       "annotations": [],
                       "attachments": []
                     }
@@ -122,7 +131,7 @@
             },
             {
               "title": "authenticated Platform Admin workflow and screenshots",
-              "ok": true,
+              "ok": false,
               "tags": [],
               "tests": [
                 {
@@ -135,23 +144,63 @@
                     {
                       "workerIndex": 0,
                       "parallelIndex": 0,
-                      "status": "passed",
-                      "duration": 10946,
-                      "errors": [],
+                      "status": "failed",
+                      "duration": 9925,
+                      "error": {
+                        "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoContainText\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m failed\n\nLocator: locator('body')\nTimeout: 5000ms\nExpected pattern: \u001b[32m/create customer administrator/i\u001b[39m\nReceived string:  \u001b[31m\"\u001b[39m\n\u001b[31m    Northstar QualityProduct Lifecycle Intelligence · developmentAdministrator control planeAdministration Identity, access & configurationPlans & Integrations Subscriptions, connectors & mappingsProduct Configuration Products, versions, APIs & mappingsSubscriptions & Notifications Expiry, reminders & templatesMapping Studio Catalog, versions, dry run & driftCustomers / Tenants Search and review customersCreate Customer Provision a tenant and limitsCustomer Administrators Search, update or retire accountsRecent platform administration activity Review user changes and audit evidenceEvidence before inference.Authorized humans decide.LogoutThe request could not be completed.Administration unavailableThe request could not be completed.Privacy and compliance noticeMDARIX uses essential session storage and tenant-scoped audit records to operate this workspace. Review your organization's GDPR/HIPAA obligations before entering regulated data.DismissAcknowledge·········\u001b[39m\n\u001b[31m\"\u001b[39m\n\nCall log:\n\u001b[2m  - Expect \"toContainText\" locator('body') with timeout 5000ms\u001b[22m\n\u001b[2m  - waiting for locator('body')\u001b[22m\n\u001b[2m    5 × locator resolved to <body>…</body>\u001b[22m\n\u001b[2m      - unexpected value \"\u001b[22m\n\u001b[2m    MDARIXProduct Lifecycle Intelligence · environmentWorkspaceHomeProductsSignals & ComplaintsStory ViewPersona DashboardAsk MDARIXInvestigationInvestigationsEvidenceDecision & TrustDecision CenterAI Assurance Inspect AI trust controlsAudit Trail Review recorded activityEvidence before inference.Authorized humans decide.LogoutPrivacy and compliance noticeMDARIX uses essential session storage and tenant-scoped audit records to operate this workspace. Review your organization's GDPR/HIPAA obligations before entering regulated data.DismissAcknowledge\u001b[22m\n\u001b[2m    \u001b[22m\n\u001b[2m  \u001b[22m\n\u001b[2m\u001b[22m\n\u001b[2m\"\u001b[22m\n\u001b[2m    - locator resolved to <body>…</body>\u001b[22m\n\u001b[2m    - unexpected value \"\u001b[22m\n\u001b[2m    Northstar QualityProduct Lifecycle Intelligence · developmentAdministrator control planeAdministration Identity, access & configurationPlans & Integrations Subscriptions, connectors & mappingsProduct Configuration Products, versions, APIs & mappingsSubscriptions & Notifications Expiry, reminders & templatesMapping Studio Catalog, versions, dry run & driftCustomers / Tenants Search and review customersCreate Customer Provision a tenant and limitsCustomer Administrators Search, update or retire accountsRecent platform administration activity Review user changes and audit evidenceEvidence before inference.Authorized humans decide.LogoutThe request could not be completed.Administrator control planeLoading tenant administration…Privacy and compliance noticeMDARIX uses essential session storage and tenant-scoped audit records to operate this workspace. Review your organization's GDPR/HIPAA obligations before entering regulated data.DismissAcknowledge\u001b[22m\n\u001b[2m    \u001b[22m\n\u001b[2m  \u001b[22m\n\u001b[2m\u001b[22m\n\u001b[2m\"\u001b[22m\n\u001b[2m    8 × locator resolved to <body>…</body>\u001b[22m\n\u001b[2m      - unexpected value \"\u001b[22m\n\u001b[2m    Northstar QualityProduct Lifecycle Intelligence · developmentAdministrator control planeAdministration Identity, access & configurationPlans & Integrations Subscriptions, connectors & mappingsProduct Configuration Products, versions, APIs & mappingsSubscriptions & Notifications Expiry, reminders & templatesMapping Studio Catalog, versions, dry run & driftCustomers / Tenants Search and review customersCreate Customer Provision a tenant and limitsCustomer Administrators Search, update or retire accountsRecent platform administration activity Review user changes and audit evidenceEvidence before inference.Authorized humans decide.LogoutThe request could not be completed.Administration unavailableThe request could not be completed.Privacy and compliance noticeMDARIX uses essential session storage and tenant-scoped audit records to operate this workspace. Review your organization's GDPR/HIPAA obligations before entering regulated data.DismissAcknowledge\u001b[22m\n\u001b[2m    \u001b[22m\n\u001b[2m  \u001b[22m\n\u001b[2m\u001b[22m\n\u001b[2m\"\u001b[22m\n",
+                        "stack": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoContainText\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m failed\n\nLocator: locator('body')\nTimeout: 5000ms\nExpected pattern: \u001b[32m/create customer administrator/i\u001b[39m\nReceived string:  \u001b[31m\"\u001b[39m\n\u001b[31m    Northstar QualityProduct Lifecycle Intelligence · developmentAdministrator control planeAdministration Identity, access & configurationPlans & Integrations Subscriptions, connectors & mappingsProduct Configuration Products, versions, APIs & mappingsSubscriptions & Notifications Expiry, reminders & templatesMapping Studio Catalog, versions, dry run & driftCustomers / Tenants Search and review customersCreate Customer Provision a tenant and limitsCustomer Administrators Search, update or retire accountsRecent platform administration activity Review user changes and audit evidenceEvidence before inference.Authorized humans decide.LogoutThe request could not be completed.Administration unavailableThe request could not be completed.Privacy and compliance noticeMDARIX uses essential session storage and tenant-scoped audit records to operate this workspace. Review your organization's GDPR/HIPAA obligations before entering regulated data.DismissAcknowledge·········\u001b[39m\n\u001b[31m\"\u001b[39m\n\nCall log:\n\u001b[2m  - Expect \"toContainText\" locator('body') with timeout 5000ms\u001b[22m\n\u001b[2m  - waiting for locator('body')\u001b[22m\n\u001b[2m    5 × locator resolved to <body>…</body>\u001b[22m\n\u001b[2m      - unexpected value \"\u001b[22m\n\u001b[2m    MDARIXProduct Lifecycle Intelligence · environmentWorkspaceHomeProductsSignals & ComplaintsStory ViewPersona DashboardAsk MDARIXInvestigationInvestigationsEvidenceDecision & TrustDecision CenterAI Assurance Inspect AI trust controlsAudit Trail Review recorded activityEvidence before inference.Authorized humans decide.LogoutPrivacy and compliance noticeMDARIX uses essential session storage and tenant-scoped audit records to operate this workspace. Review your organization's GDPR/HIPAA obligations before entering regulated data.DismissAcknowledge\u001b[22m\n\u001b[2m    \u001b[22m\n\u001b[2m  \u001b[22m\n\u001b[2m\u001b[22m\n\u001b[2m\"\u001b[22m\n\u001b[2m    - locator resolved to <body>…</body>\u001b[22m\n\u001b[2m    - unexpected value \"\u001b[22m\n\u001b[2m    Northstar QualityProduct Lifecycle Intelligence · developmentAdministrator control planeAdministration Identity, access & configurationPlans & Integrations Subscriptions, connectors & mappingsProduct Configuration Products, versions, APIs & mappingsSubscriptions & Notifications Expiry, reminders & templatesMapping Studio Catalog, versions, dry run & driftCustomers / Tenants Search and review customersCreate Customer Provision a tenant and limitsCustomer Administrators Search, update or retire accountsRecent platform administration activity Review user changes and audit evidenceEvidence before inference.Authorized humans decide.LogoutThe request could not be completed.Administrator control planeLoading tenant administration…Privacy and compliance noticeMDARIX uses essential session storage and tenant-scoped audit records to operate this workspace. Review your organization's GDPR/HIPAA obligations before entering regulated data.DismissAcknowledge\u001b[22m\n\u001b[2m    \u001b[22m\n\u001b[2m  \u001b[22m\n\u001b[2m\u001b[22m\n\u001b[2m\"\u001b[22m\n\u001b[2m    8 × locator resolved to <body>…</body>\u001b[22m\n\u001b[2m      - unexpected value \"\u001b[22m\n\u001b[2m    Northstar QualityProduct Lifecycle Intelligence · developmentAdministrator control planeAdministration Identity, access & configurationPlans & Integrations Subscriptions, connectors & mappingsProduct Configuration Products, versions, APIs & mappingsSubscriptions & Notifications Expiry, reminders & templatesMapping Studio Catalog, versions, dry run & driftCustomers / Tenants Search and review customersCreate Customer Provision a tenant and limitsCustomer Administrators Search, update or retire accountsRecent platform administration activity Review user changes and audit evidenceEvidence before inference.Authorized humans decide.LogoutThe request could not be completed.Administration unavailableThe request could not be completed.Privacy and compliance noticeMDARIX uses essential session storage and tenant-scoped audit records to operate this workspace. Review your organization's GDPR/HIPAA obligations before entering regulated data.DismissAcknowledge\u001b[22m\n\u001b[2m    \u001b[22m\n\u001b[2m  \u001b[22m\n\u001b[2m\u001b[22m\n\u001b[2m\"\u001b[22m\n\n    at C:\\Users\\user\\Srinivas\\MDARIX-R1\\frontend\\e2e\\browser-evidence.spec.ts:31:42",
+                        "location": {
+                          "file": "C:\\Users\\user\\Srinivas\\MDARIX-R1\\frontend\\e2e\\browser-evidence.spec.ts",
+                          "column": 42,
+                          "line": 31
+                        },
+                        "snippet": "\u001b[0m \u001b[90m 29 |\u001b[39m       \u001b[36mawait\u001b[39m expect(page\u001b[33m.\u001b[39mlocator(\u001b[32m\"body\"\u001b[39m))\u001b[33m.\u001b[39mnot\u001b[33m.\u001b[39mtoContainText(\u001b[32m\"Loading tenant administration\"\u001b[39m)\u001b[33m;\u001b[39m\n \u001b[90m 30 |\u001b[39m       \u001b[36mawait\u001b[39m expect(page\u001b[33m.\u001b[39mlocator(\u001b[32m\"body\"\u001b[39m))\u001b[33m.\u001b[39mnot\u001b[33m.\u001b[39mtoContainText(\u001b[32m\"Administration unavailable\"\u001b[39m)\u001b[33m;\u001b[39m\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 31 |\u001b[39m       \u001b[36mawait\u001b[39m expect(page\u001b[33m.\u001b[39mlocator(\u001b[32m\"body\"\u001b[39m))\u001b[33m.\u001b[39mtoContainText(expected)\u001b[33m;\u001b[39m\n \u001b[90m    |\u001b[39m                                          \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 32 |\u001b[39m       \u001b[36mawait\u001b[39m page\u001b[33m.\u001b[39mscreenshot({ path\u001b[33m:\u001b[39m \u001b[32m`artifacts/browser-${testInfo.project.name}-admin-${name}.png`\u001b[39m\u001b[33m,\u001b[39m fullPage\u001b[33m:\u001b[39m \u001b[36mtrue\u001b[39m })\u001b[33m;\u001b[39m\n \u001b[90m 33 |\u001b[39m     }\n \u001b[90m 34 |\u001b[39m   })\u001b[33m;\u001b[39m\u001b[0m"
+                      },
+                      "errors": [
+                        {
+                          "location": {
+                            "file": "C:\\Users\\user\\Srinivas\\MDARIX-R1\\frontend\\e2e\\browser-evidence.spec.ts",
+                            "column": 42,
+                            "line": 31
+                          },
+                          "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoContainText\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m failed\n\nLocator: locator('body')\nTimeout: 5000ms\nExpected pattern: \u001b[32m/create customer administrator/i\u001b[39m\nReceived string:  \u001b[31m\"\u001b[39m\n\u001b[31m    Northstar QualityProduct Lifecycle Intelligence · developmentAdministrator control planeAdministration Identity, access & configurationPlans & Integrations Subscriptions, connectors & mappingsProduct Configuration Products, versions, APIs & mappingsSubscriptions & Notifications Expiry, reminders & templatesMapping Studio Catalog, versions, dry run & driftCustomers / Tenants Search and review customersCreate Customer Provision a tenant and limitsCustomer Administrators Search, update or retire accountsRecent platform administration activity Review user changes and audit evidenceEvidence before inference.Authorized humans decide.LogoutThe request could not be completed.Administration unavailableThe request could not be completed.Privacy and compliance noticeMDARIX uses essential session storage and tenant-scoped audit records to operate this workspace. Review your organization's GDPR/HIPAA obligations before entering regulated data.DismissAcknowledge·········\u001b[39m\n\u001b[31m\"\u001b[39m\n\nCall log:\n\u001b[2m  - Expect \"toContainText\" locator('body') with timeout 5000ms\u001b[22m\n\u001b[2m  - waiting for locator('body')\u001b[22m\n\u001b[2m    5 × locator resolved to <body>…</body>\u001b[22m\n\u001b[2m      - unexpected value \"\u001b[22m\n\u001b[2m    MDARIXProduct Lifecycle Intelligence · environmentWorkspaceHomeProductsSignals & ComplaintsStory ViewPersona DashboardAsk MDARIXInvestigationInvestigationsEvidenceDecision & TrustDecision CenterAI Assurance Inspect AI trust controlsAudit Trail Review recorded activityEvidence before inference.Authorized humans decide.LogoutPrivacy and compliance noticeMDARIX uses essential session storage and tenant-scoped audit records to operate this workspace. Review your organization's GDPR/HIPAA obligations before entering regulated data.DismissAcknowledge\u001b[22m\n\u001b[2m    \u001b[22m\n\u001b[2m  \u001b[22m\n\u001b[2m\u001b[22m\n\u001b[2m\"\u001b[22m\n\u001b[2m    - locator resolved to <body>…</body>\u001b[22m\n\u001b[2m    - unexpected value \"\u001b[22m\n\u001b[2m    Northstar QualityProduct Lifecycle Intelligence · developmentAdministrator control planeAdministration Identity, access & configurationPlans & Integrations Subscriptions, connectors & mappingsProduct Configuration Products, versions, APIs & mappingsSubscriptions & Notifications Expiry, reminders & templatesMapping Studio Catalog, versions, dry run & driftCustomers / Tenants Search and review customersCreate Customer Provision a tenant and limitsCustomer Administrators Search, update or retire accountsRecent platform administration activity Review user changes and audit evidenceEvidence before inference.Authorized humans decide.LogoutThe request could not be completed.Administrator control planeLoading tenant administration…Privacy and compliance noticeMDARIX uses essential session storage and tenant-scoped audit records to operate this workspace. Review your organization's GDPR/HIPAA obligations before entering regulated data.DismissAcknowledge\u001b[22m\n\u001b[2m    \u001b[22m\n\u001b[2m  \u001b[22m\n\u001b[2m\u001b[22m\n\u001b[2m\"\u001b[22m\n\u001b[2m    8 × locator resolved to <body>…</body>\u001b[22m\n\u001b[2m      - unexpected value \"\u001b[22m\n\u001b[2m    Northstar QualityProduct Lifecycle Intelligence · developmentAdministrator control planeAdministration Identity, access & configurationPlans & Integrations Subscriptions, connectors & mappingsProduct Configuration Products, versions, APIs & mappingsSubscriptions & Notifications Expiry, reminders & templatesMapping Studio Catalog, versions, dry run & driftCustomers / Tenants Search and review customersCreate Customer Provision a tenant and limitsCustomer Administrators Search, update or retire accountsRecent platform administration activity Review user changes and audit evidenceEvidence before inference.Authorized humans decide.LogoutThe request could not be completed.Administration unavailableThe request could not be completed.Privacy and compliance noticeMDARIX uses essential session storage and tenant-scoped audit records to operate this workspace. Review your organization's GDPR/HIPAA obligations before entering regulated data.DismissAcknowledge\u001b[22m\n\u001b[2m    \u001b[22m\n\u001b[2m  \u001b[22m\n\u001b[2m\u001b[22m\n\u001b[2m\"\u001b[22m\n\n\n  29 |       await expect(page.locator(\"body\")).not.toContainText(\"Loading tenant administration\");\n  30 |       await expect(page.locator(\"body\")).not.toContainText(\"Administration unavailable\");\n> 31 |       await expect(page.locator(\"body\")).toContainText(expected);\n     |                                          ^\n  32 |       await page.screenshot({ path: `artifacts/browser-${testInfo.project.name}-admin-${name}.png`, fullPage: true });\n  33 |     }\n  34 |   });\n    at C:\\Users\\user\\Srinivas\\MDARIX-R1\\frontend\\e2e\\browser-evidence.spec.ts:31:42"
+                        }
+                      ],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-09-24T15:58:44.009Z",
+                      "startTime": "2026-09-25T19:57:40.950Z",
                       "annotations": [],
-                      "attachments": []
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "C:\\Users\\user\\Srinivas\\MDARIX-R1\\frontend\\test-results\\browser-evidence-MDARIX-br-47935-in-workflow-and-screenshots-desktop\\test-failed-1.png"
+                        },
+                        {
+                          "name": "error-context",
+                          "contentType": "text/markdown",
+                          "path": "C:\\Users\\user\\Srinivas\\MDARIX-R1\\frontend\\test-results\\browser-evidence-MDARIX-br-47935-in-workflow-and-screenshots-desktop\\error-context.md"
+                        },
+                        {
+                          "name": "trace",
+                          "contentType": "application/zip",
+                          "path": "C:\\Users\\user\\Srinivas\\MDARIX-R1\\frontend\\test-results\\browser-evidence-MDARIX-br-47935-in-workflow-and-screenshots-desktop\\trace.zip"
+                        }
+                      ],
+                      "errorLocation": {
+                        "file": "C:\\Users\\user\\Srinivas\\MDARIX-R1\\frontend\\e2e\\browser-evidence.spec.ts",
+                        "column": 42,
+                        "line": 31
+                      }
                     }
                   ],
-                  "status": "expected"
+                  "status": "unexpected"
                 }
               ],
               "id": "a01cbefd99a4cc157da2-294fc6207d8e44d32d74",
               "file": "browser-evidence.spec.ts",
-              "line": 32,
+              "line": 24,
               "column": 3
             },
             {
@@ -167,15 +216,15 @@
                   "projectName": "desktop",
                   "results": [
                     {
-                      "workerIndex": 0,
+                      "workerIndex": 2,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 4548,
+                      "duration": 4294,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-09-24T15:58:55.109Z",
+                      "startTime": "2026-09-25T19:57:52.276Z",
                       "annotations": [],
                       "attachments": []
                     }
@@ -185,7 +234,7 @@
               ],
               "id": "a01cbefd99a4cc157da2-a3bac97e8367a81278a6",
               "file": "browser-evidence.spec.ts",
-              "line": 48,
+              "line": 36,
               "column": 3
             },
             {
@@ -201,15 +250,15 @@
                   "projectName": "desktop",
                   "results": [
                     {
-                      "workerIndex": 0,
+                      "workerIndex": 2,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 5163,
+                      "duration": 8134,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-09-24T15:58:59.740Z",
+                      "startTime": "2026-09-25T19:57:57.185Z",
                       "annotations": [],
                       "attachments": []
                     }
@@ -219,7 +268,7 @@
               ],
               "id": "a01cbefd99a4cc157da2-562a0d04f2b092a2cbc9",
               "file": "browser-evidence.spec.ts",
-              "line": 60,
+              "line": 44,
               "column": 3
             },
             {
@@ -235,15 +284,15 @@
                   "projectName": "desktop",
                   "results": [
                     {
-                      "workerIndex": 0,
+                      "workerIndex": 2,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 5385,
+                      "duration": 4520,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-09-24T15:59:04.956Z",
+                      "startTime": "2026-09-25T19:58:05.348Z",
                       "annotations": [],
                       "attachments": []
                     }
@@ -253,7 +302,41 @@
               ],
               "id": "a01cbefd99a4cc157da2-34cc64a201cf80f47209",
               "file": "browser-evidence.spec.ts",
-              "line": 71,
+              "line": 54,
+              "column": 3
+            },
+            {
+              "title": "authenticated AI workflow surfaces grounded review state",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "desktop",
+                  "projectName": "desktop",
+                  "results": [
+                    {
+                      "workerIndex": 2,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 4008,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-09-25T19:58:09.907Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "a01cbefd99a4cc157da2-ec29ddec0dd805d124d6",
+              "file": "browser-evidence.spec.ts",
+              "line": 66,
               "column": 3
             },
             {
@@ -272,12 +355,12 @@
                       "workerIndex": 1,
                       "parallelIndex": 1,
                       "status": "passed",
-                      "duration": 6009,
+                      "duration": 3146,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-09-24T15:58:38.139Z",
+                      "startTime": "2026-09-25T19:57:37.153Z",
                       "annotations": [],
                       "attachments": []
                     }
@@ -292,7 +375,7 @@
             },
             {
               "title": "authenticated Platform Admin workflow and screenshots",
-              "ok": true,
+              "ok": false,
               "tags": [],
               "tests": [
                 {
@@ -305,23 +388,63 @@
                     {
                       "workerIndex": 1,
                       "parallelIndex": 1,
-                      "status": "passed",
-                      "duration": 13405,
-                      "errors": [],
+                      "status": "failed",
+                      "duration": 9835,
+                      "error": {
+                        "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoContainText\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m failed\n\nLocator: locator('body')\nTimeout: 5000ms\nExpected pattern: \u001b[32m/create customer administrator/i\u001b[39m\nReceived string:  \u001b[31m\"\u001b[39m\n\u001b[31m    Northstar QualityProduct Lifecycle Intelligence · developmentAdministrator control planeAdministration Identity, access & configurationPlans & Integrations Subscriptions, connectors & mappingsProduct Configuration Products, versions, APIs & mappingsSubscriptions & Notifications Expiry, reminders & templatesMapping Studio Catalog, versions, dry run & driftCustomers / Tenants Search and review customersCreate Customer Provision a tenant and limitsCustomer Administrators Search, update or retire accountsRecent platform administration activity Review user changes and audit evidenceEvidence before inference.Authorized humans decide.LogoutAdministration unavailableThe request could not be completed.Privacy and compliance noticeMDARIX uses essential session storage and tenant-scoped audit records to operate this workspace. Review your organization's GDPR/HIPAA obligations before entering regulated data.DismissAcknowledge·········\u001b[39m\n\u001b[31m\"\u001b[39m\n\nCall log:\n\u001b[2m  - Expect \"toContainText\" locator('body') with timeout 5000ms\u001b[22m\n\u001b[2m  - waiting for locator('body')\u001b[22m\n\u001b[2m    5 × locator resolved to <body>…</body>\u001b[22m\n\u001b[2m      - unexpected value \"\u001b[22m\n\u001b[2m    MDARIXProduct Lifecycle Intelligence · environmentWorkspaceHomeProductsSignals & ComplaintsStory ViewPersona DashboardAsk MDARIXInvestigationInvestigationsEvidenceDecision & TrustDecision CenterAI Assurance Inspect AI trust controlsAudit Trail Review recorded activityEvidence before inference.Authorized humans decide.LogoutPrivacy and compliance noticeMDARIX uses essential session storage and tenant-scoped audit records to operate this workspace. Review your organization's GDPR/HIPAA obligations before entering regulated data.DismissAcknowledge\u001b[22m\n\u001b[2m    \u001b[22m\n\u001b[2m  \u001b[22m\n\u001b[2m\u001b[22m\n\u001b[2m\"\u001b[22m\n\u001b[2m    - locator resolved to <body>…</body>\u001b[22m\n\u001b[2m    - unexpected value \"\u001b[22m\n\u001b[2m    Northstar QualityProduct Lifecycle Intelligence · developmentAdministrator control planeAdministration Identity, access & configurationPlans & Integrations Subscriptions, connectors & mappingsProduct Configuration Products, versions, APIs & mappingsSubscriptions & Notifications Expiry, reminders & templatesMapping Studio Catalog, versions, dry run & driftCustomers / Tenants Search and review customersCreate Customer Provision a tenant and limitsCustomer Administrators Search, update or retire accountsRecent platform administration activity Review user changes and audit evidenceEvidence before inference.Authorized humans decide.LogoutAdministrator control planeLoading tenant administration…Privacy and compliance noticeMDARIX uses essential session storage and tenant-scoped audit records to operate this workspace. Review your organization's GDPR/HIPAA obligations before entering regulated data.DismissAcknowledge\u001b[22m\n\u001b[2m    \u001b[22m\n\u001b[2m  \u001b[22m\n\u001b[2m\u001b[22m\n\u001b[2m\"\u001b[22m\n\u001b[2m    8 × locator resolved to <body>…</body>\u001b[22m\n\u001b[2m      - unexpected value \"\u001b[22m\n\u001b[2m    Northstar QualityProduct Lifecycle Intelligence · developmentAdministrator control planeAdministration Identity, access & configurationPlans & Integrations Subscriptions, connectors & mappingsProduct Configuration Products, versions, APIs & mappingsSubscriptions & Notifications Expiry, reminders & templatesMapping Studio Catalog, versions, dry run & driftCustomers / Tenants Search and review customersCreate Customer Provision a tenant and limitsCustomer Administrators Search, update or retire accountsRecent platform administration activity Review user changes and audit evidenceEvidence before inference.Authorized humans decide.LogoutAdministration unavailableThe request could not be completed.Privacy and compliance noticeMDARIX uses essential session storage and tenant-scoped audit records to operate this workspace. Review your organization's GDPR/HIPAA obligations before entering regulated data.DismissAcknowledge\u001b[22m\n\u001b[2m    \u001b[22m\n\u001b[2m  \u001b[22m\n\u001b[2m\u001b[22m\n\u001b[2m\"\u001b[22m\n",
+                        "stack": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoContainText\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m failed\n\nLocator: locator('body')\nTimeout: 5000ms\nExpected pattern: \u001b[32m/create customer administrator/i\u001b[39m\nReceived string:  \u001b[31m\"\u001b[39m\n\u001b[31m    Northstar QualityProduct Lifecycle Intelligence · developmentAdministrator control planeAdministration Identity, access & configurationPlans & Integrations Subscriptions, connectors & mappingsProduct Configuration Products, versions, APIs & mappingsSubscriptions & Notifications Expiry, reminders & templatesMapping Studio Catalog, versions, dry run & driftCustomers / Tenants Search and review customersCreate Customer Provision a tenant and limitsCustomer Administrators Search, update or retire accountsRecent platform administration activity Review user changes and audit evidenceEvidence before inference.Authorized humans decide.LogoutAdministration unavailableThe request could not be completed.Privacy and compliance noticeMDARIX uses essential session storage and tenant-scoped audit records to operate this workspace. Review your organization's GDPR/HIPAA obligations before entering regulated data.DismissAcknowledge·········\u001b[39m\n\u001b[31m\"\u001b[39m\n\nCall log:\n\u001b[2m  - Expect \"toContainText\" locator('body') with timeout 5000ms\u001b[22m\n\u001b[2m  - waiting for locator('body')\u001b[22m\n\u001b[2m    5 × locator resolved to <body>…</body>\u001b[22m\n\u001b[2m      - unexpected value \"\u001b[22m\n\u001b[2m    MDARIXProduct Lifecycle Intelligence · environmentWorkspaceHomeProductsSignals & ComplaintsStory ViewPersona DashboardAsk MDARIXInvestigationInvestigationsEvidenceDecision & TrustDecision CenterAI Assurance Inspect AI trust controlsAudit Trail Review recorded activityEvidence before inference.Authorized humans decide.LogoutPrivacy and compliance noticeMDARIX uses essential session storage and tenant-scoped audit records to operate this workspace. Review your organization's GDPR/HIPAA obligations before entering regulated data.DismissAcknowledge\u001b[22m\n\u001b[2m    \u001b[22m\n\u001b[2m  \u001b[22m\n\u001b[2m\u001b[22m\n\u001b[2m\"\u001b[22m\n\u001b[2m    - locator resolved to <body>…</body>\u001b[22m\n\u001b[2m    - unexpected value \"\u001b[22m\n\u001b[2m    Northstar QualityProduct Lifecycle Intelligence · developmentAdministrator control planeAdministration Identity, access & configurationPlans & Integrations Subscriptions, connectors & mappingsProduct Configuration Products, versions, APIs & mappingsSubscriptions & Notifications Expiry, reminders & templatesMapping Studio Catalog, versions, dry run & driftCustomers / Tenants Search and review customersCreate Customer Provision a tenant and limitsCustomer Administrators Search, update or retire accountsRecent platform administration activity Review user changes and audit evidenceEvidence before inference.Authorized humans decide.LogoutAdministrator control planeLoading tenant administration…Privacy and compliance noticeMDARIX uses essential session storage and tenant-scoped audit records to operate this workspace. Review your organization's GDPR/HIPAA obligations before entering regulated data.DismissAcknowledge\u001b[22m\n\u001b[2m    \u001b[22m\n\u001b[2m  \u001b[22m\n\u001b[2m\u001b[22m\n\u001b[2m\"\u001b[22m\n\u001b[2m    8 × locator resolved to <body>…</body>\u001b[22m\n\u001b[2m      - unexpected value \"\u001b[22m\n\u001b[2m    Northstar QualityProduct Lifecycle Intelligence · developmentAdministrator control planeAdministration Identity, access & configurationPlans & Integrations Subscriptions, connectors & mappingsProduct Configuration Products, versions, APIs & mappingsSubscriptions & Notifications Expiry, reminders & templatesMapping Studio Catalog, versions, dry run & driftCustomers / Tenants Search and review customersCreate Customer Provision a tenant and limitsCustomer Administrators Search, update or retire accountsRecent platform administration activity Review user changes and audit evidenceEvidence before inference.Authorized humans decide.LogoutAdministration unavailableThe request could not be completed.Privacy and compliance noticeMDARIX uses essential session storage and tenant-scoped audit records to operate this workspace. Review your organization's GDPR/HIPAA obligations before entering regulated data.DismissAcknowledge\u001b[22m\n\u001b[2m    \u001b[22m\n\u001b[2m  \u001b[22m\n\u001b[2m\u001b[22m\n\u001b[2m\"\u001b[22m\n\n    at C:\\Users\\user\\Srinivas\\MDARIX-R1\\frontend\\e2e\\browser-evidence.spec.ts:31:42",
+                        "location": {
+                          "file": "C:\\Users\\user\\Srinivas\\MDARIX-R1\\frontend\\e2e\\browser-evidence.spec.ts",
+                          "column": 42,
+                          "line": 31
+                        },
+                        "snippet": "\u001b[0m \u001b[90m 29 |\u001b[39m       \u001b[36mawait\u001b[39m expect(page\u001b[33m.\u001b[39mlocator(\u001b[32m\"body\"\u001b[39m))\u001b[33m.\u001b[39mnot\u001b[33m.\u001b[39mtoContainText(\u001b[32m\"Loading tenant administration\"\u001b[39m)\u001b[33m;\u001b[39m\n \u001b[90m 30 |\u001b[39m       \u001b[36mawait\u001b[39m expect(page\u001b[33m.\u001b[39mlocator(\u001b[32m\"body\"\u001b[39m))\u001b[33m.\u001b[39mnot\u001b[33m.\u001b[39mtoContainText(\u001b[32m\"Administration unavailable\"\u001b[39m)\u001b[33m;\u001b[39m\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 31 |\u001b[39m       \u001b[36mawait\u001b[39m expect(page\u001b[33m.\u001b[39mlocator(\u001b[32m\"body\"\u001b[39m))\u001b[33m.\u001b[39mtoContainText(expected)\u001b[33m;\u001b[39m\n \u001b[90m    |\u001b[39m                                          \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 32 |\u001b[39m       \u001b[36mawait\u001b[39m page\u001b[33m.\u001b[39mscreenshot({ path\u001b[33m:\u001b[39m \u001b[32m`artifacts/browser-${testInfo.project.name}-admin-${name}.png`\u001b[39m\u001b[33m,\u001b[39m fullPage\u001b[33m:\u001b[39m \u001b[36mtrue\u001b[39m })\u001b[33m;\u001b[39m\n \u001b[90m 33 |\u001b[39m     }\n \u001b[90m 34 |\u001b[39m   })\u001b[33m;\u001b[39m\u001b[0m"
+                      },
+                      "errors": [
+                        {
+                          "location": {
+                            "file": "C:\\Users\\user\\Srinivas\\MDARIX-R1\\frontend\\e2e\\browser-evidence.spec.ts",
+                            "column": 42,
+                            "line": 31
+                          },
+                          "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoContainText\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m failed\n\nLocator: locator('body')\nTimeout: 5000ms\nExpected pattern: \u001b[32m/create customer administrator/i\u001b[39m\nReceived string:  \u001b[31m\"\u001b[39m\n\u001b[31m    Northstar QualityProduct Lifecycle Intelligence · developmentAdministrator control planeAdministration Identity, access & configurationPlans & Integrations Subscriptions, connectors & mappingsProduct Configuration Products, versions, APIs & mappingsSubscriptions & Notifications Expiry, reminders & templatesMapping Studio Catalog, versions, dry run & driftCustomers / Tenants Search and review customersCreate Customer Provision a tenant and limitsCustomer Administrators Search, update or retire accountsRecent platform administration activity Review user changes and audit evidenceEvidence before inference.Authorized humans decide.LogoutAdministration unavailableThe request could not be completed.Privacy and compliance noticeMDARIX uses essential session storage and tenant-scoped audit records to operate this workspace. Review your organization's GDPR/HIPAA obligations before entering regulated data.DismissAcknowledge·········\u001b[39m\n\u001b[31m\"\u001b[39m\n\nCall log:\n\u001b[2m  - Expect \"toContainText\" locator('body') with timeout 5000ms\u001b[22m\n\u001b[2m  - waiting for locator('body')\u001b[22m\n\u001b[2m    5 × locator resolved to <body>…</body>\u001b[22m\n\u001b[2m      - unexpected value \"\u001b[22m\n\u001b[2m    MDARIXProduct Lifecycle Intelligence · environmentWorkspaceHomeProductsSignals & ComplaintsStory ViewPersona DashboardAsk MDARIXInvestigationInvestigationsEvidenceDecision & TrustDecision CenterAI Assurance Inspect AI trust controlsAudit Trail Review recorded activityEvidence before inference.Authorized humans decide.LogoutPrivacy and compliance noticeMDARIX uses essential session storage and tenant-scoped audit records to operate this workspace. Review your organization's GDPR/HIPAA obligations before entering regulated data.DismissAcknowledge\u001b[22m\n\u001b[2m    \u001b[22m\n\u001b[2m  \u001b[22m\n\u001b[2m\u001b[22m\n\u001b[2m\"\u001b[22m\n\u001b[2m    - locator resolved to <body>…</body>\u001b[22m\n\u001b[2m    - unexpected value \"\u001b[22m\n\u001b[2m    Northstar QualityProduct Lifecycle Intelligence · developmentAdministrator control planeAdministration Identity, access & configurationPlans & Integrations Subscriptions, connectors & mappingsProduct Configuration Products, versions, APIs & mappingsSubscriptions & Notifications Expiry, reminders & templatesMapping Studio Catalog, versions, dry run & driftCustomers / Tenants Search and review customersCreate Customer Provision a tenant and limitsCustomer Administrators Search, update or retire accountsRecent platform administration activity Review user changes and audit evidenceEvidence before inference.Authorized humans decide.LogoutAdministrator control planeLoading tenant administration…Privacy and compliance noticeMDARIX uses essential session storage and tenant-scoped audit records to operate this workspace. Review your organization's GDPR/HIPAA obligations before entering regulated data.DismissAcknowledge\u001b[22m\n\u001b[2m    \u001b[22m\n\u001b[2m  \u001b[22m\n\u001b[2m\u001b[22m\n\u001b[2m\"\u001b[22m\n\u001b[2m    8 × locator resolved to <body>…</body>\u001b[22m\n\u001b[2m      - unexpected value \"\u001b[22m\n\u001b[2m    Northstar QualityProduct Lifecycle Intelligence · developmentAdministrator control planeAdministration Identity, access & configurationPlans & Integrations Subscriptions, connectors & mappingsProduct Configuration Products, versions, APIs & mappingsSubscriptions & Notifications Expiry, reminders & templatesMapping Studio Catalog, versions, dry run & driftCustomers / Tenants Search and review customersCreate Customer Provision a tenant and limitsCustomer Administrators Search, update or retire accountsRecent platform administration activity Review user changes and audit evidenceEvidence before inference.Authorized humans decide.LogoutAdministration unavailableThe request could not be completed.Privacy and compliance noticeMDARIX uses essential session storage and tenant-scoped audit records to operate this workspace. Review your organization's GDPR/HIPAA obligations before entering regulated data.DismissAcknowledge\u001b[22m\n\u001b[2m    \u001b[22m\n\u001b[2m  \u001b[22m\n\u001b[2m\u001b[22m\n\u001b[2m\"\u001b[22m\n\n\n  29 |       await expect(page.locator(\"body\")).not.toContainText(\"Loading tenant administration\");\n  30 |       await expect(page.locator(\"body\")).not.toContainText(\"Administration unavailable\");\n> 31 |       await expect(page.locator(\"body\")).toContainText(expected);\n     |                                          ^\n  32 |       await page.screenshot({ path: `artifacts/browser-${testInfo.project.name}-admin-${name}.png`, fullPage: true });\n  33 |     }\n  34 |   });\n    at C:\\Users\\user\\Srinivas\\MDARIX-R1\\frontend\\e2e\\browser-evidence.spec.ts:31:42"
+                        }
+                      ],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-09-24T15:58:44.540Z",
+                      "startTime": "2026-09-25T19:57:40.996Z",
                       "annotations": [],
-                      "attachments": []
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "C:\\Users\\user\\Srinivas\\MDARIX-R1\\frontend\\test-results\\browser-evidence-MDARIX-br-47935-in-workflow-and-screenshots-mobile\\test-failed-1.png"
+                        },
+                        {
+                          "name": "error-context",
+                          "contentType": "text/markdown",
+                          "path": "C:\\Users\\user\\Srinivas\\MDARIX-R1\\frontend\\test-results\\browser-evidence-MDARIX-br-47935-in-workflow-and-screenshots-mobile\\error-context.md"
+                        },
+                        {
+                          "name": "trace",
+                          "contentType": "application/zip",
+                          "path": "C:\\Users\\user\\Srinivas\\MDARIX-R1\\frontend\\test-results\\browser-evidence-MDARIX-br-47935-in-workflow-and-screenshots-mobile\\trace.zip"
+                        }
+                      ],
+                      "errorLocation": {
+                        "file": "C:\\Users\\user\\Srinivas\\MDARIX-R1\\frontend\\e2e\\browser-evidence.spec.ts",
+                        "column": 42,
+                        "line": 31
+                      }
                     }
                   ],
-                  "status": "expected"
+                  "status": "unexpected"
                 }
               ],
               "id": "a01cbefd99a4cc157da2-88824cbea598911716fc",
               "file": "browser-evidence.spec.ts",
-              "line": 32,
+              "line": 24,
               "column": 3
             },
             {
@@ -337,15 +460,15 @@
                   "projectName": "mobile",
                   "results": [
                     {
-                      "workerIndex": 1,
+                      "workerIndex": 3,
                       "parallelIndex": 1,
                       "status": "passed",
-                      "duration": 4362,
+                      "duration": 4772,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-09-24T15:58:57.989Z",
+                      "startTime": "2026-09-25T19:57:52.294Z",
                       "annotations": [],
                       "attachments": []
                     }
@@ -355,7 +478,7 @@
               ],
               "id": "a01cbefd99a4cc157da2-d4e97e80d27476fb9d53",
               "file": "browser-evidence.spec.ts",
-              "line": 48,
+              "line": 36,
               "column": 3
             },
             {
@@ -371,15 +494,15 @@
                   "projectName": "mobile",
                   "results": [
                     {
-                      "workerIndex": 1,
+                      "workerIndex": 3,
                       "parallelIndex": 1,
                       "status": "passed",
-                      "duration": 6107,
+                      "duration": 7380,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-09-24T15:59:02.436Z",
+                      "startTime": "2026-09-25T19:57:57.658Z",
                       "annotations": [],
                       "attachments": []
                     }
@@ -389,7 +512,7 @@
               ],
               "id": "a01cbefd99a4cc157da2-f96490dca291b6b6535f",
               "file": "browser-evidence.spec.ts",
-              "line": 60,
+              "line": 44,
               "column": 3
             },
             {
@@ -405,15 +528,15 @@
                   "projectName": "mobile",
                   "results": [
                     {
-                      "workerIndex": 1,
+                      "workerIndex": 3,
                       "parallelIndex": 1,
                       "status": "passed",
-                      "duration": 5126,
+                      "duration": 4550,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-09-24T15:59:08.596Z",
+                      "startTime": "2026-09-25T19:58:05.077Z",
                       "annotations": [],
                       "attachments": []
                     }
@@ -423,7 +546,41 @@
               ],
               "id": "a01cbefd99a4cc157da2-34fb40d3024130f508b8",
               "file": "browser-evidence.spec.ts",
-              "line": 71,
+              "line": 54,
+              "column": 3
+            },
+            {
+              "title": "authenticated AI workflow surfaces grounded review state",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "mobile",
+                  "projectName": "mobile",
+                  "results": [
+                    {
+                      "workerIndex": 3,
+                      "parallelIndex": 1,
+                      "status": "passed",
+                      "duration": 4606,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-09-25T19:58:09.649Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "a01cbefd99a4cc157da2-aeb45843ad52db6d0908",
+              "file": "browser-evidence.spec.ts",
+              "line": 66,
               "column": 3
             }
           ]
@@ -433,11 +590,11 @@
   ],
   "errors": [],
   "stats": {
-    "startTime": "2026-09-24T15:58:35.578Z",
-    "duration": 38389.799,
+    "startTime": "2026-09-25T19:57:36.567Z",
+    "duration": 38248.577,
     "expected": 10,
     "skipped": 0,
-    "unexpected": 0,
+    "unexpected": 2,
     "flaky": 0
   }
 }
