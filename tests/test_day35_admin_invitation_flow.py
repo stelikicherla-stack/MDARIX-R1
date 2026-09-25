@@ -6,6 +6,7 @@ ACCESS_ROUTER = (ROOT / "backend" / "app" / "access_router.py").read_text(encodi
 AUTH_ROUTER = (ROOT / "backend" / "app" / "auth_router.py").read_text(encoding="utf-8")
 EMAILER = (ROOT / "auth" / "emailer.py").read_text(encoding="utf-8")
 UI = (ROOT / "frontend" / "src" / "main.tsx").read_text(encoding="utf-8")
+NAVIGATION_POLICY = (ROOT / "frontend" / "src" / "app" / "navigationPolicy.ts").read_text(encoding="utf-8")
 
 
 def test_admin_invite_does_not_collect_or_store_admin_visible_password():
@@ -17,9 +18,9 @@ def test_admin_invite_does_not_collect_or_store_admin_visible_password():
 
 
 def test_frontend_navigation_recognizes_platform_and_customer_admin_roles():
-    assert "PLATFORM_ADMIN" in UI
-    assert "CUSTOMER_ADMIN" in UI
-    assert "MDARIX ADMINISTRATOR" in UI
+    assert "PLATFORM_ADMIN" in NAVIGATION_POLICY
+    assert "CUSTOMER_ADMIN" in NAVIGATION_POLICY
+    assert "MDARIX ADMINISTRATOR" in NAVIGATION_POLICY
 
 
 def test_activation_and_reset_have_dedicated_routes_and_email_links():
