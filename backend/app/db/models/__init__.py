@@ -3,3 +3,4 @@ from backend.app.db.models.foundation import *  # noqa: F401,F403
 from backend.app.db.models.ingestion import *  # noqa: F401,F403
 from backend.app.db.models.normalization import *  # noqa: F401,F403
 from backend.app.db.models.retrieval_intelligence import *  # noqa: F401,F403
+from backend.app.db.models.customer_lifecycle import *  # noqa: F401,F403

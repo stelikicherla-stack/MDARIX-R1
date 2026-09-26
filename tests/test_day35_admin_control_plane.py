@@ -4,6 +4,7 @@ from pathlib import Path
 ROOT = Path(__file__).parents[1]
 UI = (ROOT / "frontend" / "src" / "main.tsx").read_text(encoding="utf-8")
 ROUTER = (ROOT / "backend" / "app" / "access_router.py").read_text(encoding="utf-8")
+PLATFORM_ADMIN_UI = (ROOT / "frontend" / "src" / "features" / "admin" / "PlatformAdminScreen.tsx").read_text(encoding="utf-8")
 
 
 def test_admin_dashboard_loads_all_control_plane_domains():
@@ -64,3 +65,16 @@ def test_admin_ui_exposes_controlled_administration_and_audit_feedback():
     assert "Controlled administration" in UI
     assert "The change was recorded in audit history." in UI
     assert "Tenant-scoped administration" in UI
+
+
+def test_platform_admin_data_mapping_exposes_external_to_internal_fields():
+    endpoint = "/api/v1/admin/configuration/data-mappings"
+    assert endpoint in PLATFORM_ADMIN_UI
+    assert '@router.get("/admin/configuration/data-mappings")' in ROUTER
+    for label in (
+        "External database", "External table", "External field",
+        "MDARIX table", "MDARIX field", "Transform", "Required",
+    ):
+        assert label in PLATFORM_ADMIN_UI
+    for field in ("source_database", "source_schema", "source_table", "target_schema", "target_table"):
+        assert field in ROUTER

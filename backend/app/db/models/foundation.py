@@ -1,11 +1,13 @@
 import uuid
 
 from sqlalchemy import (
+    Boolean,
     CheckConstraint,
     DateTime,
     ForeignKey,
     ForeignKeyConstraint,
     Index,
+    Integer,
     String,
     Text,
     UniqueConstraint,
@@ -43,11 +45,39 @@ def tz(nullable: bool = True) -> Mapped[object]:
 class Tenant(Base):
     __tablename__ = "tenants"
     id = uuid_pk()
+    customer_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("customers.id"), nullable=False)
     tenant_key: Mapped[str] = mapped_column(String(80), nullable=False, unique=True)
+    tenant_identifier: Mapped[str] = mapped_column(String(100), nullable=False, unique=True)
     name: Mapped[str] = mapped_column(String(255), nullable=False)
-    status: Mapped[str] = mapped_column(String(40), nullable=False, server_default="active")
+    display_name: Mapped[str] = mapped_column(String(255), nullable=False)
+    tenant_slug: Mapped[str] = mapped_column(String(120), nullable=False, unique=True)
+    tenant_type: Mapped[str] = mapped_column(String(40), nullable=False, server_default="STANDARD")
+    deployment_model: Mapped[str] = mapped_column(String(60), nullable=False, server_default="SHARED")
+    primary_region: Mapped[str] = mapped_column(String(80), nullable=False, server_default="UNSPECIFIED")
+    residency_region: Mapped[str] = mapped_column(String(80), nullable=False, server_default="UNSPECIFIED")
+    database_region: Mapped[str | None] = mapped_column(String(80))
+    backup_region: Mapped[str | None] = mapped_column(String(80))
+    storage_region: Mapped[str | None] = mapped_column(String(80))
+    ai_processing_region: Mapped[str | None] = mapped_column(String(80))
+    disaster_recovery_region: Mapped[str | None] = mapped_column(String(80))
+    cross_border_processing_allowed: Mapped[bool] = mapped_column(Boolean, nullable=False, server_default="false")
+    application_version: Mapped[str | None] = mapped_column(String(80))
+    schema_version: Mapped[str | None] = mapped_column(String(80))
+    configuration_version: Mapped[str | None] = mapped_column(String(80))
+    provisioning_status: Mapped[str] = mapped_column(String(40), nullable=False, server_default="PROVISIONED")
+    status: Mapped[str] = mapped_column(String(40), nullable=False, server_default="ACTIVE")
+    activated_at = tz()
+    suspended_at = tz()
+    terminated_at = tz()
+    lock_version: Mapped[int] = mapped_column(Integer, nullable=False, server_default="1")
     created_at = tz(False)
     updated_at = tz(False)
+    __table_args__ = (
+        UniqueConstraint("customer_id", "id", name="uq_tenants_customer_id_id"),
+        CheckConstraint("status in ('DRAFT','PENDING_APPROVAL','PROVISIONING','PROVISIONED','PENDING_CUSTOMER_ACTIVATION','ACTIVE','EXPIRING_SOON','EXPIRED','SUSPENDED','TERMINATED','ARCHIVED')", name="tenant_lifecycle_status_allowed"),
+        CheckConstraint("provisioning_status in ('DRAFT','QUEUED','RUNNING','FAILED','PROVISIONED','ACTIVE')", name="tenant_provisioning_status_allowed"),
+        CheckConstraint("tenant_type in ('STANDARD','ENTERPRISE','PRIVATE_DEPLOYMENT')", name="tenant_type_allowed"),
+    )
 
 
 class SourceRecord(Base):

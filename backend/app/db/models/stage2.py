@@ -92,6 +92,7 @@ class SubscriptionLifecycle(Base):
 class ReminderPolicy(Base):
     __tablename__ = 'subscription_reminder_policies'
     id = _id(); tenant_id = _tenant(); name: Mapped[str] = mapped_column(String(120), nullable=False); thresholds = mapped_column(JSONB, nullable=False, server_default='[60,30,7]'); timezone: Mapped[str] = mapped_column(String(80), nullable=False, server_default='UTC'); recipient_types = mapped_column(JSONB, nullable=False, server_default='["CUSTOMER_ADMIN"]'); version: Mapped[str] = mapped_column(String(40), nullable=False, server_default='v1'); status: Mapped[str] = mapped_column(String(30), nullable=False, server_default='ACTIVE'); created_at = _ts(False); updated_at = _ts(False)
+    __table_args__ = (UniqueConstraint('tenant_id','id',name='uq_subscription_reminder_policy_tenant_id'),)
 
 class EmailTemplate(Base):
     __tablename__ = 'subscription_email_templates'

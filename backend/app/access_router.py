@@ -31,6 +31,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy import func
 from datetime import datetime, timezone
 from backend.app.db.models.stage2 import AuthSession, UserInvitation, OutboxEvent, SubscriptionLifecycle, ReminderPolicy, EmailTemplate
+from backend.app.customer_lifecycle import build_customer_tenant
 
 router=APIRouter(prefix="/api/v1",tags=["Access Control"])
 def _development_token(token: str | None) -> str | None:
@@ -47,7 +48,17 @@ class UserStatusRequest(BaseModel): status: str = Field(pattern="^(ACTIVE|SUSPEN
 class AuthorityRequest(BaseModel): role_name: str; object_type: str; decision_type: str; authority: str = "AUTHORIZED"; version: str = "v1"
 class SodRequest(BaseModel): name: str; object_type: str; decision_type: str; creator_cannot_approve: bool = True; last_material_editor_cannot_approve: bool = True; version: str = "v1"
 class ConnectorRequest(BaseModel): code: str; connector_type: str; configuration: dict = {}; version: str = "v1"
-class MappingRequest(BaseModel): code: str; source_system: str; target_entity: str; mapping_rules: dict = {}; version: str = "v1"
+class MappingRequest(BaseModel):
+    code: str
+    source_system: str
+    target_entity: str
+    mapping_rules: dict = {}
+    version: str = "v1"
+    source_database: str | None = None
+    source_schema: str | None = None
+    source_table: str | None = None
+    target_schema: str = "public"
+    target_table: str | None = None
 class UserCreateRequest(BaseModel): email: str = Field(min_length=3, max_length=254); display_name: str = Field(min_length=1, max_length=120); company: str = Field(min_length=1, max_length=160); role: str = "Viewer"; target_tenant_id: uuid.UUID | None = None
 class CustomerCreateRequest(BaseModel): company_name: str = Field(min_length=1, max_length=255); tenant_code: str = Field(min_length=1, max_length=80); plan_code: str = "ENTERPRISE_TEST"; licensed_users_limit: int = Field(default=25, ge=1); customer_admin_limit: int = Field(default=2, ge=1); connector_limit: int = Field(default=5, ge=0); status: str = "active"; notes: str | None = None
 class CustomerProvisionRequest(BaseModel):
@@ -534,7 +545,15 @@ def create_connector(payload: ConnectorRequest, request: Request, db: Session = 
 @router.post("/admin/configuration/mappings")
 def create_mapping(payload: MappingRequest, request: Request, db: Session = Depends(get_db)):
     admin = _admin_tenant(request, db); now = datetime.now(timezone.utc)
-    row = MappingConfiguration(id=uuid.uuid4(), tenant_id=admin.tenant_id, code=payload.code, source_system=payload.source_system, target_entity=payload.target_entity, mapping_rules=payload.mapping_rules, version=payload.version, status="DRAFT", created_at=now, updated_at=now)
+    rules = dict(payload.mapping_rules)
+    rules["_configuration"] = {
+        "source_database": payload.source_database,
+        "source_schema": payload.source_schema,
+        "source_table": payload.source_table,
+        "target_schema": payload.target_schema,
+        "target_table": payload.target_table or payload.target_entity,
+    }
+    row = MappingConfiguration(id=uuid.uuid4(), tenant_id=admin.tenant_id, code=payload.code, source_system=payload.source_system, target_entity=payload.target_entity, mapping_rules=rules, version=payload.version, status="DRAFT", created_at=now, updated_at=now)
     db.add(row); _audit_configuration(db, admin, "MAPPING_CONFIGURATION_CREATED", "MappingConfiguration", row.id, row.version); db.commit(); return {"mapping_id": str(row.id), "tenant_id": str(admin.tenant_id), "code": row.code, "version": row.version, "status": row.status}
 
 
@@ -550,6 +569,50 @@ def list_mappings(request: Request, db: Session = Depends(get_db)):
     admin = _admin_tenant(request, db)
     rows = db.query(MappingConfiguration).filter(MappingConfiguration.tenant_id == admin.tenant_id).order_by(MappingConfiguration.code, MappingConfiguration.version).all()
     return [{"id": str(row.id), "code": row.code, "source_system": row.source_system, "target_entity": row.target_entity, "version": row.version, "status": row.status, "mapping_rules": row.mapping_rules} for row in rows]
+
+
+@router.get("/admin/configuration/data-mappings")
+def list_data_mapping_fields(request: Request, db: Session = Depends(get_db)):
+    """Return tenant-authorized external-to-internal field mapping configuration."""
+    admin = _admin_tenant(request, db)
+    rows = db.query(MappingConfiguration).filter(
+        MappingConfiguration.tenant_id == admin.tenant_id,
+    ).order_by(MappingConfiguration.code, MappingConfiguration.version).all()
+    result: list[dict] = []
+    for row in rows:
+        rules = row.mapping_rules or {}
+        configuration = rules.get("_configuration", {}) if isinstance(rules, dict) else {}
+        configured_fields = rules.get("fields", rules) if isinstance(rules, dict) else {}
+        if isinstance(configured_fields, list):
+            field_entries = [(str(index), item) for index, item in enumerate(configured_fields)]
+        elif isinstance(configured_fields, dict):
+            field_entries = [(key, value) for key, value in configured_fields.items() if not str(key).startswith("_")]
+        else:
+            field_entries = []
+        if not field_entries:
+            field_entries = [("Not configured", {"target_field": "Not configured", "transform": "DIRECT"})]
+        for source_key, rule in field_entries:
+            normalized = rule if isinstance(rule, dict) else {"target": rule}
+            source_field = normalized.get("source_field") or normalized.get("source") or source_key
+            target_field = normalized.get("target_field") or normalized.get("target") or normalized.get("field")
+            if isinstance(target_field, str) and "." in target_field:
+                target_table, target_field = target_field.rsplit(".", 1)
+            else:
+                target_table = configuration.get("target_table") or row.target_entity
+            result.append({
+                "mapping_id": str(row.id), "mapping_code": row.code,
+                "tenant_id": str(row.tenant_id), "source_system": row.source_system,
+                "source_database": configuration.get("source_database") or row.source_system,
+                "source_schema": configuration.get("source_schema") or "customer",
+                "source_table": normalized.get("source_table") or configuration.get("source_table") or normalized.get("source_object") or "Not configured",
+                "source_field": source_field,
+                "target_schema": configuration.get("target_schema") or "public",
+                "target_table": target_table, "target_field": target_field or "Not configured",
+                "transform": normalized.get("transform") or normalized.get("type") or "DIRECT",
+                "required": bool(normalized.get("required", False)),
+                "version": row.version, "status": row.status,
+            })
+    return result
 
 
 @router.patch("/admin/configuration/connectors/{configuration_id}/status")
@@ -620,6 +683,39 @@ def tenant_dashboard(request: Request, db: Session = Depends(get_db)):
     investigations = db.query(Investigation).filter_by(tenant_id=tenant_id).count()
     connectors = db.query(ConnectorConfiguration).filter(ConnectorConfiguration.tenant_id == tenant_id).count()
     return {"tenant": {"id": str(tenant_id), "name": admin.company or admin.display_name or "Authenticated tenant", "environment": os.getenv("MDARIX_ENV", "development")}, "metrics": {"users": users, "active_users": active_users, "products": products, "investigations": investigations, "connectors": connectors, **health["metrics"]}, "health": {"status": health["status"], "alerts": health["alerts"], "recent_audit": health["recent_audit"]}, "scope": {"tenant_scoped": True, "server_derived": True}}
+
+
+@router.get("/admin/ai-summary")
+def admin_ai_summary(request: Request, db: Session = Depends(get_db)):
+    """Return a safe, tenant-scoped AI control-plane summary without prompt or secret data."""
+    admin = _admin_tenant(request, db)
+    recent = db.query(AuditEvent).filter(AuditEvent.tenant_id == admin.tenant_id).order_by(AuditEvent.created_at.desc()).limit(200).all()
+    executions = sum(1 for row in recent if "AI" in row.action.upper() or "GENAI" in row.action.upper())
+    failures = sum(1 for row in recent if ("AI" in row.action.upper() or "GENAI" in row.action.upper()) and any(token in row.action.upper() for token in ("FAIL", "ERROR", "UNAVAILABLE")))
+    from genai.provider import GenAIProvider
+    health = GenAIProvider().health()
+    return {"tenant_id": str(admin.tenant_id), "provider": health.get("provider"), "model": health.get("model"), "configured": health.get("configured", False), "human_review_required": True, "hidden_chain_of_thought_persisted": False, "metrics": {"recent_executions": executions, "recent_failures": failures, "evaluations": "SERVER_DERIVED"}, "scope": {"tenant_scoped": True, "secrets_redacted": True}}
+
+
+@router.get("/admin/security-summary")
+def admin_security_summary(request: Request, db: Session = Depends(get_db)):
+    """Return tenant-isolation and security evidence counts for the admin dashboard."""
+    admin = _admin_tenant(request, db)
+    recent = db.query(AuditEvent).filter(AuditEvent.tenant_id == admin.tenant_id).order_by(AuditEvent.created_at.desc()).limit(200).all()
+    security = [row for row in recent if any(token in row.action.upper() for token in ("DENIED", "UNAUTHORIZED", "SECURITY", "AUTHENTICATION_FAILED", "ISOLATION"))]
+    return {"tenant_id": str(admin.tenant_id), "status": "REVIEW" if security else "HEALTHY", "metrics": {"security_events": len(security), "isolation_checks": sum(1 for row in recent if "ISOLATION" in row.action.upper()), "policy_denials": sum(1 for row in security if "DENIED" in row.action.upper())}, "controls": ["API authorization", "Tenant-scoped queries", "Field-policy filtering", "Audit immutability"], "scope": {"tenant_scoped": True}}
+
+
+@router.get("/admin/operations-summary")
+def admin_operations_summary(request: Request, db: Session = Depends(get_db)):
+    """Return operational queue and connector health counts from durable records."""
+    admin = _admin_tenant(request, db)
+    tenant_id = admin.tenant_id
+    pending = db.query(OutboxEvent).filter(OutboxEvent.tenant_id == tenant_id, OutboxEvent.published_at.is_(None), OutboxEvent.dead_lettered_at.is_(None)).count()
+    dead_lettered = db.query(OutboxEvent).filter(OutboxEvent.tenant_id == tenant_id, OutboxEvent.dead_lettered_at.is_not(None)).count()
+    retried = db.query(OutboxEvent).filter(OutboxEvent.tenant_id == tenant_id, OutboxEvent.attempts > 0).count()
+    connectors = db.query(ConnectorConfiguration).filter(ConnectorConfiguration.tenant_id == tenant_id).count()
+    return {"tenant_id": str(tenant_id), "status": "ATTENTION_REQUIRED" if dead_lettered else "HEALTHY", "metrics": {"outbox_pending": pending, "outbox_retried": retried, "outbox_dead_lettered": dead_lettered, "configured_connectors": connectors}, "worker": {"heartbeat": "NOT_REPORTED", "deployment": "ENVIRONMENT_DEPENDENT"}, "scope": {"tenant_scoped": True}}
 
 
 @router.get("/admin/identity/users")
@@ -695,8 +791,8 @@ def create_customer(payload: CustomerCreateRequest, request: Request, db: Sessio
     if db.query(Tenant).filter(Tenant.tenant_key == key).first():
         raise HTTPException(409, detail={"code": "TENANT_EXISTS", "message": "Tenant code already exists"})
     now = datetime.now(timezone.utc)
-    tenant = Tenant(id=uuid.uuid4(), tenant_key=key, name=payload.company_name.strip(), status=payload.status, created_at=now, updated_at=now)
-    db.add(tenant); db.flush()
+    customer, tenant = build_customer_tenant(tenant_key=key, name=payload.company_name, status=payload.status, now=now)
+    db.add(customer); db.add(tenant); db.flush()
     plan = db.query(PlanDefinition).filter(PlanDefinition.code == payload.plan_code, PlanDefinition.status == "ACTIVE").first()
     if plan is None:
         plan = PlanDefinition(id=uuid.uuid4(), code=payload.plan_code, name=payload.plan_code.replace("_", " ").title(), description="Day 35 platform-created test plan", version="v1", status="ACTIVE", effective_from=now, effective_to=None, created_at=now, updated_at=now)
@@ -727,8 +823,8 @@ def provision_tenant(payload: CustomerProvisionRequest, request: Request, db: Se
     key = payload.tenant_code.strip().upper(); email = payload.customer_admin_email.strip().lower(); now = datetime.now(timezone.utc)
     tenant = db.query(Tenant).filter(Tenant.tenant_key == key).first()
     if tenant is None:
-        tenant = Tenant(id=uuid.uuid4(), tenant_key=key, name=payload.company_name.strip(), status="PROVISIONING", created_at=now, updated_at=now)
-        db.add(tenant); db.flush()
+        customer, tenant = build_customer_tenant(tenant_key=key, name=payload.company_name, status="PROVISIONING", now=now, region=payload.region, residency_region=payload.residency)
+        db.add(customer); db.add(tenant); db.flush()
         plan = db.query(PlanDefinition).filter(PlanDefinition.code == payload.plan_code, PlanDefinition.status == "ACTIVE").first()
         if plan is None:
             plan = PlanDefinition(id=uuid.uuid4(), code=payload.plan_code, name=payload.plan_code.replace("_", " ").title(), description="Platform provisioning plan", version="v1", status="ACTIVE", effective_from=now, created_at=now, updated_at=now)
@@ -748,7 +844,10 @@ def provision_tenant(payload: CustomerProvisionRequest, request: Request, db: Se
     else:
         delivery = "ALREADY_CREATED"; invite_state = "EXISTING"
     prerequisites = {"tenant": True, "plan": True, "membership": True, "invitation": invite_state in {"SENT", "CREATED", "EXISTING"}, "isolation": True, "configuration": True}
-    tenant.status = "ACTIVE" if all(prerequisites.values()) else "PROVISIONING"; tenant.updated_at = now
+    tenant.status = "ACTIVE" if all(prerequisites.values()) else "PROVISIONING"
+    tenant.provisioning_status = "ACTIVE" if tenant.status == "ACTIVE" else "RUNNING"
+    tenant.activated_at = now if tenant.status == "ACTIVE" else None
+    tenant.updated_at = now
     db.add(AuditEvent(id=uuid.uuid4(), tenant_id=admin.tenant_id, actor_ref=str(admin.id), action="TENANT_PROVISIONED", entity_type="Tenant", entity_id=tenant.id, details={"tenant_key": key, "region": payload.region, "residency": payload.residency, "customer_admin_id": str(user.id), "invitation": invite_state, "email_delivery": delivery, "prerequisites": prerequisites}, created_at=now))
     db.commit()
     return {"tenant_id": str(tenant.id), "tenant_key": key, "status": tenant.status, "customer_admin_id": str(user.id), "customer_admin_email": email, "invitation": invite_state, "email_delivery": delivery, "prerequisites": prerequisites, "idempotent_retry_safe": True}
@@ -858,6 +957,46 @@ def get_platform_subscription(tenant_id: uuid.UUID, request: Request, db: Sessio
             "effective_to": assignment.effective_to.isoformat() if assignment.effective_to else None,
             "limits": limits, "entitlements": [{"feature_code": f.feature_code, "enabled": f.enabled,
             "limits": f.limits or {}, "provenance": "PLAN"} for f in features]}
+
+
+@router.get("/platform-admin/customers/{tenant_id}/integrations/{connector_id}")
+def get_platform_connector_detail(tenant_id: uuid.UUID, connector_id: uuid.UUID, request: Request, db: Session = Depends(get_db)):
+    _require_platform_admin(request, db)
+    row = db.query(ConnectorConfiguration).filter(ConnectorConfiguration.id == connector_id, ConnectorConfiguration.tenant_id == tenant_id).first()
+    if row is None: raise HTTPException(404, detail={"code": "CONNECTOR_NOT_FOUND", "message": "Integration is not available for this tenant"})
+    configuration = row.configuration or {}
+    return {"id": str(row.id), "tenant_id": str(row.tenant_id), "code": row.code, "connector_type": row.connector_type, "version": row.version, "status": row.status, "endpoint": configuration.get("endpoint"), "health_path": configuration.get("health_path"), "schema_path": configuration.get("schema_path"), "credential_configured": bool(configuration.get("credential_ref")), "last_known_health": "NOT_RUN", "scope": {"tenant_scoped": True, "secrets_redacted": True}}
+
+
+@router.get("/platform-admin/subscriptions/{subscription_id}")
+def get_platform_subscription_detail(subscription_id: uuid.UUID, request: Request, db: Session = Depends(get_db)):
+    _require_platform_admin(request, db)
+    assignment = db.query(TenantPlanAssignment).filter(TenantPlanAssignment.id == subscription_id).first()
+    if assignment is None: raise HTTPException(404, detail={"code": "SUBSCRIPTION_NOT_FOUND", "message": "Subscription is not available"})
+    plan = db.query(PlanDefinition).filter(PlanDefinition.id == assignment.plan_id).first()
+    return {"subscription_id": str(assignment.id), "tenant_id": str(assignment.tenant_id), "plan_id": str(assignment.plan_id), "plan_code": plan.code if plan else None, "status": assignment.status, "effective_from": assignment.effective_from.isoformat() if assignment.effective_from else None, "effective_to": assignment.effective_to.isoformat() if assignment.effective_to else None, "scope": {"platform_authorized": True}}
+
+
+@router.get("/platform-admin/audit-events/{event_id}")
+def get_platform_audit_event_detail(event_id: uuid.UUID, request: Request, db: Session = Depends(get_db)):
+    _require_platform_admin(request, db)
+    row = db.query(AuditEvent).filter(AuditEvent.id == event_id).first()
+    if row is None: raise HTTPException(404, detail={"code": "AUDIT_EVENT_NOT_FOUND", "message": "Audit event is not available"})
+    return {"id": str(row.id), "tenant_id": str(row.tenant_id), "actor_ref": row.actor_ref, "action": row.action, "entity_type": row.entity_type, "entity_id": str(row.entity_id) if row.entity_id else None, "details": row.details or {}, "created_at": row.created_at, "immutable": True, "scope": {"platform_authorized": True}}
+
+
+@router.get("/platform-admin/ai/models")
+def get_platform_ai_models(request: Request, db: Session = Depends(get_db)):
+    _require_platform_admin(request, db)
+    from genai.provider import GenAIProvider
+    health = GenAIProvider().health()
+    return {"models": [{"provider": health.get("provider"), "model": health.get("model"), "configured": health.get("configured", False), "configuration_version": health.get("configuration_version", "genai-config-1"), "human_review_required": True, "hidden_chain_of_thought_persisted": False}], "scope": {"secrets_redacted": True}}
+
+
+@router.get("/platform-admin/security/controls")
+def get_platform_security_controls(request: Request, db: Session = Depends(get_db)):
+    _require_platform_admin(request, db)
+    return {"controls": [{"code": "TENANT_AUTHORIZATION", "status": "ENFORCED"}, {"code": "FIELD_POLICY_FILTERING", "status": "ENFORCED"}, {"code": "AUDIT_APPEND_ONLY", "status": "ENFORCED"}, {"code": "SESSION_REVOCATION", "status": "ENFORCED"}, {"code": "MFA_CRITICAL_OPERATIONS", "status": "ENVIRONMENT_DEPENDENT"}], "production_validation": "PENDING", "scope": {"platform_authorized": True}}
 
 
 @router.get("/platform-admin/customers/{tenant_id}/usage")
