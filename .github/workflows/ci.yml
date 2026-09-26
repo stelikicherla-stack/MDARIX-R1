@@ -18,6 +18,10 @@ jobs:
       POSTGRES_HOST: localhost
       POSTGRES_PORT: '5432'
       POSTGRES_DB: mdarix_r1
+      # The migration chain includes the explicit database-hardening gate.
+      # CI uses the freshly provisioned PostgreSQL service, so it is safe to
+      # apply the runtime-role and RLS migration during the isolated run.
+      MDARIX_DB_HARDENING_APPLY: '1'
     services:
       postgres:
         image: pgvector/pgvector:pg16
