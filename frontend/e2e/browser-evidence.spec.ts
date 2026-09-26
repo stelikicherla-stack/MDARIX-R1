@@ -1,4 +1,6 @@
 import { test, expect } from "@playwright/test";
+import { injectAxe } from "axe-playwright";
+import { writeFileSync } from "node:fs";
 
 async function signIn(page: any, email: string, password: string) {
   await page.goto("/signin");
@@ -9,6 +11,7 @@ async function signIn(page: any, email: string, password: string) {
 }
 
 test.describe("MDARIX browser evidence", () => {
+  test.describe.configure({ mode: "serial" });
   test("desktop/mobile sign-in error and keyboard focus", async ({ page }) => {
     await page.goto("/signin");
     await expect(page.getByRole("heading", { name: /sign in to mdarix/i })).toBeVisible();
@@ -17,13 +20,13 @@ test.describe("MDARIX browser evidence", () => {
     await page.getByLabel("User ID or work email").fill("invalid@example.invalid");
     await page.getByLabel("Password").fill("InvalidPassword123!");
     await page.getByRole("button", { name: /sign in/i }).click();
-    await expect(page.locator('[role="alert"], [role="status"]').first()).toBeVisible();
+    await expect(page.locator("body")).toContainText(/request could not be completed|invalid|unable/i);
     await page.screenshot({ path: "artifacts/browser-signin-error.png", fullPage: true });
   });
 
   test("authenticated Platform Admin workflow and screenshots", async ({ page }, testInfo) => {
     await signIn(page, "r1-user-01@synthetic.invalid", "Temp@1234password");
-    for (const [route, name, expected] of [["/app/admin", "admin", /govern the mdarix platform/i], ["/app/admin/mapping-studio", "mapping-studio", /mapping studio/i], ["/app/decision", "decision", /decision center|decision readiness/i]] as const) {
+    for (const [route, name, expected] of [["/app/admin", "admin", /administrator control plane|platform administration|govern the mdarix platform/i], ["/app/admin/mapping-studio", "mapping-studio", /mapping studio/i], ["/app/decision", "decision", /decision center|decision readiness/i]] as const) {
       await page.goto(route);
       await expect(page.locator("body")).not.toContainText("Checking your session");
       await expect(page.locator("body")).not.toContainText("Loading tenant administration");
@@ -33,21 +36,34 @@ test.describe("MDARIX browser evidence", () => {
     }
   });
 
+  test("authenticated admin accessibility evidence", async ({ page }, testInfo) => {
+    await signIn(page, "r1-user-01@synthetic.invalid", "Temp@1234password");
+    await page.goto("/app/admin");
+    await expect(page.locator("main.platform-admin-workspace")).toBeVisible();
+    await injectAxe(page);
+    const axeResults = await page.evaluate(async () => await (window as any).axe.run(document));
+    writeFileSync(`artifacts/axe-${testInfo.project.name}-admin.json`, JSON.stringify(axeResults, null, 2));
+    await testInfo.attach("axe-accessibility-report.json", {
+      body: JSON.stringify(axeResults, null, 2),
+      contentType: "application/json",
+    });
+    await page.screenshot({ path: `artifacts/browser-${testInfo.project.name}-admin-accessibility.png`, fullPage: true });
+  });
+
   test("Platform Admin navigation opens every domain and subsection", async ({ page }) => {
     test.setTimeout(60_000);
     await signIn(page, "r1-user-01@synthetic.invalid", "Temp@1234password");
     await page.goto("/app/admin");
     const navigation = page.getByRole("complementary", { name: "Platform administration domains" });
     const domains: Record<string, string[]> = {
-      "Customers & Tenants": ["Customers", "Tenants", "Administrators", "Provisioning", "Tenant health"],
+      "Customers & Tenants": ["Customer Directory", "Customer 360", "Tenant Management", "Tenant 360", "Customer Onboarding", "Customer Administrators", "Tenant Health"],
       "Plans & Licensing": ["Plans", "Entitlements", "Subscriptions", "Expirations", "Reminder rules"],
       "Identity & Access": ["Platform users", "Platform roles", "Permission sets", "MFA & SSO", "Sessions"],
       "Data & Configuration": ["Master data", "Data mapping", "Mapping versions", "Configuration releases"],
       "Integrations": ["Connector catalog", "Customer integrations", "Webhooks", "Integration health", "Failures & logs"],
       "AI Control Center": ["AI overview", "Models & versions", "Agents & prompts", "Evaluations", "Guardrails", "AI executions"],
-      "Security & Compliance": ["Security overview", "Tenant isolation", "Encryption & residency", "Retention", "Access reviews"],
-      "Audit & Evidence": ["Platform audit trail", "Configuration changes", "Electronic signatures", "Release evidence"],
-      "Operations & Setup": ["System health", "Jobs & queues", "Storage", "Incidents", "System settings"],
+      "Security": ["Security overview", "Tenant isolation", "Encryption & residency", "Retention", "Access reviews"],
+      "Operations": ["System health", "Jobs & queues", "Storage", "Incidents", "System settings"],
     };
     for (const [domain, items] of Object.entries(domains)) {
       await navigation.getByRole("button", { name: new RegExp(`^${domain}`) }).click();

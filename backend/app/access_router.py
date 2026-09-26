@@ -4,11 +4,12 @@ import os
 import json
 import ipaddress
 import socket
+import re
 from urllib.parse import urlparse, urlunparse
 from urllib.request import Request as UrlRequest, urlopen
 from urllib.error import URLError, HTTPError
-from datetime import datetime, timezone
-from fastapi import APIRouter, HTTPException, Request, Depends
+from datetime import datetime, timezone, timedelta
+from fastapi import APIRouter, HTTPException, Request, Depends, Response
 from pydantic import BaseModel, Field
 from access_control.policy import PermissionSet, Role, User, effective_permissions
 from auth.service import auth_service
@@ -24,6 +25,7 @@ from backend.app.db.models.foundation import (
     ApprovalAuthority, SegregationOfDutiesPolicy, ConnectorConfiguration, MappingConfiguration, AuditEvent, Decision,
     MasterMapping, TenantMappingVersion, TenantMappingOverride, Investigation,
 )
+from backend.app.db.models.customer_lifecycle import Customer, TenantEnvironment, CustomerContact, CustomerDomain, DomainVerification, IdentityProviderConfiguration, SupportAccessGrant, TenantHealthRun, ProvisioningJob, ProvisioningJobStep, CustomerOnboardingDraft, TenantAccessTransition
 from access_control.personas import R1_PERSONAS as PERSONAS, get_persona
 from access_control.configuration_safety import safe_configuration
 from integration.gateway import ConnectionConfig, Connector, MappingDefinition, preview
@@ -31,7 +33,8 @@ from sqlalchemy.orm import Session
 from sqlalchemy import func
 from datetime import datetime, timezone
 from backend.app.db.models.stage2 import AuthSession, UserInvitation, OutboxEvent, SubscriptionLifecycle, ReminderPolicy, EmailTemplate
-from backend.app.customer_lifecycle import build_customer_tenant
+from backend.app.customer_lifecycle import build_customer_tenant, allowed_lifecycle_transition
+from backend.app.customer_admin_continuity import replacement_action, validate_support_window
 
 router=APIRouter(prefix="/api/v1",tags=["Access Control"])
 def _development_token(token: str | None) -> str | None:
@@ -72,6 +75,38 @@ class CustomerProvisionRequest(BaseModel):
     customer_admin_display_name: str = Field(min_length=1, max_length=120)
     customer_admin_company: str = Field(default="Customer", min_length=1, max_length=160)
     invitation_required: bool = True
+    environment_type: str = Field(default="PRODUCTION", pattern="^(PRODUCTION|SANDBOX|VALIDATION|UAT|DEMO)$")
+class OnboardingDraftRequest(BaseModel):
+    idempotency_key: str = Field(min_length=8, max_length=160)
+    current_step: int = Field(default=1, ge=1, le=9)
+    draft_data: dict = {}
+class DomainVerificationRequest(BaseModel):
+    domain: str = Field(min_length=3, max_length=255)
+    verification_method: str = Field(default="DNS", pattern="^(DNS|FILE)$")
+    verification_token: str | None = Field(default=None, min_length=8, max_length=255)
+class IdentityProviderVerificationRequest(BaseModel):
+    provider_type: str = Field(min_length=2, max_length=40)
+    issuer: str = Field(min_length=8, max_length=500)
+    client_reference: str = Field(min_length=2, max_length=255)
+class ScheduledLifecycleRequest(BaseModel):
+    target_status: str = Field(min_length=3, max_length=40)
+    effective_at: str
+    reason: str = Field(min_length=1, max_length=500)
+    notify_customer_admin: bool = True
+class SupportAccessRequest(BaseModel):
+    tenant_id: uuid.UUID
+    platform_user_id: uuid.UUID
+    scope: dict = Field(default_factory=dict)
+    reason: str = Field(min_length=10, max_length=1000)
+    starts_at: str
+    expires_at: str
+class SupportAccessDecisionRequest(BaseModel):
+    reason: str = Field(min_length=10, max_length=1000)
+class CustomerAdminReplacementRequest(BaseModel):
+    replacement_email: str = Field(min_length=3, max_length=254)
+    replacement_display_name: str = Field(min_length=1, max_length=120)
+    company: str = Field(min_length=1, max_length=160)
+    reason: str = Field(min_length=10, max_length=1000)
 class SubscriptionRequest(BaseModel):
     plan_id: uuid.UUID; starts_at: str; expires_at: str; grace_ends_at: str | None = None; reason: str = Field(min_length=1)
 class ReminderPolicyRequest(BaseModel):
@@ -485,6 +520,7 @@ def reactivate_user(user_id: uuid.UUID, request: Request, db: Session = Depends(
         raise HTTPException(404, detail={"code": "USER_NOT_FOUND", "message": "User is not available for this tenant"})
     if (user.status or "").upper() != "OFFBOARDED":
         raise HTTPException(409, detail={"code": "USER_NOT_OFFBOARDED", "message": "Only an offboarded user can be reactivated"})
+    _enforce_invite_limits(db, user.tenant_id, user.role)
     now = datetime.now(timezone.utc)
     user.status = "INVITED"; user.email_verified = False; user.password_hash = _hash(secrets.token_urlsafe(48)); user.updated_at = now
     membership = db.query(TenantMembership).filter(TenantMembership.tenant_id == user.tenant_id, TenantMembership.user_id == user.id).first()
@@ -820,6 +856,7 @@ def provision_tenant(payload: CustomerProvisionRequest, request: Request, db: Se
     the existing provisioning state instead of creating another tenant/user/invite.
     """
     admin = _require_platform_admin(request, db)
+    _validate_onboarding_payload(payload, db)
     key = payload.tenant_code.strip().upper(); email = payload.customer_admin_email.strip().lower(); now = datetime.now(timezone.utc)
     tenant = db.query(Tenant).filter(Tenant.tenant_key == key).first()
     if tenant is None:
@@ -844,13 +881,120 @@ def provision_tenant(payload: CustomerProvisionRequest, request: Request, db: Se
     else:
         delivery = "ALREADY_CREATED"; invite_state = "EXISTING"
     prerequisites = {"tenant": True, "plan": True, "membership": True, "invitation": invite_state in {"SENT", "CREATED", "EXISTING"}, "isolation": True, "configuration": True}
+    idempotency_key = f"TENANT_PROVISION:{key}:{email}"
+    job = db.query(ProvisioningJob).filter(ProvisioningJob.idempotency_key == idempotency_key).first()
+    if job is None:
+        job = ProvisioningJob(id=uuid.uuid4(), customer_id=tenant.customer_id, tenant_id=tenant.id, job_identifier=f"PROV-{uuid.uuid4().hex[:12].upper()}", idempotency_key=idempotency_key, status="COMPLETED" if all(prerequisites.values()) else "FAILED", failure_details=None if all(prerequisites.values()) else {"prerequisites": prerequisites}, retry_count=0, started_at=now, completed_at=now, created_at=now, updated_at=now)
+        db.add(job); db.flush()
+        step_names = [("CUSTOMER", "Customer identity"), ("TENANT", "Tenant boundary"), ("PLAN", "Plan and entitlements"), ("MEMBERSHIP", "Administrator membership"), ("INVITATION", "Customer Administrator invitation"), ("ISOLATION", "Isolation checks"), ("CONFIGURATION", "Configuration baseline")]
+        for sequence, (code, label) in enumerate(step_names, 1):
+            passed = prerequisites.get(code.lower(), False)
+            db.add(ProvisioningJobStep(id=uuid.uuid4(), provisioning_job_id=job.id, tenant_id=tenant.id, step_code=code, sequence=sequence, status="COMPLETED" if passed else "FAILED", attempt_count=1, failure_details=None if passed else {"message": f"{label} prerequisite failed"}, started_at=now, completed_at=now, created_at=now, updated_at=now))
+    if not db.query(TenantEnvironment).filter(TenantEnvironment.tenant_id == tenant.id, TenantEnvironment.environment_type == payload.environment_type).first():
+        db.add(TenantEnvironment(id=uuid.uuid4(), tenant_id=tenant.id, environment_identifier=f"{payload.environment_type.lower()}-{tenant.tenant_key.lower()}", environment_type=payload.environment_type, region=payload.region, residency_region=payload.residency, status="ACTIVE", provisioned_at=now, activated_at=now, created_at=now, updated_at=now))
     tenant.status = "ACTIVE" if all(prerequisites.values()) else "PROVISIONING"
     tenant.provisioning_status = "ACTIVE" if tenant.status == "ACTIVE" else "RUNNING"
     tenant.activated_at = now if tenant.status == "ACTIVE" else None
     tenant.updated_at = now
     db.add(AuditEvent(id=uuid.uuid4(), tenant_id=admin.tenant_id, actor_ref=str(admin.id), action="TENANT_PROVISIONED", entity_type="Tenant", entity_id=tenant.id, details={"tenant_key": key, "region": payload.region, "residency": payload.residency, "customer_admin_id": str(user.id), "invitation": invite_state, "email_delivery": delivery, "prerequisites": prerequisites}, created_at=now))
     db.commit()
-    return {"tenant_id": str(tenant.id), "tenant_key": key, "status": tenant.status, "customer_admin_id": str(user.id), "customer_admin_email": email, "invitation": invite_state, "email_delivery": delivery, "prerequisites": prerequisites, "idempotent_retry_safe": True}
+    return {"tenant_id": str(tenant.id), "tenant_key": key, "status": tenant.status, "customer_admin_id": str(user.id), "customer_admin_email": email, "invitation": invite_state, "email_delivery": delivery, "prerequisites": prerequisites, "job_id": str(job.id), "job_identifier": job.job_identifier, "idempotent_retry_safe": True}
+
+
+def _validate_onboarding_payload(payload: CustomerProvisionRequest, db: Session) -> dict:
+    """Validate the complete wizard payload without mutating the database."""
+    key = payload.tenant_code.strip().upper()
+    email = payload.customer_admin_email.strip().lower()
+    if not re.fullmatch(r"[^@\s]+@[^@\s]+\.[^@\s]+", email):
+        raise HTTPException(422, detail={"code": "INVALID_ADMIN_EMAIL", "message": "Initial Customer Administrator email is invalid"})
+    region, residency = payload.region.strip().lower(), payload.residency.strip().lower()
+    if region != residency and residency not in {"default", "unspecified"}:
+        raise HTTPException(422, detail={"code": "RESIDENCY_POLICY_CONFLICT", "message": "Region and residency require an approved cross-border policy"})
+    existing = db.query(Tenant).filter(Tenant.tenant_key == key).first()
+    if existing is not None and not db.query(AuthUser).filter(AuthUser.tenant_id == existing.id, AuthUser.username == email).first():
+        raise HTTPException(409, detail={"code": "ONBOARDING_KEY_CONFLICT", "message": "Tenant code belongs to a different onboarding request"})
+    plan = db.query(PlanDefinition).filter(PlanDefinition.code == payload.plan_code, PlanDefinition.status == "ACTIVE").first()
+    if plan is None:
+        raise HTTPException(422, detail={"code": "PLAN_NOT_PUBLISHED", "message": "Selected plan must be published and active"})
+    entitlement = db.query(FeatureEntitlement).filter(FeatureEntitlement.plan_id == plan.id, FeatureEntitlement.feature_code == "ADMIN_CONTROL_PLANE", FeatureEntitlement.enabled.is_(True), FeatureEntitlement.status == "ACTIVE").first()
+    if entitlement is None:
+        raise HTTPException(422, detail={"code": "ENTITLEMENT_MISSING", "message": "Selected plan does not grant administration entitlement"})
+    limit = (entitlement.limits or {}).get("licensed_users_limit")
+    if isinstance(limit, int) and payload.licensed_users_limit > limit:
+        raise HTTPException(422, detail={"code": "SEAT_LIMIT_EXCEEDED", "message": "Requested seat cap exceeds the published plan limit"})
+    environment_limit = (entitlement.limits or {}).get("environment_limit")
+    existing_environment_count = db.query(TenantEnvironment).filter(TenantEnvironment.tenant_id == (existing.id if existing else uuid.UUID(int=0))).count()
+    if isinstance(environment_limit, int) and existing_environment_count >= environment_limit:
+        raise HTTPException(422, detail={"code": "ENVIRONMENT_LIMIT_EXCEEDED", "message": "Tenant has reached the published environment limit"})
+    return {"customer": True, "tenant": True, "region_residency": True, "plan": True, "entitlements": True, "seats": True, "identity": True}
+
+
+@router.post("/platform-admin/onboarding/validate")
+def validate_onboarding(payload: CustomerProvisionRequest, request: Request, db: Session = Depends(get_db)):
+    """Preflight a complete wizard payload without creating records."""
+    _require_platform_admin(request, db)
+    return {"valid": True, "checks": _validate_onboarding_payload(payload, db), "mutation": "NONE", "resume_safe": True}
+
+
+@router.post("/platform-admin/tenants/{tenant_id}/domain-verifications")
+def verify_customer_domain(tenant_id: uuid.UUID, payload: DomainVerificationRequest, request: Request, db: Session = Depends(get_db)):
+    """Record an authenticated domain challenge/verification result.
+
+    The actual DNS/file proof is supplied by the deployment or identity
+    provider; MDARIX stores only the hashed challenge and verified state.
+    """
+    admin = _require_platform_admin(request, db)
+    tenant = db.query(Tenant).filter(Tenant.id == tenant_id).first()
+    if tenant is None:
+        raise HTTPException(404, detail={"code": "TENANT_NOT_FOUND", "message": "Tenant is not available"})
+    domain = payload.domain.strip().lower()
+    row = db.query(CustomerDomain).filter(CustomerDomain.customer_id == tenant.customer_id, CustomerDomain.domain == domain).first()
+    now = datetime.now(timezone.utc)
+    if row is None:
+        row = CustomerDomain(id=uuid.uuid4(), customer_id=tenant.customer_id, domain=domain, status="PENDING", created_at=now, updated_at=now)
+        db.add(row); db.flush()
+    challenge = db.query(DomainVerification).filter(DomainVerification.customer_domain_id == row.id).order_by(DomainVerification.created_at.desc()).first()
+    if challenge is None:
+        challenge = DomainVerification(id=uuid.uuid4(), customer_domain_id=row.id, verification_method=payload.verification_method, verification_token_hash=hash_token(payload.verification_token or secrets.token_urlsafe(24)), status="PENDING", created_at=now)
+        db.add(challenge)
+    if payload.verification_token:
+        challenge.status = "VERIFIED"; challenge.verified_at = now; row.status = "VERIFIED"; row.updated_at = now
+    db.add(AuditEvent(id=uuid.uuid4(), tenant_id=admin.tenant_id, actor_ref=str(admin.id), action="DOMAIN_VERIFICATION_UPDATED", entity_type="CustomerDomain", entity_id=row.id, details={"domain": domain, "status": row.status, "method": challenge.verification_method}, created_at=now))
+    db.commit()
+    return {"tenant_id": str(tenant.id), "domain": domain, "status": row.status, "verification_id": str(challenge.id), "verified_at": challenge.verified_at}
+
+
+@router.post("/platform-admin/tenants/{tenant_id}/identity-provider/verify")
+def verify_identity_provider(tenant_id: uuid.UUID, payload: IdentityProviderVerificationRequest, request: Request, db: Session = Depends(get_db)):
+    """Persist a provider verification contract after external discovery succeeds."""
+    admin = _require_platform_admin(request, db)
+    tenant = db.query(Tenant).filter(Tenant.id == tenant_id).first()
+    if tenant is None:
+        raise HTTPException(404, detail={"code": "TENANT_NOT_FOUND", "message": "Tenant is not available"})
+    parsed = urlparse(payload.issuer)
+    if parsed.scheme not in {"https"} or not parsed.netloc:
+        raise HTTPException(422, detail={"code": "IDENTITY_ISSUER_MUST_BE_HTTPS", "message": "Identity provider issuer must use HTTPS"})
+    now = datetime.now(timezone.utc)
+    row = db.query(IdentityProviderConfiguration).filter(IdentityProviderConfiguration.tenant_id == tenant.id, IdentityProviderConfiguration.provider_type == payload.provider_type).first()
+    if row is None:
+        row = IdentityProviderConfiguration(id=uuid.uuid4(), tenant_id=tenant.id, provider_type=payload.provider_type, issuer=payload.issuer, client_reference=payload.client_reference, login_mode="SSO_MFA", configuration={}, status="VERIFIED", verified_at=now, created_at=now, updated_at=now); db.add(row)
+    else:
+        row.issuer = payload.issuer; row.client_reference = payload.client_reference; row.status = "VERIFIED"; row.verified_at = now; row.updated_at = now
+    db.add(AuditEvent(id=uuid.uuid4(), tenant_id=admin.tenant_id, actor_ref=str(admin.id), action="IDENTITY_PROVIDER_VERIFIED", entity_type="IdentityProviderConfiguration", entity_id=row.id, details={"provider_type": row.provider_type, "issuer": row.issuer}, created_at=now))
+    db.commit()
+    return {"tenant_id": str(tenant.id), "provider_type": row.provider_type, "issuer": row.issuer, "status": row.status, "verified_at": row.verified_at}
+
+
+@router.get("/platform-admin/provisioning-jobs/{job_id}")
+def get_provisioning_job(job_id: uuid.UUID, request: Request, db: Session = Depends(get_db)):
+    """Return durable provisioning status and per-step evidence for the Platform Admin wizard."""
+    _require_platform_admin(request, db)
+    job = db.query(ProvisioningJob).filter(ProvisioningJob.id == job_id).first()
+    if job is None:
+        raise HTTPException(404, detail={"code": "PROVISIONING_JOB_NOT_FOUND", "message": "Provisioning job is not available"})
+    steps = db.query(ProvisioningJobStep).filter(ProvisioningJobStep.provisioning_job_id == job.id).order_by(ProvisioningJobStep.sequence).all()
+    step_details = [{"code": step.step_code, "sequence": step.sequence, "status": step.status, "attempt_count": step.attempt_count, "failure_details": step.failure_details, "started_at": step.started_at, "completed_at": step.completed_at} for step in steps]
+    return {"id": str(job.id), "job_identifier": job.job_identifier, "customer_id": str(job.customer_id), "tenant_id": str(job.tenant_id) if job.tenant_id else None, "status": job.status, "retry_count": job.retry_count, "failure_details": job.failure_details, "started_at": job.started_at, "completed_at": job.completed_at, "steps": [step["code"] for step in step_details], "step_details": step_details}
 
 
 @router.get("/platform/customers")
@@ -872,14 +1016,176 @@ def platform_tenant_health(tenant_id: uuid.UUID, request: Request, db: Session =
     return {"tenant_id": str(tenant.id), "tenant_key": tenant.tenant_key, "status": "PASS", "critical_failure": False, "last_run": datetime.now(timezone.utc).isoformat(), "checks": checks}
 
 
+@router.put("/platform-admin/onboarding/drafts/{idempotency_key}")
+def save_onboarding_draft(idempotency_key: str, payload: OnboardingDraftRequest, request: Request, db: Session = Depends(get_db)):
+    """Persist a resumable, platform-scoped onboarding draft without provisioning."""
+    admin = _require_platform_admin(request, db)
+    if idempotency_key != payload.idempotency_key:
+        raise HTTPException(422, detail={"code": "IDEMPOTENCY_KEY_MISMATCH", "message": "Draft key does not match the request path"})
+    row = db.query(CustomerOnboardingDraft).filter(CustomerOnboardingDraft.idempotency_key == idempotency_key).first()
+    now = datetime.now(timezone.utc)
+    if row is None:
+        row = CustomerOnboardingDraft(id=uuid.uuid4(), idempotency_key=idempotency_key, created_by=admin.id, current_step=payload.current_step, draft_data=payload.draft_data, created_at=now, updated_at=now)
+        db.add(row)
+    else:
+        row.current_step = payload.current_step
+        row.draft_data = payload.draft_data
+        row.updated_at = now
+    db.commit()
+    return {"id": str(row.id), "idempotency_key": row.idempotency_key, "current_step": row.current_step, "draft_data": row.draft_data, "status": row.status, "updated_at": row.updated_at}
+
+
+@router.get("/platform-admin/onboarding/drafts/{idempotency_key}")
+def get_onboarding_draft(idempotency_key: str, request: Request, db: Session = Depends(get_db)):
+    _require_platform_admin(request, db)
+    row = db.query(CustomerOnboardingDraft).filter(CustomerOnboardingDraft.idempotency_key == idempotency_key).first()
+    if row is None:
+        raise HTTPException(404, detail={"code": "ONBOARDING_DRAFT_NOT_FOUND", "message": "Onboarding draft is not available"})
+    return {"id": str(row.id), "idempotency_key": row.idempotency_key, "current_step": row.current_step, "draft_data": row.draft_data, "status": row.status, "failure_details": row.failure_details, "updated_at": row.updated_at}
+
+
 @router.get("/platform-admin/customers")
 def list_platform_customers(request: Request, db: Session = Depends(get_db)):
     """Return tenant administration metadata only; never customer business data."""
     _require_platform_admin(request, db)
-    rows = db.query(Tenant).order_by(Tenant.name).all()
-    return [{"id": str(row.id), "tenant_key": row.tenant_key, "name": row.name,
-             "status": row.status, "created_at": row.created_at.isoformat() if row.created_at else None}
-            for row in rows]
+    params = request.query_params
+    query = (params.get("q") or "").strip().lower()
+    status = (params.get("status") or "").strip().upper()
+    country = (params.get("country") or "").strip().lower()
+    industry = (params.get("industry") or "").strip().lower()
+    environment = (params.get("environment") or "").strip().upper()
+    data_region = (params.get("data_region") or "").strip().lower()
+    plan = (params.get("plan") or "").strip()
+    expiry_before = (params.get("expiry_before") or "").strip()
+    seat_status = (params.get("seat_status") or "").strip().upper()
+    sort = params.get("sort", "name")
+    order = params.get("order", "asc").lower()
+    page = max(1, int(params.get("page", "1")))
+    page_size = min(100, max(1, int(params.get("page_size", "25"))))
+    rows = db.query(Tenant, Customer).outerjoin(Customer, Customer.id == Tenant.customer_id)
+    if query:
+        rows = rows.filter(func.lower(Tenant.name).contains(query) | func.lower(Tenant.tenant_key).contains(query) | func.lower(Customer.display_name).contains(query) | func.lower(Customer.customer_identifier).contains(query))
+    if status:
+        rows = rows.filter(func.upper(Tenant.status) == status)
+    if country:
+        rows = rows.filter(func.lower(Customer.country).contains(country))
+    if industry:
+        rows = rows.filter(func.lower(Customer.industry).contains(industry))
+    if data_region:
+        rows = rows.filter(func.lower(Tenant.residency_region).contains(data_region))
+    if environment:
+        matching_tenants = db.query(TenantEnvironment.tenant_id).filter(func.upper(TenantEnvironment.environment_type) == environment)
+        rows = rows.filter(Tenant.id.in_(matching_tenants))
+    if plan:
+        matching_tenants = db.query(TenantPlanAssignment.tenant_id).join(PlanDefinition, PlanDefinition.id == TenantPlanAssignment.plan_id).filter(func.lower(PlanDefinition.code).contains(plan.lower()), TenantPlanAssignment.status == "ACTIVE")
+        rows = rows.filter(Tenant.id.in_(matching_tenants))
+    if expiry_before:
+        try:
+            expiry_date = datetime.fromisoformat(expiry_before).date()
+            rows = rows.filter(Tenant.id.in_(db.query(SubscriptionLifecycle.tenant_id).filter(SubscriptionLifecycle.expires_at <= expiry_date)))
+        except ValueError:
+            raise HTTPException(422, detail={"code": "INVALID_EXPIRY_FILTER", "message": "expiry_before must be an ISO date"})
+    sort_column = {"name": Tenant.name, "status": Tenant.status, "created_at": Tenant.created_at, "tenant_key": Tenant.tenant_key}.get(sort, Tenant.name)
+    rows = rows.order_by(sort_column.desc() if order == "desc" else sort_column.asc())
+    total = rows.count()
+    items = rows.offset((page - 1) * page_size).limit(page_size).all()
+    payload = []
+    for row, customer in items:
+        assignment = db.query(TenantPlanAssignment).filter(TenantPlanAssignment.tenant_id == row.id, TenantPlanAssignment.status == "ACTIVE").order_by(TenantPlanAssignment.effective_from.desc()).first()
+        plan_row = db.query(PlanDefinition).filter(PlanDefinition.id == assignment.plan_id).first() if assignment else None
+        subscription = db.query(SubscriptionLifecycle).filter(SubscriptionLifecycle.tenant_id == row.id).order_by(SubscriptionLifecycle.created_at.desc()).first()
+        seat_usage = db.query(TenantMembership).filter(TenantMembership.tenant_id == row.id).count()
+        seat_cap = getattr(plan_row, "seat_cap", None) or getattr(plan_row, "max_seats", None)
+        health_status = "HEALTHY" if row.status in ("ACTIVE", "PROVISIONED") else "ATTENTION_REQUIRED"
+        if seat_status == "OVER" and not (seat_cap and seat_usage > seat_cap):
+            continue
+        payload.append({"id": str(row.id), "customer_id": str(row.customer_id) if row.customer_id else None, "customer_identifier": customer.customer_identifier if customer else None, "tenant_key": row.tenant_key, "name": customer.display_name if customer else row.name, "legal_name": customer.legal_name if customer else None, "country": customer.country if customer else None, "industry": customer.industry if customer else None, "data_region": row.residency_region, "status": row.status, "plan_code": plan_row.code if plan_row else None, "plan_name": plan_row.name if plan_row else None, "seat_usage": seat_usage, "seat_cap": seat_cap, "expires_at": subscription.expires_at.isoformat() if subscription and subscription.expires_at else None, "health_status": health_status, "created_at": row.created_at.isoformat() if row.created_at else None, "actions": ["VIEW", "EDIT", "SUSPEND", "REACTIVATE"]})
+    if params.get("format") == "csv":
+        csv = "id,tenant_key,name,status,created_at\n" + "\n".join(
+            f'"{item["id"]}","{item["tenant_key"]}","{item["name"]}","{item["status"]}","{item["created_at"] or ""}"' for item in payload
+        )
+        return Response(content=csv, media_type="text/csv", headers={"Content-Disposition": "attachment; filename=mdarix-customers.csv"})
+    return {"items": payload, "page": page, "page_size": page_size, "total": total, "pages": (total + page_size - 1) // page_size, "sort": sort, "order": order}
+
+
+@router.post("/platform-admin/tenants/{tenant_id}/lifecycle")
+def transition_platform_tenant(tenant_id: uuid.UUID, payload: dict, request: Request, db: Session = Depends(get_db)):
+    admin = _require_platform_admin(request, db)
+    tenant = db.query(Tenant).filter(Tenant.id == tenant_id).first()
+    if tenant is None:
+        raise HTTPException(404, detail={"code": "TENANT_NOT_FOUND", "message": "Tenant is not available"})
+    target = str(payload.get("status", "")).upper()
+    reason = str(payload.get("reason", "")).strip()
+    password = str(payload.get("password", ""))
+    expected_version = payload.get("lock_version")
+    current = str(tenant.status).upper()
+    if expected_version is not None and int(expected_version) != int(tenant.lock_version or 0):
+        raise HTTPException(409, detail={"code": "STALE_RECORD", "message": "Tenant changed since it was loaded; refresh before retrying"})
+    if target == "REACTIVATED":
+        target = "ACTIVE"
+    if not allowed_lifecycle_transition(current, target):
+        raise HTTPException(409, detail={"code": "INVALID_TENANT_TRANSITION", "message": f"Cannot transition {current} to {target}"})
+    if not reason:
+        raise HTTPException(422, detail={"code": "REASON_REQUIRED", "message": "A lifecycle reason is required"})
+    actor_user = db.query(AuthUser).filter(AuthUser.id == admin.id, AuthUser.tenant_id == admin.tenant_id).first()
+    if actor_user is None or not password or not _verify(password, actor_user.password_hash):
+        db.rollback()
+        raise HTTPException(403, detail={"code": "INVALID_REAUTHENTICATION", "message": "Current password is required for lifecycle changes"})
+    now = datetime.now(timezone.utc)
+    next_status = "ACTIVE" if target == "REACTIVATED" else target
+    tenant.status = next_status
+    tenant.provisioning_status = "ACTIVE" if next_status == "ACTIVE" else tenant.provisioning_status
+    tenant.activated_at = now if next_status == "ACTIVE" else tenant.activated_at
+    tenant.suspended_at = now if next_status == "SUSPENDED" else tenant.suspended_at
+    tenant.lock_version = int(tenant.lock_version or 0) + 1
+    db.add(AuditEvent(id=uuid.uuid4(), tenant_id=tenant.id, actor_ref=str(admin.id), action="TENANT_LIFECYCLE_TRANSITION", entity_type="Tenant", entity_id=tenant.id, details={"from": current, "to": next_status, "reason": reason}, created_at=now))
+    db.commit()
+    return {"tenant_id": str(tenant.id), "previous_status": current, "status": next_status, "reason": reason, "transitioned_at": now}
+
+
+@router.post("/platform-admin/tenants/{tenant_id}/lifecycle/schedule")
+def schedule_tenant_lifecycle(tenant_id: uuid.UUID, payload: ScheduledLifecycleRequest, request: Request, db: Session = Depends(get_db)):
+    """Schedule an idempotent lifecycle transition; mutation occurs at run time."""
+    admin = _require_platform_admin(request, db)
+    tenant = db.query(Tenant).filter(Tenant.id == tenant_id).first()
+    if tenant is None:
+        raise HTTPException(404, detail={"code": "TENANT_NOT_FOUND", "message": "Tenant is not available"})
+    try:
+        effective_at = datetime.fromisoformat(payload.effective_at.replace("Z", "+00:00"))
+    except ValueError as exc:
+        raise HTTPException(422, detail={"code": "INVALID_EFFECTIVE_AT", "message": "effective_at must be an ISO-8601 timestamp"}) from exc
+    if effective_at <= datetime.now(timezone.utc):
+        raise HTTPException(422, detail={"code": "SCHEDULE_MUST_BE_FUTURE", "message": "Scheduled lifecycle changes must be in the future"})
+    target = "ACTIVE" if payload.target_status.upper() == "REACTIVATED" else payload.target_status.upper()
+    current = str(tenant.status).upper()
+    if not allowed_lifecycle_transition(current, target):
+        raise HTTPException(409, detail={"code": "INVALID_TENANT_TRANSITION", "message": f"Cannot transition {current} to {target}"})
+    existing = db.query(TenantAccessTransition).filter(TenantAccessTransition.tenant_id == tenant.id, TenantAccessTransition.to_status == target, TenantAccessTransition.effective_at == effective_at).first()
+    if existing:
+        return {"id": str(existing.id), "status": "ALREADY_SCHEDULED", "effective_at": existing.effective_at}
+    row = TenantAccessTransition(id=uuid.uuid4(), tenant_id=tenant.id, transition_type="SCHEDULED", suspension_type="SUSPENSION" if target == "SUSPENDED" else "REACTIVATION", from_status=current, to_status=target, reason=payload.reason, remarks=payload.reason, effective_at=effective_at, notify_customer_admin=payload.notify_customer_admin, performed_by=admin.id, created_at=datetime.now(timezone.utc))
+    db.add(row); db.commit()
+    return {"id": str(row.id), "tenant_id": str(tenant.id), "status": "SCHEDULED", "from_status": current, "to_status": target, "effective_at": effective_at}
+
+
+@router.post("/platform/lifecycle/run-scheduled")
+def run_scheduled_lifecycle(request: Request, db: Session = Depends(get_db)):
+    """Apply due scheduled transitions and enqueue tenant notifications."""
+    admin = _require_platform_admin(request, db); now = datetime.now(timezone.utc); applied = 0; queued = 0
+    rows = db.query(TenantAccessTransition).filter(TenantAccessTransition.transition_type == "SCHEDULED", TenantAccessTransition.effective_at <= now).with_for_update(skip_locked=True).all()
+    for row in rows:
+        tenant = db.query(Tenant).filter(Tenant.id == row.tenant_id).with_for_update().first()
+        if tenant is None or str(tenant.status).upper() != row.from_status.upper():
+            continue
+        tenant.status = row.to_status; tenant.lock_version = int(tenant.lock_version or 0) + 1
+        if row.to_status == "SUSPENDED": tenant.suspended_at = now
+        if row.to_status == "ACTIVE": tenant.activated_at = now
+        db.add(AuditEvent(id=uuid.uuid4(), tenant_id=tenant.id, actor_ref=str(admin.id), action="SCHEDULED_TENANT_LIFECYCLE_APPLIED", entity_type="Tenant", entity_id=tenant.id, details={"from": row.from_status, "to": row.to_status, "schedule_id": str(row.id), "reason": row.reason}, created_at=now))
+        if row.notify_customer_admin:
+            db.add(OutboxEvent(tenant_id=tenant.id, event_name="TENANT_LIFECYCLE_NOTIFICATION", aggregate_type="TenantAccessTransition", aggregate_id=row.id, payload={"tenant_id": str(tenant.id), "transition": row.to_status, "reason": row.reason, "schedule_id": str(row.id)}, occurred_at=now)); queued += 1
+        row.transition_type = "APPLIED"; applied += 1
+    db.commit()
+    return {"status": "COMPLETE", "applied": applied, "notifications_queued": queued, "run_at": now}
 
 
 @router.get("/platform-admin/customers/{tenant_id}")
@@ -936,6 +1242,254 @@ def create_platform_plan(payload: PlanCreateRequest, request: Request, db: Sessi
                       entity_type="PlanDefinition", entity_id=plan.id, details={"code": plan.code, "version": plan.version}, created_at=now))
     db.commit()
     return {"id": str(plan.id), "code": plan.code, "status": plan.status}
+
+
+@router.get("/platform-admin/customer-records/{customer_id}")
+def get_platform_customer_record(customer_id: uuid.UUID, request: Request, db: Session = Depends(get_db)):
+    """Return the complete platform Customer 360 shell without customer business records."""
+    _require_platform_admin(request, db)
+    customer = db.query(Customer).filter(Customer.id == customer_id).first()
+    if customer is None:
+        raise HTTPException(404, detail={"code": "CUSTOMER_NOT_FOUND", "message": "Customer is not available"})
+    tenants = db.query(Tenant).filter(Tenant.customer_id == customer.id).order_by(Tenant.name).all()
+    return {"customer": {"id": str(customer.id), "customer_identifier": customer.customer_identifier, "legal_name": customer.legal_name, "display_name": customer.display_name, "trading_name": customer.trading_name, "customer_type": customer.customer_type, "industry": customer.industry, "company_size": customer.company_size, "country": customer.country, "state_province": customer.state_province, "headquarters": customer.headquarters, "website": customer.website, "crm_reference": customer.crm_reference, "lifecycle_status": customer.lifecycle_status, "lock_version": customer.lock_version, "created_at": customer.created_at, "updated_at": customer.updated_at}, "tenants": [{"id": str(t.id), "tenant_identifier": t.tenant_identifier, "tenant_key": t.tenant_key, "display_name": t.display_name, "tenant_type": t.tenant_type, "deployment_model": t.deployment_model, "primary_region": t.primary_region, "residency_region": t.residency_region, "status": t.status, "provisioning_status": t.provisioning_status} for t in tenants], "tabs": ["Overview", "Tenants", "Environments", "Administrators", "Subscription", "Entitlements", "Identity", "Integrations", "Usage", "Security", "Audit", "Support"]}
+
+
+def _parse_support_time(value: str, field: str) -> datetime:
+    try:
+        parsed = datetime.fromisoformat(value.replace("Z", "+00:00"))
+    except ValueError as exc:
+        raise HTTPException(422, detail={"code": "INVALID_SUPPORT_TIME", "message": f"{field} must be ISO-8601"}) from exc
+    if parsed.tzinfo is None:
+        parsed = parsed.replace(tzinfo=timezone.utc)
+    return parsed
+
+
+def _expire_support_grants(db: Session, tenant_id: uuid.UUID | None = None) -> int:
+    now = datetime.now(timezone.utc)
+    query = db.query(SupportAccessGrant).filter(SupportAccessGrant.status == "APPROVED", SupportAccessGrant.expires_at <= now)
+    if tenant_id is not None:
+        query = query.filter(SupportAccessGrant.tenant_id == tenant_id)
+    rows = query.all()
+    for row in rows:
+        row.status = "EXPIRED"
+        row.updated_at = now
+    if rows:
+        db.flush()
+    return len(rows)
+
+
+@router.get("/platform-admin/support-access")
+def list_support_access(request: Request, db: Session = Depends(get_db)):
+    _require_platform_admin(request, db)
+    _expire_support_grants(db)
+    rows = db.query(SupportAccessGrant).order_by(SupportAccessGrant.created_at.desc()).all()
+    db.commit()
+    return {"items": [{"id": str(row.id), "tenant_id": str(row.tenant_id), "platform_user_id": str(row.platform_user_id), "scope": row.scope or {}, "reason": row.reason, "status": row.status, "starts_at": row.starts_at, "expires_at": row.expires_at, "approved_by": str(row.approved_by) if row.approved_by else None} for row in rows]}
+
+
+@router.post("/platform-admin/support-access")
+def create_support_access(payload: SupportAccessRequest, request: Request, db: Session = Depends(get_db)):
+    admin = _require_platform_admin(request, db)
+    starts_at = _parse_support_time(payload.starts_at, "starts_at")
+    expires_at = _parse_support_time(payload.expires_at, "expires_at")
+    now = datetime.now(timezone.utc)
+    window_error = validate_support_window(starts_at, expires_at, now)
+    if window_error:
+        code = "SUPPORT_ACCESS_TOO_LONG" if "24 hours" in window_error else "INVALID_SUPPORT_EXPIRY"
+        raise HTTPException(422, detail={"code": code, "message": window_error})
+    if db.query(Tenant).filter(Tenant.id == payload.tenant_id).first() is None:
+        raise HTTPException(404, detail={"code": "TENANT_NOT_FOUND", "message": "Tenant is not available"})
+    target = db.query(AuthUser).filter(AuthUser.id == payload.platform_user_id).first()
+    if target is None or not _is_platform_admin(target):
+        raise HTTPException(422, detail={"code": "PLATFORM_USER_REQUIRED", "message": "Support access must target a platform user"})
+    row = SupportAccessGrant(id=uuid.uuid4(), tenant_id=payload.tenant_id, platform_user_id=payload.platform_user_id, scope=payload.scope, reason=payload.reason.strip(), status="PENDING", starts_at=starts_at, expires_at=expires_at, created_at=now, updated_at=now)
+    db.add(row)
+    db.add(AuditEvent(id=uuid.uuid4(), tenant_id=payload.tenant_id, actor_ref=str(admin.id), action="SUPPORT_ACCESS_REQUESTED", entity_type="SupportAccessGrant", entity_id=row.id, details={"scope": payload.scope, "expires_at": expires_at.isoformat(), "reason": payload.reason}, created_at=now))
+    db.commit()
+    return {"id": str(row.id), "status": row.status, "tenant_id": str(row.tenant_id), "expires_at": row.expires_at, "approval_required": True}
+
+
+@router.post("/platform-admin/support-access/{grant_id}/approve")
+def approve_support_access(grant_id: uuid.UUID, payload: SupportAccessDecisionRequest, request: Request, db: Session = Depends(get_db)):
+    admin = _require_platform_admin(request, db)
+    row = db.query(SupportAccessGrant).filter(SupportAccessGrant.id == grant_id).first()
+    if row is None:
+        raise HTTPException(404, detail={"code": "SUPPORT_ACCESS_NOT_FOUND", "message": "Support access grant is not available"})
+    now = datetime.now(timezone.utc)
+    if row.status != "PENDING" or row.expires_at <= now:
+        row.status = "EXPIRED" if row.expires_at <= now else row.status
+        db.commit()
+        raise HTTPException(409, detail={"code": "SUPPORT_ACCESS_NOT_APPROVABLE", "message": "Grant is expired or no longer pending"})
+    if row.platform_user_id == admin.id:
+        raise HTTPException(409, detail={"code": "SUPPORT_ACCESS_SOD", "message": "Requester cannot approve their own support access"})
+    row.status = "APPROVED"; row.approved_by = admin.id; row.updated_at = now
+    db.add(AuditEvent(id=uuid.uuid4(), tenant_id=row.tenant_id, actor_ref=str(admin.id), action="SUPPORT_ACCESS_APPROVED", entity_type="SupportAccessGrant", entity_id=row.id, details={"reason": payload.reason, "expires_at": row.expires_at.isoformat()}, created_at=now))
+    db.commit()
+    return {"id": str(row.id), "status": row.status, "expires_at": row.expires_at, "approved_by": str(admin.id)}
+
+
+@router.post("/platform-admin/support-access/{grant_id}/revoke")
+def revoke_support_access(grant_id: uuid.UUID, payload: SupportAccessDecisionRequest, request: Request, db: Session = Depends(get_db)):
+    admin = _require_platform_admin(request, db)
+    row = db.query(SupportAccessGrant).filter(SupportAccessGrant.id == grant_id).first()
+    if row is None: raise HTTPException(404, detail={"code": "SUPPORT_ACCESS_NOT_FOUND", "message": "Support access grant is not available"})
+    now = datetime.now(timezone.utc); row.status = "REVOKED"; row.revoked_at = now; row.updated_at = now
+    db.add(AuditEvent(id=uuid.uuid4(), tenant_id=row.tenant_id, actor_ref=str(admin.id), action="SUPPORT_ACCESS_REVOKED", entity_type="SupportAccessGrant", entity_id=row.id, details={"reason": payload.reason}, created_at=now)); db.commit()
+    return {"id": str(row.id), "status": row.status, "revoked_at": row.revoked_at}
+
+
+@router.post("/platform-admin/tenants/{tenant_id}/customer-admins/{admin_id}/replace")
+def replace_customer_admin(tenant_id: uuid.UUID, admin_id: uuid.UUID, payload: CustomerAdminReplacementRequest, request: Request, db: Session = Depends(get_db)):
+    platform_admin = _require_platform_admin(request, db)
+    tenant = db.query(Tenant).filter(Tenant.id == tenant_id).first()
+    current = db.query(AuthUser).filter(AuthUser.id == admin_id, AuthUser.tenant_id == tenant_id, func.upper(AuthUser.role) == "CUSTOMER_ADMIN").first()
+    if tenant is None or current is None:
+        raise HTTPException(404, detail={"code": "CUSTOMER_ADMIN_NOT_FOUND", "message": "Customer Administrator is not available for this tenant"})
+    email = payload.replacement_email.strip().lower(); now = datetime.now(timezone.utc)
+    replacement = db.query(AuthUser).filter(AuthUser.tenant_id == tenant_id, func.lower(AuthUser.username) == email).first()
+    created = False
+    if replacement is None:
+        _enforce_invite_limits(db, tenant_id, "CUSTOMER_ADMIN")
+        replacement = AuthUser(id=uuid.uuid4(), tenant_id=tenant_id, username=email, display_name=payload.replacement_display_name, company=payload.company, password_hash=_hash(secrets.token_urlsafe(48)), role="CUSTOMER_ADMIN", status="INVITED", email_verified=False, created_at=now, updated_at=now)
+        db.add(replacement); db.flush(); db.add(TenantMembership(id=uuid.uuid4(), tenant_id=tenant_id, user_id=replacement.id, status="INVITED", is_default=False, created_at=now, updated_at=now)); created = True
+    elif _role_code(replacement) != "CUSTOMER_ADMIN":
+        replacement.role = "CUSTOMER_ADMIN"; replacement.status = "INVITED"
+    if replacement.id == current.id:
+        raise HTTPException(409, detail={"code": "REPLACEMENT_MUST_DIFFER", "message": "Replacement must be a different administrator"})
+    invite = db.query(UserInvitation).filter(UserInvitation.tenant_id == tenant_id, UserInvitation.user_id == replacement.id, UserInvitation.used_at.is_(None)).first()
+    delivery = "ALREADY_CREATED"
+    if invite is None:
+        token = issue_invitation(db, replacement.id, tenant_id, platform_admin.id); delivery = send_activation_email(email, token, payload.company)
+    active_others = db.query(AuthUser).filter(AuthUser.tenant_id == tenant_id, func.upper(AuthUser.role) == "CUSTOMER_ADMIN", func.upper(AuthUser.status) == "ACTIVE", AuthUser.id != current.id).count()
+    continuity_action = replacement_action(active_others, replacement.status)
+    if continuity_action == "RETIRE_CURRENT":
+        current.status = "OFFBOARDED"
+    db.add(AuditEvent(id=uuid.uuid4(), tenant_id=tenant_id, actor_ref=str(platform_admin.id), action="CUSTOMER_ADMIN_REPLACEMENT_REQUESTED", entity_type="AuthUser", entity_id=replacement.id, details={"replaced_admin_id": str(current.id), "created": created, "reason": payload.reason, "email_delivery": delivery, "continuity_preserved": True}, created_at=now)); db.commit()
+    return {"tenant_id": str(tenant_id), "replaced_admin_id": str(current.id), "replacement_admin_id": str(replacement.id), "replacement_status": replacement.status, "invitation_status": "SENT" if delivery != "NOT_CONFIGURED" else "CREATED", "email_delivery": delivery, "continuity_preserved": True, "continuity_action": continuity_action}
+
+
+@router.get("/platform-admin/tenants/{tenant_id}")
+def get_platform_tenant_record(tenant_id: uuid.UUID, request: Request, db: Session = Depends(get_db)):
+    """Return a technical Tenant 360 view with environment, identity, health, and counts."""
+    _require_platform_admin(request, db)
+    tenant = db.query(Tenant).filter(Tenant.id == tenant_id).first()
+    if tenant is None:
+        raise HTTPException(404, detail={"code": "TENANT_NOT_FOUND", "message": "Tenant is not available"})
+    environments = db.query(TenantEnvironment).filter(TenantEnvironment.tenant_id == tenant.id).all()
+    health = db.query(TenantHealthRun).filter(TenantHealthRun.tenant_id == tenant.id).order_by(TenantHealthRun.created_at.desc()).first()
+    identity = db.query(IdentityProviderConfiguration).filter(IdentityProviderConfiguration.tenant_id == tenant.id).all()
+    return {"tenant": {"id": str(tenant.id), "customer_id": str(tenant.customer_id), "tenant_identifier": tenant.tenant_identifier, "tenant_key": tenant.tenant_key, "display_name": tenant.display_name, "tenant_type": tenant.tenant_type, "deployment_model": tenant.deployment_model, "primary_region": tenant.primary_region, "residency_region": tenant.residency_region, "database_region": tenant.database_region, "backup_region": tenant.backup_region, "storage_region": tenant.storage_region, "ai_processing_region": tenant.ai_processing_region, "disaster_recovery_region": tenant.disaster_recovery_region, "cross_border_processing_allowed": tenant.cross_border_processing_allowed, "application_version": tenant.application_version, "schema_version": tenant.schema_version, "configuration_version": tenant.configuration_version, "provisioning_status": tenant.provisioning_status, "status": tenant.status, "activated_at": tenant.activated_at, "suspended_at": tenant.suspended_at, "lock_version": tenant.lock_version}, "environments": [{"id": str(e.id), "environment_identifier": e.environment_identifier, "environment_type": e.environment_type, "region": e.region, "residency_region": e.residency_region, "application_version": e.application_version, "schema_version": e.schema_version, "configuration_version": e.configuration_version, "status": e.status, "provisioned_at": e.provisioned_at, "activated_at": e.activated_at} for e in environments], "identity_providers": [{"id": str(i.id), "provider_type": i.provider_type, "login_mode": i.login_mode, "status": i.status, "verified_at": i.verified_at} for i in identity], "last_health_run": {"id": str(health.id), "status": health.status, "summary": health.summary, "completed_at": health.completed_at} if health else None, "tabs": ["Overview", "Configuration", "Environments", "Identity", "Entitlements", "Integrations", "Storage", "Security", "Health", "Audit"]}
+
+
+@router.get("/platform-admin/tenants")
+def list_platform_tenants(request: Request, q: str = "", status: str = "", region: str = "", environment: str = "", page: int = 1, page_size: int = 25, sort: str = "name", order: str = "asc", db: Session = Depends(get_db)):
+    _require_platform_admin(request, db)
+    page = max(1, page); page_size = min(100, max(1, page_size))
+    rows = db.query(Tenant).filter(Tenant.name.ilike(f"%{q.strip()}%")) if q.strip() else db.query(Tenant)
+    if status: rows = rows.filter(func.upper(Tenant.status) == status.upper())
+    if region: rows = rows.filter(func.lower(Tenant.residency_region).contains(region.lower()))
+    if environment: rows = rows.filter(Tenant.id.in_(db.query(TenantEnvironment.tenant_id).filter(func.upper(TenantEnvironment.environment_type) == environment.upper())))
+    sort_column = {"name": Tenant.name, "status": Tenant.status, "created_at": Tenant.created_at, "region": Tenant.residency_region}.get(sort, Tenant.name)
+    rows = rows.order_by(sort_column.desc() if order.lower() == "desc" else sort_column.asc())
+    total = rows.count(); items = rows.offset((page - 1) * page_size).limit(page_size).all()
+    payload = [{"id": str(row.id), "tenant_identifier": row.tenant_identifier, "tenant_key": row.tenant_key, "name": row.name, "customer_id": str(row.customer_id), "status": row.status, "region": row.primary_region, "residency_region": row.residency_region, "deployment_model": row.deployment_model, "lock_version": row.lock_version, "health_status": "HEALTHY" if row.status in ("ACTIVE", "PROVISIONED") else "REVIEW", "environment_count": db.query(TenantEnvironment).filter(TenantEnvironment.tenant_id == row.id).count()} for row in items]
+    if request.query_params.get("format") == "csv":
+        content = "id,tenant_identifier,tenant_key,name,status,region,residency_region\n" + "\n".join(f'"{r["id"]}","{r["tenant_identifier"]}","{r["tenant_key"]}","{r["name"]}","{r["status"]}","{r["region"]}","{r["residency_region"]}"' for r in payload)
+        return Response(content=content, media_type="text/csv", headers={"Content-Disposition": "attachment; filename=mdarix-tenants.csv"})
+    return {"items": payload, "page": page, "page_size": page_size, "total": total, "pages": (total + page_size - 1) // page_size, "sort": sort, "order": order}
+
+
+@router.put("/platform-admin/tenants/{tenant_id}/environments/{environment_id}")
+def update_platform_environment(tenant_id: uuid.UUID, environment_id: uuid.UUID, payload: dict, request: Request, db: Session = Depends(get_db)):
+    admin = _require_platform_admin(request, db)
+    row = db.query(TenantEnvironment).filter(TenantEnvironment.id == environment_id, TenantEnvironment.tenant_id == tenant_id).first()
+    if row is None: raise HTTPException(404, detail={"code": "ENVIRONMENT_NOT_FOUND", "message": "Environment is not available"})
+    for field in ("region", "residency_region", "application_version", "schema_version", "configuration_version", "status"):
+        if field in payload: setattr(row, field, payload[field])
+    row.updated_at = datetime.now(timezone.utc)
+    db.add(AuditEvent(id=uuid.uuid4(), tenant_id=tenant_id, actor_ref=str(admin.id), action="TENANT_ENVIRONMENT_UPDATED", entity_type="TenantEnvironment", entity_id=row.id, details={"fields": list(payload)}, created_at=row.updated_at)); db.commit()
+    return {"id": str(row.id), "tenant_id": str(row.tenant_id), "environment_identifier": row.environment_identifier, "status": row.status, "lock_version": 1}
+
+
+@router.post("/platform-admin/tenants/{tenant_id}/environments")
+def create_platform_environment(tenant_id: uuid.UUID, payload: dict, request: Request, db: Session = Depends(get_db)):
+    admin = _require_platform_admin(request, db)
+    if db.query(Tenant).filter(Tenant.id == tenant_id).first() is None: raise HTTPException(404, detail={"code": "TENANT_NOT_FOUND", "message": "Tenant is not available"})
+    required = ("environment_identifier", "environment_type", "region", "residency_region")
+    if any(not str(payload.get(field, "")).strip() for field in required): raise HTTPException(422, detail={"code": "ENVIRONMENT_FIELDS_REQUIRED", "message": "Environment identifier, type, region, and residency are required"})
+    now = datetime.now(timezone.utc); row = TenantEnvironment(id=uuid.uuid4(), tenant_id=tenant_id, environment_identifier=payload["environment_identifier"], environment_type=payload["environment_type"].upper(), region=payload["region"], residency_region=payload["residency_region"], application_version=payload.get("application_version"), schema_version=payload.get("schema_version"), configuration_version=payload.get("configuration_version"), status="DRAFT", created_at=now, updated_at=now)
+    db.add(row); db.add(AuditEvent(id=uuid.uuid4(), tenant_id=tenant_id, actor_ref=str(admin.id), action="TENANT_ENVIRONMENT_CREATED", entity_type="TenantEnvironment", entity_id=row.id, details={"environment_identifier": row.environment_identifier}, created_at=now)); db.commit()
+    return {"id": str(row.id), "tenant_id": str(row.tenant_id), "environment_identifier": row.environment_identifier, "status": row.status}
+
+
+@router.post("/platform-admin/tenants/{tenant_id}/environments/{environment_id}/clone")
+def clone_platform_environment(tenant_id: uuid.UUID, environment_id: uuid.UUID, payload: dict, request: Request, db: Session = Depends(get_db)):
+    admin = _require_platform_admin(request, db); source = db.query(TenantEnvironment).filter(TenantEnvironment.id == environment_id, TenantEnvironment.tenant_id == tenant_id).first()
+    if source is None: raise HTTPException(404, detail={"code": "ENVIRONMENT_NOT_FOUND", "message": "Source environment is not available"})
+    target = dict(payload); target.update({"environment_type": target.get("environment_type", "SANDBOX"), "region": target.get("region", source.region), "residency_region": target.get("residency_region", source.residency_region), "application_version": source.application_version, "schema_version": source.schema_version, "configuration_version": source.configuration_version, "clone_source_environment_id": source.id})
+    if not target.get("environment_identifier"): raise HTTPException(422, detail={"code": "ENVIRONMENT_IDENTIFIER_REQUIRED", "message": "A new environment identifier is required"})
+    now = datetime.now(timezone.utc); row = TenantEnvironment(id=uuid.uuid4(), tenant_id=tenant_id, environment_identifier=target["environment_identifier"], environment_type=target["environment_type"].upper(), region=target["region"], residency_region=target["residency_region"], application_version=target.get("application_version"), schema_version=target.get("schema_version"), configuration_version=target.get("configuration_version"), clone_source_environment_id=source.id, status="DRAFT", created_at=now, updated_at=now)
+    db.add(row); db.add(AuditEvent(id=uuid.uuid4(), tenant_id=tenant_id, actor_ref=str(admin.id), action="TENANT_ENVIRONMENT_CLONED", entity_type="TenantEnvironment", entity_id=row.id, details={"source_environment_id": str(source.id)}, created_at=now)); db.commit()
+    return {"id": str(row.id), "source_environment_id": str(source.id), "environment_identifier": row.environment_identifier, "status": row.status}
+
+
+@router.get("/platform-admin/tenants/{tenant_id}/security")
+def get_platform_tenant_security(tenant_id: uuid.UUID, request: Request, db: Session = Depends(get_db)):
+    _require_platform_admin(request, db)
+    if db.query(Tenant).filter(Tenant.id == tenant_id).first() is None: raise HTTPException(404, detail={"code": "TENANT_NOT_FOUND", "message": "Tenant is not available"})
+    return {"tenant_id": str(tenant_id), "items": [{"control": "Tenant authorization", "status": "ENFORCED"}, {"control": "Database isolation", "status": "SERVER_VALIDATED"}, {"control": "Encryption at rest", "status": "INFRASTRUCTURE_DEPENDENT"}, {"control": "Storage encryption", "status": "INFRASTRUCTURE_DEPENDENT"}, {"control": "Production TLS", "status": "PENDING_VALIDATION"}], "production_validation": "PENDING"}
+
+
+@router.get("/platform-admin/tenants/{tenant_id}/audit")
+def get_platform_tenant_audit(tenant_id: uuid.UUID, request: Request, db: Session = Depends(get_db)):
+    _require_platform_admin(request, db)
+    if db.query(Tenant).filter(Tenant.id == tenant_id).first() is None: raise HTTPException(404, detail={"code": "TENANT_NOT_FOUND", "message": "Tenant is not available"})
+    rows = db.query(AuditEvent).filter(AuditEvent.tenant_id == tenant_id).order_by(AuditEvent.created_at.desc()).limit(100).all()
+    return {"tenant_id": str(tenant_id), "items": [{"id": str(row.id), "action": row.action, "entity_type": row.entity_type, "entity_id": str(row.entity_id) if row.entity_id else None, "actor_ref": row.actor_ref, "details": row.details or {}, "created_at": row.created_at, "immutable": True} for row in rows]}
+
+
+@router.get("/platform-admin/customer-records/{customer_id}/tabs/{tab}")
+def get_platform_customer_tab(customer_id: uuid.UUID, tab: str, request: Request, db: Session = Depends(get_db)):
+    """Return structured, server-authorized Customer 360 tab data."""
+    _require_platform_admin(request, db)
+    customer = db.query(Customer).filter(Customer.id == customer_id).first()
+    if customer is None:
+        raise HTTPException(404, detail={"code": "CUSTOMER_NOT_FOUND", "message": "Customer is not available"})
+    tenants = db.query(Tenant).filter(Tenant.customer_id == customer.id).all()
+    tenant_ids = [tenant.id for tenant in tenants]
+    key = tab.strip().lower().replace(" ", "_")
+    if key in {"administrators", "users"}:
+        rows = db.query(AuthUser).filter(AuthUser.tenant_id.in_(tenant_ids), func.upper(AuthUser.role).in_(["ADMINISTRATOR", "ADMIN", "CUSTOMER_ADMIN"])).all()
+        items = [{"id": str(row.id), "display_name": row.display_name, "email": row.username, "role": row.role, "status": row.status, "tenant_id": str(row.tenant_id)} for row in rows]
+    elif key in {"environments", "environment"}:
+        rows = db.query(TenantEnvironment).filter(TenantEnvironment.tenant_id.in_(tenant_ids)).all()
+        items = [{"id": str(row.id), "tenant_id": str(row.tenant_id), "environment_identifier": row.environment_identifier, "environment_type": row.environment_type, "region": row.region, "residency_region": row.residency_region, "status": row.status, "configuration_version": row.configuration_version} for row in rows]
+    elif key in {"subscription", "entitlements"}:
+        assignments = db.query(TenantPlanAssignment).filter(TenantPlanAssignment.tenant_id.in_(tenant_ids), TenantPlanAssignment.status == "ACTIVE").all()
+        items = []
+        for assignment in assignments:
+            plan = db.query(PlanDefinition).filter(PlanDefinition.id == assignment.plan_id).first()
+            features = db.query(FeatureEntitlement).filter(FeatureEntitlement.plan_id == assignment.plan_id, FeatureEntitlement.status == "ACTIVE").all()
+            if key == "subscription": items.append({"id": str(assignment.id), "tenant_id": str(assignment.tenant_id), "plan_code": plan.code if plan else None, "plan_name": plan.name if plan else None, "status": assignment.status, "effective_from": assignment.effective_from, "effective_to": assignment.effective_to})
+            else: items.extend({"id": str(feature.id), "tenant_id": str(assignment.tenant_id), "feature_code": feature.feature_code, "enabled": feature.enabled, "limits": feature.limits or {}, "status": feature.status} for feature in features)
+    elif key == "identity":
+        rows = db.query(IdentityProviderConfiguration).filter(IdentityProviderConfiguration.tenant_id.in_(tenant_ids)).all()
+        items = [{"id": str(row.id), "tenant_id": str(row.tenant_id), "provider_type": row.provider_type, "login_mode": row.login_mode, "status": row.status, "verified_at": row.verified_at} for row in rows]
+    elif key == "integrations":
+        rows = db.query(ConnectorConfiguration).filter(ConnectorConfiguration.tenant_id.in_(tenant_ids)).all()
+        items = [{"id": str(row.id), "tenant_id": str(row.tenant_id), "code": row.code, "connector_type": row.connector_type, "version": row.version, "status": row.status, "health": "REVIEW"} for row in rows]
+    elif key == "usage":
+        items = [{"tenant_id": str(tenant.id), "users": db.query(TenantMembership).filter(TenantMembership.tenant_id == tenant.id).count(), "administrators": db.query(AuthUser).filter(AuthUser.tenant_id == tenant.id, func.upper(AuthUser.role).in_(["ADMINISTRATOR", "ADMIN", "CUSTOMER_ADMIN"])).count(), "connectors": db.query(ConnectorConfiguration).filter(ConnectorConfiguration.tenant_id == tenant.id).count()} for tenant in tenants]
+    elif key == "support":
+        rows = db.query(SupportAccessGrant).filter(SupportAccessGrant.tenant_id.in_(tenant_ids)).all()
+        items = [{"id": str(row.id), "tenant_id": str(row.tenant_id), "status": row.status, "reason": row.reason, "expires_at": row.expires_at, "scope": row.scope} for row in rows]
+    elif key in {"security", "audit"}:
+        rows = db.query(AuditEvent).filter(AuditEvent.tenant_id.in_(tenant_ids)).order_by(AuditEvent.created_at.desc()).limit(100).all()
+        items = [{"id": str(row.id), "tenant_id": str(row.tenant_id), "action": row.action, "entity_type": row.entity_type, "entity_id": str(row.entity_id) if row.entity_id else None, "actor_ref": row.actor_ref, "details": row.details or {}, "created_at": row.created_at} for row in rows]
+    else:
+        raise HTTPException(404, detail={"code": "CUSTOMER_TAB_NOT_FOUND", "message": "Customer 360 tab is not available"})
+    return {"customer_id": str(customer.id), "tab": tab, "items": items, "count": len(items), "scope": "platform-authorized"}
 
 
 @router.get("/platform-admin/customers/{tenant_id}/subscription")

@@ -12,6 +12,24 @@ from datetime import datetime
 from backend.app.db.models.customer_lifecycle import Customer
 from backend.app.db.models.foundation import Tenant
 
+LIFECYCLE_TRANSITIONS: dict[str, frozenset[str]] = {
+    "DRAFT": frozenset({"PENDING_APPROVAL"}),
+    "PENDING_APPROVAL": frozenset({"DRAFT", "PROVISIONING"}),
+    "PROVISIONING": frozenset({"PROVISIONED"}),
+    "PROVISIONED": frozenset({"PENDING_CUSTOMER_ACTIVATION", "PROVISIONING"}),
+    "PENDING_CUSTOMER_ACTIVATION": frozenset({"ACTIVE", "PROVISIONING"}),
+    "ACTIVE": frozenset({"EXPIRING_SOON", "SUSPENDED", "TERMINATED"}),
+    "EXPIRING_SOON": frozenset({"ACTIVE", "EXPIRED", "SUSPENDED"}),
+    "EXPIRED": frozenset({"ACTIVE", "SUSPENDED", "TERMINATED"}),
+    "SUSPENDED": frozenset({"ACTIVE", "TERMINATED"}),
+    "TERMINATED": frozenset({"ARCHIVED"}),
+    "ARCHIVED": frozenset(),
+}
+
+
+def allowed_lifecycle_transition(current: str, target: str) -> bool:
+    return target.upper() in LIFECYCLE_TRANSITIONS.get(current.upper(), frozenset())
+
 
 def _slug(value: str) -> str:
     return re.sub(r"[^a-z0-9]+", "-", value.lower()).strip("-")[:100]
