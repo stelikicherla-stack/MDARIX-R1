@@ -43,6 +43,11 @@ jobs:
       - run: python -m pip check
       - run: pip-audit -r requirements.txt
       - run: alembic upgrade head
+      - name: Seed deterministic test identities
+        env:
+          DAY35_FIXTURE_APPLY: '1'
+          DAY35_FIXTURE_PASSWORD: LegacyTestPassword123!
+        run: python scripts/provision_day35_fixture.py
       - run: python -m compileall backend auth access_control counterfactual graph scenario_intelligence
       - run: python -m pytest -q
       - name: Validate compose configuration
