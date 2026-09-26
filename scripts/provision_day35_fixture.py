@@ -9,6 +9,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from access_control.fixtures import FIXTURE_TENANTS, FIXTURE_USERS, validate_fixture
 from auth.service import _hash
+from backend.app.db.models.customer_lifecycle import Customer
 from backend.app.db.models.foundation import AuthUser, PersonaAssignment, Tenant, TenantMembership
 from backend.app.db.session import SessionLocal
 
@@ -32,7 +33,27 @@ def main() -> int:
         for fixture in FIXTURE_TENANTS:
             tenant = db.query(Tenant).filter(Tenant.tenant_key == fixture.key).first()
             if tenant is None:
-                tenant = Tenant(id=uuid.uuid4(), tenant_key=fixture.key, name=fixture.name, status="active", created_at=now, updated_at=now)
+                customer = Customer(
+                    id=uuid.uuid4(),
+                    customer_identifier=f"CUST-{fixture.key.removeprefix('R1_TENANT_')}",
+                    legal_name=fixture.name,
+                    display_name=fixture.name,
+                    customer_type="SYNTHETIC",
+                    country="UNSPECIFIED",
+                    lifecycle_status="ACTIVE",
+                    lock_version=1,
+                    created_at=now,
+                    updated_at=now,
+                )
+                db.add(customer)
+                db.flush()
+                tenant = Tenant(id=uuid.uuid4(), customer_id=customer.id, tenant_key=fixture.key,
+                                tenant_identifier=fixture.key, tenant_slug=fixture.key.lower(),
+                                display_name=fixture.name, name=fixture.name, tenant_type="STANDARD",
+                                deployment_model="SHARED", primary_region="UNSPECIFIED",
+                                residency_region="UNSPECIFIED", cross_border_processing_allowed=False,
+                                provisioning_status="PROVISIONED", status="ACTIVE", lock_version=1,
+                                activated_at=now, created_at=now, updated_at=now)
                 db.add(tenant); db.flush()
             tenants[fixture.key] = tenant
         for fixture in FIXTURE_USERS:
